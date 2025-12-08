@@ -8,8 +8,10 @@ use App\Models\MenuItem;
 use App\Models\PriceHistory;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Throwable;
 
 class MenuItemController extends Controller
 {
@@ -67,7 +69,7 @@ class MenuItemController extends Controller
         ]);
 
         $item->load('category');
-        broadcast(new MenuItemUpdated($item));
+        $this->broadcastMenuItem($item);
 
         return response()->json($item, 201);
     }
@@ -110,7 +112,7 @@ class MenuItemController extends Controller
         }
 
         $menuItem->refresh()->load('category');
-        broadcast(new MenuItemUpdated($menuItem));
+        $this->broadcastMenuItem($menuItem);
 
         return response()->json($menuItem);
     }
@@ -153,7 +155,7 @@ class MenuItemController extends Controller
         $menuItem->update(['is_sold_out' => ! $menuItem->is_sold_out]);
 
         $menuItem->refresh()->load('category');
-        broadcast(new MenuItemUpdated($menuItem));
+        $this->broadcastMenuItem($menuItem);
 
         return response()->json($menuItem);
     }
@@ -170,5 +172,17 @@ class MenuItemController extends Controller
         $path = $request->file('image')->store('menu', 'public');
 
         return Storage::disk('public')->url($path);
+    }
+
+    private function broadcastMenuItem(MenuItem $item): void
+    {
+        try {
+            broadcast(new MenuItemUpdated($item));
+        } catch (Throwable $e) {
+            Log::warning('Menu item broadcast failed', [
+                'item_id' => $item->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 }

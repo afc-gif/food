@@ -169,6 +169,11 @@
                 data-sold-out="{{ $isSoldOut ? '1' : '0' }}"
                 data-category="{{ $catSlug }}"
               >
+                @if($item->image_url)
+                  <div class="af-menu-thumb">
+                    <img src="{{ $item->image_url }}" alt="{{ $item->name }}">
+                  </div>
+                @endif
                 <div class="af-menu-head">
                   <h3>{{ $item->name }}</h3>
                   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">

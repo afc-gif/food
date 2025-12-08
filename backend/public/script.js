@@ -412,6 +412,8 @@ function renderMenu(items) {
             data-sold-out="${item.is_sold_out ? "1" : "0"}"
             data-category="${catSlug}"
           >
+            ${item.image_url ? `<div class="af-menu-thumb"><img src="${item.image_url}" alt="${item.name}"></div>` : ""}
+            <div class="af-menu-body">
             <div class="af-menu-head">
               <h3>${item.name}</h3>
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -436,6 +438,7 @@ function renderMenu(items) {
               >
                 ${item.is_sold_out ? "Sold Out" : "Add to Cart"}
               </button>
+            </div>
             </div>
           </article>
         `;
@@ -541,6 +544,8 @@ function createMenuCard(item) {
   card.setAttribute("data-sold-out", soldOut);
   card.setAttribute("data-category", catSlug);
   card.innerHTML = `
+    ${item.image_url ? `<div class="af-menu-thumb"><img src="${item.image_url}" alt="${item.name}"></div>` : ""}
+    <div class="af-menu-body">
     <div class="af-menu-head">
       <h3>${item.name}</h3>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
@@ -565,6 +570,7 @@ function createMenuCard(item) {
       >
         ${item.is_sold_out ? "Sold Out" : "Add to Cart"}
       </button>
+    </div>
     </div>
   `;
   return card;
