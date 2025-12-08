@@ -268,7 +268,14 @@
                             <h2 style="margin:0 0 4px;">Orders</h2>
                             <p class="muted" style="margin:0;">Today and recent sales. Seller is recorded per order.</p>
                         </div>
-                        <button class="btn-ghost" id="purgeOrdersBtn" style="white-space:nowrap;">Delete test orders</button>
+                        <div class="row" style="gap:8px; align-items:center; flex-wrap:wrap;">
+                            <select id="ordersExportRange" style="padding:8px 10px; border-radius:10px; border:1px solid var(--af-line);">
+                                <option value="weekly">Last 7 days</option>
+                                <option value="monthly" selected>Last 30 days</option>
+                            </select>
+                            <button class="btn-ghost" id="ordersExportBtn" style="white-space:nowrap;">Download CSV</button>
+                            <button class="btn-ghost" id="purgeOrdersBtn" style="white-space:nowrap;">Delete test orders</button>
+                        </div>
                     </div>
 
                     <div style="display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top:12px;">
@@ -446,6 +453,8 @@
         const ordersChartBars = document.getElementById('ordersChartBars');
         const ordersChartLabels = document.getElementById('ordersChartLabels');
         const purgeOrdersBtn = document.getElementById('purgeOrdersBtn');
+        const ordersExportBtn = document.getElementById('ordersExportBtn');
+        const ordersExportRange = document.getElementById('ordersExportRange');
         const statCategories = document.getElementById('statCategories');
         const statItems = document.getElementById('statItems');
         const statOrders = document.getElementById('statOrders');
@@ -1334,6 +1343,26 @@
                 await safeRequest('/api/orders/purge', { method: 'POST' });
                 await Promise.all([loadOrders(), loadOrderSummary()]);
             });
+        });
+
+        if (ordersExportBtn) ordersExportBtn.addEventListener('click', async () => {
+            const range = ordersExportRange ? ordersExportRange.value : 'monthly';
+            const url = `/api/orders/export?range=${encodeURIComponent(range)}`;
+            try {
+                const res = await apiFetch(url);
+                if (!res.ok) throw new Error('Export failed');
+                const blob = await res.blob();
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `orders-${range}-${Date.now()}.csv`;
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                toast('CSV downloaded');
+            } catch (err) {
+                toast('Could not download CSV', 'error');
+                console.error(err);
+            }
         });
 
         function openPosReceipt(order) {
