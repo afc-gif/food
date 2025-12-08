@@ -239,25 +239,23 @@ if (ordersEl) {
                     <div class="order" data-order-id="${order.id}">
                         ${isFresh ? `<span style="position:absolute; top:10px; right:10px;" class="pill tone-active">New</span>` : ''}
                         <div class="order-header">
-                            <div>
-                                <strong>${escapeHtml(order.code ?? 'New order')}</strong>
-                                <div class="order-meta-row">
-                                    ${channelPill}
-                                    <span class="pill warn" data-elapsed="${order.created_at}">${elapsed(order.created_at)}</span>
-                                    <span class="pill tone-neutral">${formatTime(order.created_at)}</span>
-                                </div>
-                                <div class="order-meta-row" style="margin-top:4px;">
-                                    ${statusPill}
-                                    ${etaPill}
-                                    ${notePill}
-                                </div>
+                            <div class="order-title">
+                                <span style="font-size:17px;">${escapeHtml(order.code ?? 'New order')}</span>
+                                ${channelPill}
+                                <span class="pill warn" data-elapsed="${order.created_at}">${elapsed(order.created_at)}</span>
+                                <span class="pill tone-neutral">${formatTime(order.created_at)}</span>
                             </div>
-                            <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+                            <div class="order-channel">
                                 <span class="badge">${escapeHtml(order.status ?? 'pending')}</span>
-                                <span class="pill">${money(order.total)}</span>
+                                <span class="pill tone-neutral">${money(order.total)}</span>
                             </div>
                         </div>
-                        <div class="small" style="margin-top:6px;">Customer: ${customer}</div>
+                        <div class="order-meta-row">
+                            ${statusPill}
+                            ${etaPill}
+                            ${notePill}
+                        </div>
+                        <div class="order-customer">Customer · ${customer}</div>
                         <div class="controls kitchen-actions" data-order="${order.id}">
                             <button class="brand-btn ghost" data-action="status" data-status="prepping" data-order="${order.id}">Start</button>
                             <button class="brand-btn ghost" data-action="eta" data-eta="10" data-order="${order.id}">ETA 10m</button>
@@ -267,6 +265,12 @@ if (ordersEl) {
                             <button class="brand-btn ghost" data-action="status" data-status="served" data-order="${order.id}">Served</button>
                         </div>
                         <ul class="items">${items}</ul>
+                        <div class="order-footer">
+                            <div class="order-channel">
+                                <span class="pill tone-neutral">Ticket #${order.id}</span>
+                                <span class="pill tone-muted">Since ${elapsed(order.created_at)}</span>
+                            </div>
+                        </div>
                     </div>
                 `;
             })
