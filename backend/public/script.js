@@ -645,29 +645,3 @@ function handleWhatsApp(form) {
   const url = `https://wa.me/${whatsappNumber}?text=${message}`;
   window.open(url, "_blank");
 }
-
-// Kick off bindings and load menu data (avoid double-render if server already rendered content)
-const hasSSRMenuItems = !!(menuGrid && menuGrid.querySelector("[data-menu-item]"));
-const hasSSRFeatured = !!(featuredGrid && featuredGrid.querySelector("[data-menu-item]"));
-const hasSSRFilters = !!(menuFilters && menuFilters.querySelectorAll(".af-chip").length > 1);
-
-// Bind whatever the server already rendered for instant UX
-bindAddToCartButtons();
-bindFilterButtons();
-applyFilter();
-
-// Hydrate from the API (merge-only; we never clear SSR content to avoid flicker)
-loadMenuData();
-
-syncMenuAvailability();
-// Reduced polling interval from 10s to 30s to prevent flickering
-// setInterval(syncMenuAvailability, 30000);
-
-// Attach checkout handlers for all buttons
-document.querySelectorAll("[data-whatsapp-btn]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const formId = btn.getAttribute("data-form");
-    const form = formId ? document.getElementById(formId) : null;
-    handleWhatsApp(form);
-  });
-});
