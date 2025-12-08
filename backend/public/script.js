@@ -645,3 +645,17 @@ function handleWhatsApp(form) {
   const url = `https://wa.me/${whatsappNumber}?text=${message}`;
   window.open(url, "_blank");
 }
+
+// Init: bind existing DOM and hydrate data
+bindAddToCartButtons();
+bindFilterButtons();
+applyFilter();
+loadMenuData();
+syncMenuAvailability();
+document.querySelectorAll("[data-whatsapp-btn]").forEach((btn) => {
+  btn.addEventListener("click", () => {
+    const formId = btn.getAttribute("data-form");
+    const form = formId ? document.getElementById(formId) : null;
+    handleWhatsApp(form);
+  });
+});
