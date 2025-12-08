@@ -10,8 +10,9 @@ if (navToggle && nav) {
   });
 }
 
-// Year in footer
-document.getElementById("year").textContent = new Date().getFullYear();
+// Year in footer (guarded for pages without the element)
+const yearEl = document.getElementById("year");
+if (yearEl) yearEl.textContent = new Date().getFullYear();
 
 // Simple cart
 let cart = [];
@@ -251,15 +252,7 @@ document.querySelectorAll(".af-chip").forEach((chip) => {
   });
 });
 
-// Checkout buttons (stubs)
-
-function handlePaystack(form) {
-  if (!cart.length) {
-    alert("Your cart is empty.");
-    return;
-  }
-  alert("Paystack integration will go here.");
-}
+// Checkout buttons (WhatsApp only for now)
 
 function handleWhatsApp(form) {
   if (!cart.length) {
@@ -298,20 +291,12 @@ function handleWhatsApp(form) {
   message += `%0ATotal: ₦${total.toLocaleString()}%0A`;
   message += `%0AOrder Source: Website`;
 
-  const whatsappNumber = "2347015862018"; // TODO: replace with real number
+  const whatsappNumber = "2347015862018";
   const url = `https://wa.me/${whatsappNumber}?text=${message}`;
   window.open(url, "_blank");
 }
 
 // Attach checkout handlers for all buttons
-document.querySelectorAll("[data-paystack-btn]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const formId = btn.getAttribute("data-form");
-    const form = formId ? document.getElementById(formId) : null;
-    handlePaystack(form);
-  });
-});
-
 document.querySelectorAll("[data-whatsapp-btn]").forEach((btn) => {
   btn.addEventListener("click", () => {
     const formId = btn.getAttribute("data-form");

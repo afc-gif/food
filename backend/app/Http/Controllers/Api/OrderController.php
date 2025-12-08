@@ -64,7 +64,13 @@ class OrderController extends Controller
 
             foreach ($data['items'] as $itemInput) {
                 $menuItem = MenuItem::findOrFail($itemInput['menu_item_id']);
-                $price = $itemInput['price'] ?? $menuItem->price;
+                if (! $menuItem->is_active) {
+                    throw ValidationException::withMessages([
+                        'items' => ["{$menuItem->name} is inactive."],
+                    ]);
+                }
+                // Always trust server-side price to prevent client tampering
+                $price = $menuItem->price;
                 $lineTotal = $price * $itemInput['quantity'];
 
                 if ($menuItem->is_sold_out) {
@@ -87,6 +93,7 @@ class OrderController extends Controller
             $discount = $data['discount'] ?? 0;
             $tax = $data['tax'] ?? 0;
             $total = max(0, $subtotal + $tax - $discount);
+            $hasPayment = ! empty($data['payment']);
 
             $order = Order::create([
                 'channel' => $data['channel'] ?? 'pos',
@@ -97,17 +104,18 @@ class OrderController extends Controller
                 'tax' => $tax,
                 'discount' => $discount,
                 'total' => $total,
-                'status' => $data['payment'] ? 'paid' : 'pending',
-                'paid_at' => $data['payment'] ? now() : null,
+                'status' => $hasPayment ? 'paid' : 'pending',
+                'paid_at' => $hasPayment ? now() : null,
             ]);
 
             foreach ($itemsData as $item) {
                 $order->items()->create($item);
             }
 
-            if (!empty($data['payment'])) {
+            if ($hasPayment) {
                 $order->payments()->create([
-                    'amount' => $data['payment']['amount'],
+                    // Align recorded payment with computed total to prevent under/over collection discrepancies
+                    'amount' => $total,
                     'method' => $data['payment']['method'],
                     'reference' => $data['payment']['reference'] ?? null,
                     'paid_at' => now(),

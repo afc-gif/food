@@ -38,7 +38,11 @@ class Order extends Model
     {
         static::creating(function (Order $order) {
             if (empty($order->code)) {
-                $order->code = strtoupper(Str::random(8));
+                do {
+                    $code = strtoupper(Str::random(8));
+                } while (static::where('code', $code)->exists());
+
+                $order->code = $code;
             }
         });
     }

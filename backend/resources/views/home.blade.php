@@ -93,7 +93,6 @@
         </div>
 
         <div class="af-grid af-grid-3 af-cards" id="featuredGrid">
-          @php $fallbackImage = asset('assets/meal-1.jpg'); @endphp
           @forelse ($featured as $item)
             @php $isSoldOut = $item->is_sold_out; @endphp
             <article
@@ -103,7 +102,9 @@
               data-sold-out="{{ $isSoldOut ? '1' : '0' }}"
               data-category="{{ Str::slug(optional($item->category)->name ?? 'menu') }}"
             >
-              <img src="{{ $item->image_url ?: $fallbackImage }}" alt="{{ $item->name }}" class="af-card-img" />
+              @if($item->image_url)
+                <img src="{{ $item->image_url }}" alt="{{ $item->name }}" class="af-card-img" />
+              @endif
               <div class="af-card-body">
                 <div class="af-card-top">
                   <h3>{{ $item->name }}</h3>
@@ -377,15 +378,6 @@
               <button
                 type="button"
                 class="af-btn af-btn-primary"
-                id="paystackBtnOverlay"
-                data-paystack-btn
-                data-form="checkoutFormOverlay"
-              >
-                Pay with Card / Transfer (Paystack)
-              </button>
-              <button
-                type="button"
-                class="af-btn af-btn-ghost"
                 id="whatsappBtnOverlay"
                 data-whatsapp-btn
                 data-form="checkoutFormOverlay"

@@ -14,10 +14,8 @@
   <link rel="stylesheet" href="styles.css?v=4" />
   
   <!-- Reverb/Echo Configuration -->
+  <!-- Only the key is set explicitly; host/port/scheme now default to current origin -->
   <meta name="reverb-key" content="uncuuyrorqyj8wpk48zo" />
-  <meta name="reverb-host" content="afc.com.ng" />
-  <meta name="reverb-port" content="443" />
-  <meta name="reverb-scheme" content="https" />
 </head>
 <body>
   <header class="af-header">
@@ -290,15 +288,6 @@
               <button
                 type="button"
                 class="af-btn af-btn-primary"
-                id="paystackBtnOverlay"
-                data-paystack-btn
-                data-form="checkoutFormOverlay"
-              >
-                Pay with Card / Transfer (Paystack)
-              </button>
-              <button
-                type="button"
-                class="af-btn af-btn-ghost"
                 id="whatsappBtnOverlay"
                 data-whatsapp-btn
                 data-form="checkoutFormOverlay"
@@ -331,8 +320,14 @@
                       (window.location.hostname === 'localhost' ? 'local' : 'afc');
     const reverbHost = document.querySelector('meta[name="reverb-host"]')?.getAttribute('content') || 
                        window.location.hostname;
-    const reverbPort = parseInt(document.querySelector('meta[name="reverb-port"]')?.getAttribute('content') || '8080');
-    const reverbScheme = document.querySelector('meta[name="reverb-scheme"]')?.getAttribute('content') || 
+    const fallbackPort = window.location.port
+      ? parseInt(window.location.port, 10)
+      : (window.location.protocol === 'https:' ? 443 : 80);
+    const reverbPort = parseInt(
+      document.querySelector('meta[name="reverb-port"]')?.getAttribute('content') || `${fallbackPort}`,
+      10
+    );
+    const reverbScheme = document.querySelector('meta[name="reverb-scheme"]')?.getAttribute('content') ||
                          (window.location.protocol === 'https:' ? 'https' : 'http');
 
     if (reverbKey && window.Echo) {

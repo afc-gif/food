@@ -10,8 +10,9 @@ if (navToggle && nav) {
   });
 }
 
-// Year in footer
-document.getElementById("year").textContent = new Date().getFullYear();
+// Year in footer (guarded for pages without the element)
+const yearEl = document.getElementById("year");
+if (yearEl) yearEl.textContent = new Date().getFullYear();
 
 // Simple cart
 let cart = [];
@@ -343,7 +344,7 @@ function renderFeatured(items) {
           data-sold-out="${item.is_sold_out ? "1" : "0"}"
           data-category="${slugify(catName)}"
         >
-          <img src="${item.image_url || "assets/meal-1.jpg"}" alt="${item.name}" class="af-card-img" />
+          ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" class="af-card-img" />` : ""}
           <div class="af-card-body">
             <div class="af-card-top">
               <h3>${item.name}</h3>
@@ -591,92 +592,7 @@ function upsertMenuItem(item) {
   setSoldOutState(item.id, !!item.is_sold_out);
 }
 
-// Checkout buttons
-
-async function handlePaystack(form, triggerBtn) {
-  if (!cart.length) {
-    alert("Your cart is empty.");
-    return;
-  }
-  if (!form) {
-    alert("Please fill your details first.");
-    return;
-  }
-
-  const formData = new FormData(form);
-  const name = formData.get("name");
-  const phone = formData.get("phone");
-
-  const payload = {
-    channel: "web",
-    customer_name: name,
-    customer_phone: phone,
-    items: cart.map((item) => ({
-      menu_item_id: item.id,
-      quantity: item.qty,
-      price: item.price
-    })),
-    payment: {
-      amount: getCartTotal(),
-      method: "web-paystack",
-      reference: `WEB-${Date.now()}`
-    }
-  };
-
-  if (payload.items.some((i) => !i.menu_item_id)) {
-    alert("Missing menu item IDs; please refresh the page.");
-    return;
-  }
-
-  const resetBtnState = () => {
-    if (!triggerBtn) return;
-    triggerBtn.removeAttribute("aria-busy");
-    triggerBtn.removeAttribute("disabled");
-    triggerBtn.textContent = "Pay with Card / Transfer (Paystack)";
-  };
-
-  if (triggerBtn) {
-    triggerBtn.setAttribute("aria-busy", "true");
-    triggerBtn.setAttribute("disabled", "disabled");
-    triggerBtn.textContent = "Placing order...";
-  }
-
-  try {
-    const res = await fetch("/api/orders", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!res.ok) {
-      let message = "Could not place your order. Please try again.";
-      try {
-        const error = await res.json();
-        if (error?.message) message = error.message;
-        if (error?.errors?.items?.[0]) message = error.errors.items[0];
-      } catch (err) {
-        // ignore JSON parse issues
-      }
-      throw new Error(message);
-    }
-
-    const order = await res.json();
-    alert(
-      `Order placed! Your code is ${order.code || "pending"}. We will confirm shortly.`
-    );
-    cart = [];
-    renderCart();
-    form.reset();
-    closeCartOverlay();
-  } catch (err) {
-    alert(err.message || "Something went wrong while placing your order.");
-  } finally {
-    resetBtnState();
-  }
-}
+// Checkout buttons (WhatsApp only for now)
 
 function handleWhatsApp(form) {
   if (!cart.length) {
@@ -711,7 +627,7 @@ function handleWhatsApp(form) {
   message += `%0ATotal: ₦${getCartTotal().toLocaleString()}%0A`;
   message += `%0AOrder Source: Website`;
 
-  const whatsappNumber = "2347015862018"; // TODO: replace with real number
+  const whatsappNumber = "2347015862018";
   const url = `https://wa.me/${whatsappNumber}?text=${message}`;
   window.open(url, "_blank");
 }
@@ -734,14 +650,6 @@ syncMenuAvailability();
 // setInterval(syncMenuAvailability, 30000);
 
 // Attach checkout handlers for all buttons
-document.querySelectorAll("[data-paystack-btn]").forEach((btn) => {
-  btn.addEventListener("click", () => {
-    const formId = btn.getAttribute("data-form");
-    const form = formId ? document.getElementById(formId) : null;
-    handlePaystack(form, btn);
-  });
-});
-
 document.querySelectorAll("[data-whatsapp-btn]").forEach((btn) => {
   btn.addEventListener("click", () => {
     const formId = btn.getAttribute("data-form");
