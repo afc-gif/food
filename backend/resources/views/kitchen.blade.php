@@ -47,8 +47,8 @@
         header img { width:46px; height:46px; border-radius:14px; background:#fff; padding:6px; border:1px solid var(--af-line); }
         header h1 { margin:0; font-size:20px; color:var(--af-brown); letter-spacing:-0.02em; }
         .muted { color: var(--af-ink-soft); font-weight:500; }
-        main { padding:24px; max-width:1360px; margin:0 auto 32px; display:grid; gap:16px; }
-        .layout { display:grid; grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.8fr); gap:16px; align-items:start; }
+        main { padding:24px; max-width:1280px; margin:0 auto 32px; display:grid; gap:16px; }
+        .layout { display:block; }
         .card { background:var(--af-card); border:1px solid var(--af-line); border-radius:18px; padding:18px; box-shadow:0 20px 40px rgba(0,0,0,0.08); }
         .pill { border:1px solid var(--af-line); border-radius:999px; padding:8px 12px; font-size:12px; display:inline-flex; align-items:center; gap:6px; background:#fff; white-space:nowrap; }
         .pill.success { background:rgba(15,81,50,0.1); color:var(--af-success); border-color:rgba(15,81,50,0.25); }
@@ -150,45 +150,41 @@
             </div>
         </div>
 
-        <div class="layout">
-            <div class="card">
-                <div class="section-heading">
-                    <div>
-                        <h2 style="margin:0 0 4px;">Live Tickets</h2>
-                        <p class="muted" style="margin:0;">Clean, stacked orders ready for action.</p>
-                    </div>
-                    <div class="pill tone-neutral">Stream: live feed</div>
-                </div>
-                <div class="divider"></div>
-                <div id="kitchenOrders" class="orders"></div>
-                <div id="kitchenEmpty" class="empty" style="display:none;">No orders yet. They will appear here in real time.</div>
+        <div class="card" style="margin-top:4px;">
+            <div class="section-heading">
+                <h3 style="margin:0;">Board metrics</h3>
+                <span class="pill tone-active">Kitchen radar</span>
             </div>
+            <div class="stat-grid">
+                <div class="stat">
+                    <div class="small">Orders today</div>
+                    <div class="highlight" id="kitchenStatCount">0</div>
+                </div>
+                <div class="stat">
+                    <div class="small">Last order</div>
+                    <div class="highlight" id="kitchenStatLast">—</div>
+                </div>
+                <div class="stat">
+                    <div class="small">Total value</div>
+                    <div class="highlight" id="kitchenStatTotal">₦0</div>
+                </div>
+            </div>
+            <div class="soft-card" style="margin-top:10px;">
+                <div class="small">Statuses and ETA updates broadcast instantly to POS and admin.</div>
+            </div>
+        </div>
 
-            <div class="panel-stack">
-                <div class="card">
-                    <div class="section-heading">
-                        <h3 style="margin:0;">Board metrics</h3>
-                        <span class="pill tone-active">Kitchen radar</span>
-                    </div>
-                    <div class="stat-grid">
-                        <div class="stat">
-                            <div class="small">Orders today</div>
-                            <div class="highlight" id="kitchenStatCount">0</div>
-                        </div>
-                        <div class="stat">
-                            <div class="small">Last order</div>
-                            <div class="highlight" id="kitchenStatLast">—</div>
-                        </div>
-                        <div class="stat">
-                            <div class="small">Total value</div>
-                            <div class="highlight" id="kitchenStatTotal">₦0</div>
-                        </div>
-                    </div>
-                    <div class="soft-card" style="margin-top:10px;">
-                        <div class="small">Statuses and ETA updates broadcast instantly to POS and admin.</div>
-                    </div>
+        <div class="card">
+            <div class="section-heading">
+                <div>
+                    <h2 style="margin:0 0 4px;">Live Tickets</h2>
+                    <p class="muted" style="margin:0;">Full-width, responsive list of the newest orders.</p>
                 </div>
+                <div class="pill tone-neutral">Stream: live feed</div>
             </div>
+            <div class="divider"></div>
+            <div id="kitchenOrders" class="orders"></div>
+            <div id="kitchenEmpty" class="empty" style="display:none;">No orders yet. They will appear here in real time.</div>
         </div>
     </main>
     <div id="kitchenToast" class="toast"></div>

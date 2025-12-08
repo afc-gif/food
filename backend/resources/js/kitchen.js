@@ -23,6 +23,7 @@ if (ordersEl) {
         String(value).replace(/[&<>"']/g, (char) =>
             ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char] ?? char)
         );
+    const hasReverbKey = Boolean(window.reverbConfig?.hasKey);
     const kitchenStatuses = {
         pending: { label: 'Hold', tone: 'warn' },
         queued: { label: 'Sent to kitchen', tone: 'neutral' },
@@ -106,8 +107,14 @@ if (ordersEl) {
 
     const echo = window.Echo;
 
+    // Show an immediate connection status before Echo wiring resolves
+    if (!echo) {
+        setConnection(hasReverbKey ? 'Polling (Echo not initialized)' : 'Polling (Reverb key missing)', false, 'polling');
+        startPolling();
+    }
+
     if (echo) {
-        setConnection('Connecting…', false);
+        setConnection('Connecting to Reverb…', false);
         const channel = echo.private('orders');
 
         channel.listen('.order.created', (event) => {
