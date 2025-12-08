@@ -63,7 +63,7 @@
         .stat { border:1px dashed var(--af-line); border-radius:14px; padding:14px; background:#fff; display:flex; flex-direction:column; gap:6px; box-shadow:0 8px 20px rgba(0,0,0,0.04); }
         .stat .small { font-size:13px; color: var(--af-ink-soft); letter-spacing:0.01em; }
         .stat .highlight { color:var(--af-brown); font-weight:700; font-size:20px; }
-        .orders { display:grid; gap:14px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+        .orders { display:grid; gap:16px; grid-template-columns: minmax(0, 1fr); }
         .order {
             border:1px solid var(--af-line);
             border-radius:18px;
@@ -142,8 +142,8 @@
     <main>
         <div class="hero">
             <div>
-                <h2>Kitchen Control Room</h2>
-                <p>Clean stream of tickets from POS and online orders. Prioritize, set ETA, and keep the line moving.</p>
+                <h2>Board Overview</h2>
+                <p>Live feed from POS and online orders. Keep one clean column and send clear ETAs back to the floor.</p>
             </div>
             <div style="display:flex; gap:8px; align-items:center;">
                 <div id="kitchenConnection" class="pill" style="font-weight:700;">Connecting…</div>
@@ -167,7 +167,7 @@
             <div class="panel-stack">
                 <div class="card">
                     <div class="section-heading">
-                        <h3 style="margin:0;">Board Overview</h3>
+                        <h3 style="margin:0;">Board metrics</h3>
                         <span class="pill tone-active">Kitchen radar</span>
                     </div>
                     <div class="stat-grid">
@@ -185,19 +185,7 @@
                         </div>
                     </div>
                     <div class="soft-card" style="margin-top:10px;">
-                        <div class="small">Keep tickets flowing — statuses and ETA updates broadcast instantly to staff.</div>
-                    </div>
-                </div>
-
-                <div class="card">
-                    <div class="section-heading">
-                        <h3 style="margin:0;">Quick actions</h3>
-                        <span class="pill tone-neutral">Safety tools</span>
-                    </div>
-                    <p class="muted" style="margin:0 0 12px;">If websockets drop, these keep the board fresh.</p>
-                    <div class="kitchen-actions">
-                        <button class="brand-btn ghost" type="button" onclick="location.reload()">Refresh board</button>
-                        <button class="brand-btn ghost" type="button" onclick="document.getElementById('kitchenOrders')?.scrollIntoView({behavior:'smooth'})">Jump to orders</button>
+                        <div class="small">Statuses and ETA updates broadcast instantly to POS and admin.</div>
                     </div>
                 </div>
             </div>

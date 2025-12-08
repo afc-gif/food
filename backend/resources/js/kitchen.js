@@ -234,6 +234,9 @@ if (ordersEl) {
                 const notePill = order.kitchen_note ? `<span class="pill tone-note">${escapeHtml(order.kitchen_note)}</span>` : '';
                 const isFresh = Date.now() - new Date(order.created_at).getTime() < 3 * 60 * 1000;
                 const channelPill = `<span class="pill tone-neutral">${escapeHtml(order.channel ?? 'pos')}</span>`;
+                const etaBroadcast = order.kitchen_eta_minutes || order.kitchen_eta_at
+                    ? `<span class="pill tone-success">ETA sent to POS/Admin</span>`
+                    : `<span class="pill tone-muted">ETA pending</span>`;
 
                 return `
                     <div class="order" data-order-id="${order.id}">
@@ -253,6 +256,7 @@ if (ordersEl) {
                         <div class="order-meta-row">
                             ${statusPill}
                             ${etaPill}
+                            ${etaBroadcast}
                             ${notePill}
                         </div>
                         <div class="order-customer">Customer · ${customer}</div>
