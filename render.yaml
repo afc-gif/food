@@ -15,3 +15,57 @@ services:
       # Re-use the production settings already baked into the image; override here if needed.
       - key: APP_ENV
         value: production
+      - key: BROADCAST_CONNECTION
+        value: reverb
+      - key: REVERB_APP_KEY
+        value: your-reverb-key
+      - key: REVERB_APP_SECRET
+        value: your-reverb-secret
+      - key: REVERB_APP_ID
+        value: your-reverb-app-id
+      - key: REVERB_HOST
+        value: your-reverb-host
+      - key: REVERB_PORT
+        value: "443"
+      - key: REVERB_SCHEME
+        value: https
+      - key: REVERB_SERVER_PORT
+        value: "8080"
+      - key: VITE_REVERB_APP_KEY
+        value: your-reverb-key
+      - key: VITE_REVERB_HOST
+        value: your-reverb-host
+      - key: VITE_REVERB_PORT
+        value: "443"
+      - key: VITE_REVERB_SCHEME
+        value: https
+      - key: VITE_REVERB_SERVER_PORT
+        value: "443"
+  - type: web
+    name: food-reverb
+    env: docker
+    dockerfilePath: Dockerfile
+    dockerContext: .
+    dockerCommand: bash -lc "cd /app/backend && php artisan reverb:start --host=0.0.0.0 --port=$PORT --hostname=$REVERB_HOST --debug"
+    autoDeploy: true
+    envVars:
+      - key: DOCKER_BUILDKIT
+        value: "1"
+      - key: APP_ENV
+        value: production
+      - key: BROADCAST_CONNECTION
+        value: reverb
+      - key: REVERB_APP_KEY
+        value: your-reverb-key
+      - key: REVERB_APP_SECRET
+        value: your-reverb-secret
+      - key: REVERB_APP_ID
+        value: your-reverb-app-id
+      - key: REVERB_HOST
+        value: your-reverb-host
+      - key: REVERB_PORT
+        value: "443"
+      - key: REVERB_SCHEME
+        value: https
+      - key: REVERB_SERVER_PORT
+        value: "$PORT"

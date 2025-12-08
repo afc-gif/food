@@ -19,11 +19,8 @@ php artisan route:cache
 # Run migrations (and seed) if DB is reachable
 php artisan migrate --force --seed || true
 
-# Start PHP-FPM and Reverb websocket server
+# Start PHP-FPM
 php-fpm -D
-# Run Reverb on the configured port (fall back to PORT, then 8080)
-REVERB_BIND_PORT="${REVERB_SERVER_PORT:-${PORT:-8080}}"
-php artisan reverb:start --host=0.0.0.0 --port="${REVERB_BIND_PORT}" &
 
 # Start Nginx in foreground
 nginx -g 'daemon off;'
