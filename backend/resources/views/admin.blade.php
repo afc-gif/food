@@ -549,6 +549,23 @@
             }
         };
 
+        const toast = (message, tone = 'ok') => {
+            const el = document.createElement('div');
+            el.textContent = message;
+            el.style.position = 'fixed';
+            el.style.right = '16px';
+            el.style.bottom = '16px';
+            el.style.zIndex = '9999';
+            el.style.padding = '12px 14px';
+            el.style.borderRadius = '10px';
+            el.style.fontWeight = '700';
+            el.style.boxShadow = '0 16px 38px rgba(0,0,0,0.18)';
+            el.style.background = tone === 'error' ? '#fee2e2' : '#0f0b05';
+            el.style.color = tone === 'error' ? '#991b1b' : '#fff';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 2600);
+        };
+
         const safeRequest = async (url, options = {}) => {
             const res = await apiFetch(url, options);
             if (!res.ok) {
@@ -570,7 +587,7 @@
             try {
                 await fn();
             } catch (e) {
-                alert(e.message || 'Could not complete that action.');
+                toast(e.message || 'Could not complete that action.', 'error');
                 console.error(e);
             } finally {
                 setBusy(btn, false);
@@ -1103,7 +1120,7 @@
             const form = new FormData(categoryForm);
             const submitBtn = categoryForm.querySelector('button[type="submit"]');
             await runAction(submitBtn, async () => {
-                await safeRequest('/api/categories', {
+                const res = await safeRequest('/api/categories', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -1112,6 +1129,7 @@
                         is_active: true,
                     }),
                 });
+                if (res.ok) toast('Category added');
                 categoryForm.reset();
                 await loadCategories();
             });
@@ -1125,7 +1143,8 @@
             }
             const submitBtn = menuForm.querySelector('button[type="submit"]');
             await runAction(submitBtn, async () => {
-                await safeRequest('/api/menu-items', { method: 'POST', body: form });
+                const res = await safeRequest('/api/menu-items', { method: 'POST', body: form });
+                if (res.ok) toast('Menu item added');
                 menuForm.reset();
                 await Promise.all([loadMenu(), loadCategories()]);
             });
