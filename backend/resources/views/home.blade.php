@@ -397,6 +397,6 @@
     </div>
   </footer>
 
-  <script src="{{ asset('script.js') }}?v=5"></script>
+  <script src="{{ asset('script.js') }}?v=6"></script>
 </body>
 </html>

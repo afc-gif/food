@@ -290,7 +290,8 @@ function bindFilterButtons() {
   menuFilters.addEventListener("click", (e) => {
     const chipBtn = e.target.closest(".af-chip");
     if (!chipBtn) return;
-    activeFilter = chipBtn.getAttribute("data-filter") || "all";
+    const raw = chipBtn.getAttribute("data-filter") || "all";
+    activeFilter = slugify(raw);
     menuFilters
       .querySelectorAll(".af-chip")
       .forEach((c) => c.classList.remove("af-chip-active"));
@@ -448,9 +449,10 @@ function renderMenu(items) {
 function applyFilter() {
   if (!menuGrid) return;
   menuGrid.querySelectorAll(".af-menu-item").forEach((item) => {
-    const category = item.getAttribute("data-category");
+    const category = item.getAttribute("data-category") || "all";
+    const normalized = slugify(category);
     item.style.display =
-      activeFilter === "all" || category === activeFilter ? "" : "none";
+      activeFilter === "all" || normalized === activeFilter ? "" : "none";
   });
 }
 

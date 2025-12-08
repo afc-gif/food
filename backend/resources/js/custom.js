@@ -239,12 +239,18 @@ updateCartCount();
 const menuFilters = document.getElementById("menuFilters");
 const menuGrid = document.getElementById("menuGrid");
 let activeFilter = "all";
+const slugify = (text = "") =>
+  text
+    .toString()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "menu";
 
 function applyFilter(filter) {
   if (!menuGrid) return;
-  const target = filter || activeFilter || "all";
+  const target = slugify(filter || activeFilter || "all");
   menuGrid.querySelectorAll(".af-menu-item").forEach((item) => {
-    const category = item.getAttribute("data-category");
+    const category = slugify(item.getAttribute("data-category") || "all");
     item.style.display =
       target === "all" || category === target ? "" : "none";
   });
@@ -254,7 +260,7 @@ if (menuFilters && menuGrid) {
   menuFilters.addEventListener("click", (e) => {
     const chip = e.target.closest(".af-chip");
     if (!chip) return;
-    activeFilter = chip.getAttribute("data-filter") || "all";
+    activeFilter = slugify(chip.getAttribute("data-filter") || "all");
     menuFilters
       .querySelectorAll(".af-chip")
       .forEach((c) => c.classList.remove("af-chip-active"));
