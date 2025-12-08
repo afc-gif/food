@@ -11,6 +11,7 @@ const soundBtn = document.getElementById('toggleSound');
 const notifyBtn = document.getElementById('toggleNotify');
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 let pollTimer = null;
+const seenOrders = new Set();
 
 let soundEnabled = localStorage.getItem('kitchenSound') === '1';
 let notifyEnabled = localStorage.getItem('kitchenNotify') === '1';
@@ -66,7 +67,17 @@ if (ordersEl) {
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             const normalized = (Array.isArray(data) ? data : data.data || []).map(normalizeOrder).filter((o) => o.kitchen_status !== 'pending');
-            orders = normalized.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            const nextOrders = normalized.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+            // Detect new orders during polling and notify once
+            nextOrders.forEach((order) => {
+                if (!seenOrders.has(order.id)) {
+                    seenOrders.add(order.id);
+                    notifyNewOrder(order);
+                }
+            });
+
+            orders = nextOrders;
             renderOrders();
             updateStats();
         } catch (err) {
@@ -77,7 +88,7 @@ if (ordersEl) {
     const startPolling = () => {
         if (pollTimer) return;
         pollOrders();
-        pollTimer = setInterval(pollOrders, 5000);
+        pollTimer = setInterval(pollOrders, 3000);
     };
 
     const stopPolling = () => {
@@ -88,6 +99,7 @@ if (ordersEl) {
     };
 
     let orders = (window.initialOrders ?? []).map(normalizeOrder).filter((o) => o.kitchen_status !== 'pending');
+    orders.forEach(o => seenOrders.add(o.id));
 
     renderOrders();
     updateStats();
@@ -99,7 +111,9 @@ if (ordersEl) {
         const channel = echo.private('orders');
 
         channel.listen('.order.created', (event) => {
-            upsertOrder(normalizeOrder(event));
+            const normalized = normalizeOrder(event);
+            seenOrders.add(normalized.id);
+            upsertOrder(normalized);
             showToast(`New order ${event.code ?? ''}`.trim() || 'New order received');
             notifyNewOrder(event);
         });

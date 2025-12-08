@@ -36,7 +36,8 @@
         header img { width:44px; height:44px; border-radius:12px; background:#fff; padding:6px; border:1px solid var(--af-line); }
         header h1 { margin:0; font-size:18px; color:var(--af-brown); }
         .muted { color: rgba(0,0,0,0.65); }
-        main { padding:18px; max-width:1100px; margin:0 auto 24px; }
+        main { padding:18px; max-width:1240px; margin:0 auto 24px; display:grid; gap:14px; }
+        .layout { display:grid; grid-template-columns: 1.2fr 0.8fr; gap:12px; align-items:start; }
         .card { background:var(--af-card); border:1px solid var(--af-line); border-radius:16px; padding:16px; box-shadow:0 14px 32px rgba(0,0,0,0.06); }
         .pill { border:1px solid var(--af-line); border-radius:999px; padding:8px 12px; font-size:12px; display:inline-flex; align-items:center; gap:6px; background:#fff; }
         .pill.success { background:rgba(15,81,50,0.1); color:var(--af-success); border-color:rgba(15,81,50,0.25); }
@@ -51,8 +52,8 @@
         .stat { border:1px dashed var(--af-line); border-radius:12px; padding:12px; background:#fff; display:flex; flex-direction:column; gap:4px; }
         .stat .small { font-size:13px; color: rgba(0,0,0,0.6); }
         .stat .highlight { color:var(--af-brown); font-weight:700; font-size:18px; }
-        .orders { display:grid; gap:12px; }
-        .order { border:1px solid var(--af-line); border-radius:14px; padding:12px; background:#fff; box-shadow:0 10px 20px rgba(0,0,0,0.04); }
+        .orders { display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+        .order { border:1px solid var(--af-line); border-radius:14px; padding:12px; background:#fff; box-shadow:0 10px 20px rgba(0,0,0,0.04); min-height:220px; display:grid; gap:8px; }
         .order-header { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
         .badge { padding:6px 8px; border-radius:10px; font-size:12px; background: rgba(255,165,0,0.14); color:#7a4a00; }
         .order-meta { display:flex; gap:10px; flex-wrap:wrap; align-items:center; font-size:12px; color:rgba(0,0,0,0.65); }
@@ -65,8 +66,11 @@
         .controls { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
         button.brand-btn { border:1px solid var(--af-brown); background:var(--af-brown); color:#fff; border-radius:10px; padding:10px 12px; cursor:pointer; font-weight:600; }
         button.brand-btn.ghost { background:#fff; color:var(--af-brown); }
-        .kitchen-actions { margin:10px 0; }
+        .kitchen-actions { margin:10px 0; display:flex; flex-wrap:wrap; gap:6px; }
         .kitchen-actions .brand-btn { padding:8px 10px; font-size:13px; }
+        @media (max-width: 980px) {
+            .layout { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
@@ -88,32 +92,43 @@
         </div>
     </header>
     <main>
-        <div class="card">
-            <div class="board-header" style="padding:0 0 10px 0;">
-                <div>
-                    <h2 style="margin-top:0; margin-bottom:6px;">Kitchen board</h2>
-                    <p class="muted" style="margin:0;">Live feed from POS and online orders.</p>
+        <div class="layout">
+            <div class="card">
+                <div class="board-header" style="padding:0 0 10px 0;">
+                    <div>
+                        <h2 style="margin-top:0; margin-bottom:6px;">Kitchen board</h2>
+                        <p class="muted" style="margin:0;">Live feed from POS and online orders.</p>
+                    </div>
+                    <div id="kitchenConnection" class="pill">Connecting…</div>
                 </div>
-                <div id="kitchenConnection" class="pill">Connecting…</div>
+
+                <div class="stat-grid">
+                    <div class="stat">
+                        <div class="small">Orders today</div>
+                        <div class="highlight" id="kitchenStatCount">0</div>
+                    </div>
+                    <div class="stat">
+                        <div class="small">Last order</div>
+                        <div class="highlight" id="kitchenStatLast">—</div>
+                    </div>
+                    <div class="stat">
+                        <div class="small">Total value</div>
+                        <div class="highlight" id="kitchenStatTotal">₦0</div>
+                    </div>
+                </div>
+
+                <div id="kitchenOrders" class="orders"></div>
+                <div id="kitchenEmpty" class="empty" style="display:none;">No orders yet. They will appear here in real time.</div>
             </div>
 
-            <div class="stat-grid">
-                <div class="stat">
-                    <div class="small">Orders today</div>
-                    <div class="highlight" id="kitchenStatCount">0</div>
-                </div>
-                <div class="stat">
-                    <div class="small">Last order</div>
-                    <div class="highlight" id="kitchenStatLast">—</div>
-                </div>
-                <div class="stat">
-                    <div class="small">Total value</div>
-                    <div class="highlight" id="kitchenStatTotal">₦0</div>
+            <div class="card">
+                <h3 style="margin:0 0 8px;">Quick actions</h3>
+                <p class="muted" style="margin:0 0 10px;">Use these if websockets drop; polling stays on.</p>
+                <div class="kitchen-actions">
+                    <button class="brand-btn ghost" type="button" onclick="location.reload()">Refresh board</button>
+                    <button class="brand-btn ghost" type="button" onclick="document.getElementById('kitchenOrders')?.scrollIntoView({behavior:'smooth'})">Jump to orders</button>
                 </div>
             </div>
-
-            <div id="kitchenOrders" class="orders"></div>
-            <div id="kitchenEmpty" class="empty" style="display:none;">No orders yet. They will appear here in real time.</div>
         </div>
     </main>
     <div id="kitchenToast" class="toast"></div>
