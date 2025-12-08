@@ -232,17 +232,21 @@ if (ordersEl) {
                 const statusPill = renderStatus(order.kitchen_status);
                 const etaPill = renderEta(order);
                 const notePill = order.kitchen_note ? `<span class="pill tone-note">${escapeHtml(order.kitchen_note)}</span>` : '';
+                const isFresh = Date.now() - new Date(order.created_at).getTime() < 3 * 60 * 1000;
+                const channelPill = `<span class="pill tone-neutral">${escapeHtml(order.channel ?? 'pos')}</span>`;
 
                 return `
                     <div class="order" data-order-id="${order.id}">
+                        ${isFresh ? `<span style="position:absolute; top:10px; right:10px;" class="pill tone-active">New</span>` : ''}
                         <div class="order-header">
                             <div>
                                 <strong>${escapeHtml(order.code ?? 'New order')}</strong>
-                                <div class="order-meta">
-                                    <span>${formatTime(order.created_at)} · ${escapeHtml(order.channel ?? 'pos')}</span>
+                                <div class="order-meta-row">
+                                    ${channelPill}
                                     <span class="pill warn" data-elapsed="${order.created_at}">${elapsed(order.created_at)}</span>
+                                    <span class="pill tone-neutral">${formatTime(order.created_at)}</span>
                                 </div>
-                                <div class="order-meta" style="margin-top:6px; gap:6px;">
+                                <div class="order-meta-row" style="margin-top:4px;">
                                     ${statusPill}
                                     ${etaPill}
                                     ${notePill}
@@ -259,7 +263,7 @@ if (ordersEl) {
                             <button class="brand-btn ghost" data-action="eta" data-eta="10" data-order="${order.id}">ETA 10m</button>
                             <button class="brand-btn ghost" data-action="eta" data-eta="15" data-order="${order.id}">ETA 15m</button>
                             <button class="brand-btn ghost" data-action="eta" data-eta="20" data-order="${order.id}">ETA 20m</button>
-                            <button class="brand-btn" data-action="status" data-status="ready" data-order="${order.id}">Mark ready</button>
+                            <button class="brand-btn" data-action="status" data-status="ready" data-order="${order.id}">Ready</button>
                             <button class="brand-btn ghost" data-action="status" data-status="served" data-order="${order.id}">Served</button>
                         </div>
                         <ul class="items">${items}</ul>

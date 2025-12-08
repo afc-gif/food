@@ -36,9 +36,9 @@
         header img { width:44px; height:44px; border-radius:12px; background:#fff; padding:6px; border:1px solid var(--af-line); }
         header h1 { margin:0; font-size:18px; color:var(--af-brown); }
         .muted { color: rgba(0,0,0,0.65); }
-        main { padding:18px; max-width:1240px; margin:0 auto 24px; display:grid; gap:14px; }
-        .layout { display:grid; grid-template-columns: 1.2fr 0.8fr; gap:12px; align-items:start; }
-        .card { background:var(--af-card); border:1px solid var(--af-line); border-radius:16px; padding:16px; box-shadow:0 14px 32px rgba(0,0,0,0.06); }
+        main { padding:20px; max-width:1280px; margin:0 auto 28px; display:grid; gap:14px; }
+        .layout { display:grid; grid-template-columns: 1.4fr 0.6fr; gap:14px; align-items:start; }
+        .card { background:var(--af-card); border:1px solid var(--af-line); border-radius:18px; padding:16px; box-shadow:0 18px 34px rgba(0,0,0,0.06); }
         .pill { border:1px solid var(--af-line); border-radius:999px; padding:8px 12px; font-size:12px; display:inline-flex; align-items:center; gap:6px; background:#fff; }
         .pill.success { background:rgba(15,81,50,0.1); color:var(--af-success); border-color:rgba(15,81,50,0.25); }
         .pill.warn { background:rgba(180,83,9,0.08); color:var(--af-warn); border-color:rgba(180,83,9,0.18); }
@@ -52,12 +52,13 @@
         .stat { border:1px dashed var(--af-line); border-radius:12px; padding:12px; background:#fff; display:flex; flex-direction:column; gap:4px; }
         .stat .small { font-size:13px; color: rgba(0,0,0,0.6); }
         .stat .highlight { color:var(--af-brown); font-weight:700; font-size:18px; }
-        .orders { display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
-        .order { border:1px solid var(--af-line); border-radius:14px; padding:12px; background:#fff; box-shadow:0 10px 20px rgba(0,0,0,0.04); min-height:220px; display:grid; gap:8px; }
-        .order-header { display:flex; justify-content:space-between; align-items:center; gap:8px; flex-wrap:wrap; }
+        .orders { display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+        .order { border:1px solid var(--af-line); border-radius:16px; padding:12px; background:#fff; box-shadow:0 14px 26px rgba(0,0,0,0.05); min-height:220px; display:grid; gap:10px; position:relative; }
+        .order-header { display:flex; justify-content:space-between; align-items:flex-start; gap:8px; flex-wrap:wrap; }
         .badge { padding:6px 8px; border-radius:10px; font-size:12px; background: rgba(255,165,0,0.14); color:#7a4a00; }
-        .order-meta { display:flex; gap:10px; flex-wrap:wrap; align-items:center; font-size:12px; color:rgba(0,0,0,0.65); }
-        .items { list-style:none; padding:0; margin:8px 0 0; display:grid; gap:6px; }
+        .order-meta { display:flex; gap:6px; flex-wrap:wrap; align-items:center; font-size:12px; color:rgba(0,0,0,0.65); }
+        .order-meta-row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; font-size:12px; color:rgba(0,0,0,0.65); }
+        .items { list-style:none; padding:0; margin:4px 0 0; display:grid; gap:6px; }
         .items li { display:flex; justify-content:space-between; }
         .small { font-size:13px; color: rgba(0,0,0,0.65); }
         .highlight { color:var(--af-brown); font-weight:700; }
