@@ -25,14 +25,26 @@ COPY backend /app/backend
 RUN mkdir -p storage/framework/{cache,data,sessions,views} bootstrap/cache \
  && chmod -R 777 storage bootstrap/cache
 
-# Safe defaults so package discovery/broadcasting won't fail during build
+# Allow build-time Reverb vars to flow into the asset build (Render exposes envs during build)
+ARG REVERB_APP_KEY=placeholder-key
+ARG REVERB_APP_SECRET=placeholder-secret
+ARG REVERB_APP_ID=placeholder-id
+ARG REVERB_HOST=localhost
+ARG REVERB_PORT=443
+ARG REVERB_SCHEME=https
+
+# Safe defaults so package discovery/broadcasting won't fail during build; Vite reads the VITE_* values
 ENV BROADCAST_CONNECTION=log \
-    REVERB_APP_KEY=placeholder-key \
-    REVERB_APP_SECRET=placeholder-secret \
-    REVERB_APP_ID=placeholder-id \
-    REVERB_HOST=localhost \
-    REVERB_PORT=443 \
-    REVERB_SCHEME=https
+    REVERB_APP_KEY=${REVERB_APP_KEY} \
+    REVERB_APP_SECRET=${REVERB_APP_SECRET} \
+    REVERB_APP_ID=${REVERB_APP_ID} \
+    REVERB_HOST=${REVERB_HOST} \
+    REVERB_PORT=${REVERB_PORT} \
+    REVERB_SCHEME=${REVERB_SCHEME} \
+    VITE_REVERB_APP_KEY=${REVERB_APP_KEY} \
+    VITE_REVERB_HOST=${REVERB_HOST} \
+    VITE_REVERB_PORT=${REVERB_PORT} \
+    VITE_REVERB_SCHEME=${REVERB_SCHEME}
 
 ENV COMPOSER_ALLOW_SUPERUSER=1
 
