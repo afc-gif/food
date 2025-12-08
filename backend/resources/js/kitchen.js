@@ -10,6 +10,7 @@ const toastEl = document.getElementById('kitchenToast');
 const soundBtn = document.getElementById('toggleSound');
 const notifyBtn = document.getElementById('toggleNotify');
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+let pollTimer = null;
 
 let soundEnabled = localStorage.getItem('kitchenSound') === '1';
 let notifyEnabled = localStorage.getItem('kitchenNotify') === '1';
@@ -59,6 +60,33 @@ if (ordersEl) {
         return res.json();
     };
 
+    const pollOrders = async () => {
+        try {
+            const res = await apiFetch('/api/orders?all=1');
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            const data = await res.json();
+            const normalized = (Array.isArray(data) ? data : data.data || []).map(normalizeOrder).filter((o) => o.kitchen_status !== 'pending');
+            orders = normalized.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+            renderOrders();
+            updateStats();
+        } catch (err) {
+            console.warn('Polling failed', err);
+        }
+    };
+
+    const startPolling = () => {
+        if (pollTimer) return;
+        pollOrders();
+        pollTimer = setInterval(pollOrders, 5000);
+    };
+
+    const stopPolling = () => {
+        if (pollTimer) {
+            clearInterval(pollTimer);
+            pollTimer = null;
+        }
+    };
+
     let orders = (window.initialOrders ?? []).map(normalizeOrder).filter((o) => o.kitchen_status !== 'pending');
 
     renderOrders();
@@ -80,22 +108,35 @@ if (ordersEl) {
         });
 
         if (typeof channel.error === 'function') {
-            channel.error((err) => setConnection(`Channel error: ${err?.message ?? err?.type ?? 'unknown'}`, false));
+            channel.error((err) => {
+                setConnection(`Channel error: ${err?.message ?? err?.type ?? 'unknown'}`, false, 'polling');
+                startPolling();
+            });
         }
 
         const connector = echo.connector?.pusher ?? echo.connector;
         const connection = connector?.connection;
         if (connection) {
-            connection.bind('connected', () => setConnection('Live', true));
-            connection.bind('disconnected', () => setConnection('Disconnected', false));
-            connection.bind('error', (err) => setConnection(`Connection error${err?.type ? ': '+err.type : ''}`, false));
+            connection.bind('connected', () => {
+                stopPolling();
+                setConnection('Live', true, 'live');
+            });
+            connection.bind('disconnected', () => {
+                setConnection('Disconnected', false, 'polling');
+                startPolling();
+            });
+            connection.bind('error', (err) => {
+                setConnection(`Connection error${err?.type ? ': '+err.type : ''}`, false, 'polling');
+                startPolling();
+            });
         } else {
-            setConnection('Live', true);
+            setConnection('Live', true, 'live');
         }
     } else {
         const cfg = window.reverbConfig || {};
-        setConnection('Websockets disabled: missing VITE_REVERB_* build vars', false);
+        setConnection('Polling (no websocket)', false, 'polling');
         console.warn('Echo not initialized. Ensure VITE_REVERB_APP_KEY/HOST/PORT/SCHEME are set at build time and REVERB_* at runtime.', cfg);
+        startPolling();
     }
 
     if (soundBtn) {
@@ -298,9 +339,16 @@ if (ordersEl) {
         return `${hrs}h ${mins % 60}m`;
     }
 
-    function setConnection(label, ok) {
+    function setConnection(label, ok, mode = 'live') {
         if (!connectionEl) return;
         connectionEl.textContent = label;
+        const isPolling = mode === 'polling';
+        if (isPolling) {
+            connectionEl.style.background = 'rgba(82,55,0,0.08)';
+            connectionEl.style.borderColor = 'rgba(82,55,0,0.28)';
+            connectionEl.style.color = '#523700';
+            return;
+        }
         connectionEl.style.background = ok ? 'rgba(0,128,0,0.08)' : 'rgba(255,165,0,0.12)';
         connectionEl.style.borderColor = ok ? 'rgba(0,128,0,0.35)' : 'rgba(255,165,0,0.35)';
         connectionEl.style.color = ok ? '#0f5132' : '#7a4a00';
