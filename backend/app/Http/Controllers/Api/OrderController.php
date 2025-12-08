@@ -11,6 +11,7 @@ use App\Models\OrderItem;
 use App\Models\Payment;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Validation\ValidationException;
@@ -285,9 +286,16 @@ class OrderController extends Controller
     protected function broadcastOrderChange(Order $order, bool $isNew = false): void
     {
         $order->loadMissing(['items', 'payments', 'creator']);
-        if ($isNew) {
-            broadcast(new OrderCreated($order))->toOthers();
+        try {
+            if ($isNew) {
+                broadcast(new OrderCreated($order))->toOthers();
+            }
+            broadcast(new OrderUpdated($order))->toOthers();
+        } catch (\Throwable $e) {
+            Log::warning('Order broadcast failed', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
         }
-        broadcast(new OrderUpdated($order))->toOthers();
     }
 }

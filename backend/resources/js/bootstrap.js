@@ -8,8 +8,9 @@ window.axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? undefined;
 const reverbKey = import.meta.env.VITE_REVERB_APP_KEY;
 const reverbHost = import.meta.env.VITE_REVERB_HOST ?? window.location.hostname;
-const reverbPort = Number(import.meta.env.VITE_REVERB_PORT ?? 8080);
-const reverbScheme = import.meta.env.VITE_REVERB_SCHEME ?? 'https';
+// Prefer server port if provided to keep client/server in sync
+const reverbPort = Number(import.meta.env.VITE_REVERB_SERVER_PORT ?? import.meta.env.VITE_REVERB_PORT ?? 8080);
+const reverbScheme = import.meta.env.VITE_REVERB_SCHEME ?? (reverbPort === 443 ? 'https' : 'http');
 
 // Expose config for diagnostics in the browser console
 window.reverbConfig = {
