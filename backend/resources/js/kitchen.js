@@ -9,6 +9,7 @@ const statTotalEl = document.getElementById('kitchenStatTotal');
 const toastEl = document.getElementById('kitchenToast');
 const soundBtn = document.getElementById('toggleSound');
 const notifyBtn = document.getElementById('toggleNotify');
+const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
 
 let soundEnabled = localStorage.getItem('kitchenSound') === '1';
 let notifyEnabled = localStorage.getItem('kitchenNotify') === '1';
@@ -20,8 +21,45 @@ if (ordersEl) {
         String(value).replace(/[&<>"']/g, (char) =>
             ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char] ?? char)
         );
+    const kitchenStatuses = {
+        pending: { label: 'Hold', tone: 'warn' },
+        queued: { label: 'Sent to kitchen', tone: 'neutral' },
+        prepping: { label: 'In progress', tone: 'active' },
+        ready: { label: 'Ready', tone: 'success' },
+        served: { label: 'Served', tone: 'muted' },
+    };
 
-    let orders = (window.initialOrders ?? []).map(normalizeOrder);
+    const apiFetch = (url, options = {}) => {
+        const headers = {
+            Accept: 'application/json',
+            ...(options.headers || {}),
+        };
+        if (!('Content-Type' in headers) && options.body && !(options.body instanceof FormData)) {
+            headers['Content-Type'] = 'application/json';
+        }
+        if (csrfToken) {
+            headers['X-CSRF-TOKEN'] = csrfToken;
+        }
+        return fetch(url, {
+            credentials: 'same-origin',
+            ...options,
+            headers,
+        });
+    };
+
+    const updateKitchen = async (orderId, payload) => {
+        const res = await apiFetch(`/api/orders/${orderId}/kitchen-status`, {
+            method: 'POST',
+            body: JSON.stringify(payload),
+        });
+        if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text || 'Could not update kitchen state');
+        }
+        return res.json();
+    };
+
+    let orders = (window.initialOrders ?? []).map(normalizeOrder).filter((o) => o.kitchen_status !== 'pending');
 
     renderOrders();
     updateStats();
@@ -36,6 +74,9 @@ if (ordersEl) {
             upsertOrder(normalizeOrder(event));
             showToast(`New order ${event.code ?? ''}`.trim() || 'New order received');
             notifyNewOrder(event);
+        });
+        channel.listen('.order.updated', (event) => {
+            upsertOrder(normalizeOrder(event));
         });
 
         if (typeof channel.error === 'function') {
@@ -87,6 +128,11 @@ if (ordersEl) {
             created_at: order.created_at ?? order.createdAt ?? new Date().toISOString(),
             customer_name: order.customer_name ?? order.customerName ?? '',
             customer_phone: order.customer_phone ?? order.customerPhone ?? '',
+            kitchen_status: order.kitchen_status ?? order.kitchenStatus ?? 'pending',
+            kitchen_eta_minutes: order.kitchen_eta_minutes ?? order.kitchenEtaMinutes ?? null,
+            kitchen_eta_at: order.kitchen_eta_at ?? order.kitchenEtaAt ?? null,
+            kitchen_note: order.kitchen_note ?? order.kitchenNote ?? null,
+            kitchen_sent_at: order.kitchen_sent_at ?? order.kitchenSentAt ?? null,
             items: (order.items ?? []).map((item) => ({
                 ...item,
                 quantity: Number(item.quantity ?? 0),
@@ -97,6 +143,12 @@ if (ordersEl) {
     }
 
     function upsertOrder(order) {
+        if (order.kitchen_status === 'pending') {
+            orders = orders.filter((existing) => existing.id !== order.id);
+            renderOrders();
+            updateStats();
+            return;
+        }
         orders = [
             order,
             ...orders.filter((existing) => existing.id !== order.id),
@@ -122,6 +174,9 @@ if (ordersEl) {
                 const customer = order.customer_name || order.customer_phone
                     ? `${escapeHtml(order.customer_name || 'Guest')} ${order.customer_phone ? ' · ' + escapeHtml(order.customer_phone) : ''}`
                     : 'Walk-in';
+                const statusPill = renderStatus(order.kitchen_status);
+                const etaPill = renderEta(order);
+                const notePill = order.kitchen_note ? `<span class="pill tone-note">${escapeHtml(order.kitchen_note)}</span>` : '';
 
                 return `
                     <div class="order" data-order-id="${order.id}">
@@ -132,6 +187,11 @@ if (ordersEl) {
                                     <span>${formatTime(order.created_at)} · ${escapeHtml(order.channel ?? 'pos')}</span>
                                     <span class="pill warn" data-elapsed="${order.created_at}">${elapsed(order.created_at)}</span>
                                 </div>
+                                <div class="order-meta" style="margin-top:6px; gap:6px;">
+                                    ${statusPill}
+                                    ${etaPill}
+                                    ${notePill}
+                                </div>
                             </div>
                             <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
                                 <span class="badge">${escapeHtml(order.status ?? 'pending')}</span>
@@ -139,12 +199,74 @@ if (ordersEl) {
                             </div>
                         </div>
                         <div class="small" style="margin-top:6px;">Customer: ${customer}</div>
+                        <div class="controls kitchen-actions" data-order="${order.id}">
+                            <button class="brand-btn ghost" data-action="status" data-status="prepping" data-order="${order.id}">Start</button>
+                            <button class="brand-btn ghost" data-action="eta" data-eta="10" data-order="${order.id}">ETA 10m</button>
+                            <button class="brand-btn ghost" data-action="eta" data-eta="15" data-order="${order.id}">ETA 15m</button>
+                            <button class="brand-btn ghost" data-action="eta" data-eta="20" data-order="${order.id}">ETA 20m</button>
+                            <button class="brand-btn" data-action="status" data-status="ready" data-order="${order.id}">Mark ready</button>
+                            <button class="brand-btn ghost" data-action="status" data-status="served" data-order="${order.id}">Served</button>
+                        </div>
                         <ul class="items">${items}</ul>
                     </div>
                 `;
             })
             .join('');
     }
+
+    function renderStatus(status) {
+        const meta = kitchenStatuses[status] ?? { label: status || 'Pending', tone: 'neutral' };
+        return `<span class="pill tone-${meta.tone}">${meta.label}</span>`;
+    }
+
+    function renderEta(order) {
+        if (!order.kitchen_eta_minutes && !order.kitchen_eta_at) {
+            return `<span class="pill tone-neutral">ETA not set</span>`;
+        }
+        const etaText = order.kitchen_eta_minutes
+            ? `${order.kitchen_eta_minutes}m`
+            : '';
+        const atText = order.kitchen_eta_at ? ` · ${formatTime(order.kitchen_eta_at)}` : '';
+        return `<span class="pill tone-active">ETA ${etaText}${atText}</span>`;
+    }
+
+    ordersEl.addEventListener('click', async (event) => {
+        const btn = event.target.closest('[data-action]');
+        if (!btn) return;
+        const orderId = Number(btn.getAttribute('data-order'));
+        if (!orderId) return;
+
+        const current = orders.find((o) => o.id === orderId);
+        const currentStatus = current?.kitchen_status ?? 'queued';
+
+        try {
+            if (btn.dataset.action === 'status') {
+                const targetStatus = btn.getAttribute('data-status');
+                const updated = await updateKitchen(orderId, {
+                    kitchen_status: targetStatus,
+                    eta_minutes: current?.kitchen_eta_minutes ?? null,
+                    note: current?.kitchen_note ?? null,
+                });
+                upsertOrder(normalizeOrder(updated));
+                showToast(`Order ${updated.code ?? orderId} → ${kitchenStatuses[targetStatus]?.label ?? targetStatus}`);
+            }
+
+            if (btn.dataset.action === 'eta') {
+                const eta = Number(btn.getAttribute('data-eta'));
+                if (Number.isNaN(eta)) return;
+                const updated = await updateKitchen(orderId, {
+                    kitchen_status: currentStatus,
+                    eta_minutes: eta,
+                    note: current?.kitchen_note ?? null,
+                });
+                upsertOrder(normalizeOrder(updated));
+                showToast(`ETA set to ${eta}m`);
+            }
+        } catch (error) {
+            console.error(error);
+            alert(error?.message || 'Could not update this order.');
+        }
+    });
 
     function updateStats() {
         statCountEl.textContent = orders.length;

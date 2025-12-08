@@ -139,6 +139,14 @@
                         <option value="other">Other</option>
                     </select>
                 </div>
+                <div style="border:1px solid var(--af-line); border-radius:14px; padding:12px; background:#fff;">
+                    <label>Kitchen handoff</label>
+                    <label class="pill" style="margin-top:6px; display:flex; gap:8px; align-items:center; border-radius:12px; padding:8px 10px;">
+                        <input id="posSendKitchen" type="checkbox" checked style="width:16px; height:16px; accent-color: var(--af-ink);">
+                        <span class="muted" style="color:var(--af-ink);">Send to kitchen immediately</span>
+                    </label>
+                    <div class="muted" style="margin-top:6px;">Uncheck if you need to confirm on WhatsApp first.</div>
+                </div>
             </div>
 
             <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
@@ -177,6 +185,7 @@
         const posParkBtn = document.getElementById('posParkBtn');
         const posParkedList = document.getElementById('posParkedList');
         const posSavedCustomers = document.getElementById('posSavedCustomers');
+        const posSendKitchen = document.getElementById('posSendKitchen');
         const barcodeCache = {};
         let menuCacheReady = false;
 
@@ -435,6 +444,7 @@
                 },
                 discount: Number(posDiscount ? posDiscount.value : 0) || 0,
                 tax: Number(posTax ? posTax.value : 0) || 0,
+                send_to_kitchen: posSendKitchen ? posSendKitchen.checked : true,
             };
 
             const resetBtn = () => {

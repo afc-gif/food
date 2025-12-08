@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Events\OrderCreated;
+use App\Events\OrderUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\MenuItem;
 use App\Models\Order;
@@ -56,6 +57,7 @@ class OrderController extends Controller
             'payment.reference' => 'nullable|string|max:255',
             'discount' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',
+            'send_to_kitchen' => 'sometimes|boolean',
         ]);
 
         return DB::transaction(function () use ($data, $request) {
@@ -94,6 +96,9 @@ class OrderController extends Controller
             $tax = $data['tax'] ?? 0;
             $total = max(0, $subtotal + $tax - $discount);
             $hasPayment = ! empty($data['payment']);
+            $sendToKitchen = array_key_exists('send_to_kitchen', $data)
+                ? (bool) $data['send_to_kitchen']
+                : true;
 
             $order = Order::create([
                 'channel' => $data['channel'] ?? 'pos',
@@ -106,6 +111,8 @@ class OrderController extends Controller
                 'total' => $total,
                 'status' => $hasPayment ? 'paid' : 'pending',
                 'paid_at' => $hasPayment ? now() : null,
+                'kitchen_status' => $sendToKitchen ? 'queued' : 'pending',
+                'kitchen_sent_at' => $sendToKitchen ? now() : null,
             ]);
 
             foreach ($itemsData as $item) {
@@ -123,13 +130,56 @@ class OrderController extends Controller
             }
 
             DB::afterCommit(function () use ($order) {
-                broadcast(new OrderCreated(
-                    $order->fresh(['items', 'payments', 'creator'])
-                ));
+                $this->broadcastOrderChange($order, true);
             });
 
             return $order->load(['items', 'payments']);
         });
+    }
+
+    public function sendToKitchen(Request $request, Order $order)
+    {
+        $data = $request->validate([
+            'note' => 'nullable|string|max:500',
+            'eta_minutes' => 'nullable|integer|min:1|max:240',
+        ]);
+
+        $etaAt = $this->resolveEta($data['eta_minutes'] ?? null);
+
+        $order->fill([
+            'kitchen_status' => 'queued',
+            'kitchen_sent_at' => $order->kitchen_sent_at ?? now(),
+            'kitchen_note' => $data['note'] ?? null,
+            'kitchen_eta_minutes' => $data['eta_minutes'] ?? null,
+            'kitchen_eta_at' => $etaAt,
+        ])->save();
+
+        DB::afterCommit(fn () => $this->broadcastOrderChange($order));
+
+        return $order->fresh(['items', 'payments', 'creator']);
+    }
+
+    public function updateKitchenStatus(Request $request, Order $order)
+    {
+        $data = $request->validate([
+            'kitchen_status' => 'required|string|in:pending,queued,prepping,ready,served',
+            'eta_minutes' => 'nullable|integer|min:1|max:240',
+            'note' => 'nullable|string|max:500',
+        ]);
+
+        $etaAt = $this->resolveEta($data['eta_minutes'] ?? $order->kitchen_eta_minutes);
+
+        $order->fill([
+            'kitchen_status' => $data['kitchen_status'],
+            'kitchen_eta_minutes' => $data['eta_minutes'] ?? $order->kitchen_eta_minutes,
+            'kitchen_eta_at' => $etaAt,
+            'kitchen_note' => $data['note'] ?? $order->kitchen_note,
+            'kitchen_sent_at' => $order->kitchen_sent_at ?? now(),
+        ])->save();
+
+        DB::afterCommit(fn () => $this->broadcastOrderChange($order));
+
+        return $order->fresh(['items', 'payments', 'creator']);
     }
 
     public function summary()
@@ -221,5 +271,23 @@ class OrderController extends Controller
         }, $filename, [
             'Content-Type' => 'text/csv',
         ]);
+    }
+
+    protected function resolveEta(?int $minutes): ?Carbon
+    {
+        if (! $minutes) {
+            return null;
+        }
+
+        return Carbon::now()->addMinutes($minutes);
+    }
+
+    protected function broadcastOrderChange(Order $order, bool $isNew = false): void
+    {
+        $order->loadMissing(['items', 'payments', 'creator']);
+        if ($isNew) {
+            broadcast(new OrderCreated($order))->toOthers();
+        }
+        broadcast(new OrderUpdated($order))->toOthers();
     }
 }

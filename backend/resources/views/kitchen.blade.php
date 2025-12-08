@@ -41,6 +41,12 @@
         .pill { border:1px solid var(--af-line); border-radius:999px; padding:8px 12px; font-size:12px; display:inline-flex; align-items:center; gap:6px; background:#fff; }
         .pill.success { background:rgba(15,81,50,0.1); color:var(--af-success); border-color:rgba(15,81,50,0.25); }
         .pill.warn { background:rgba(180,83,9,0.08); color:var(--af-warn); border-color:rgba(180,83,9,0.18); }
+        .pill.tone-success { background:rgba(15,81,50,0.1); color:var(--af-success); border-color:rgba(15,81,50,0.25); }
+        .pill.tone-active { background:rgba(82,55,0,0.08); color:var(--af-brown); border-color:rgba(82,55,0,0.28); }
+        .pill.tone-neutral { background:#fff; color:rgba(0,0,0,0.7); }
+        .pill.tone-warn { background:rgba(180,83,9,0.08); color:var(--af-warn); border-color:rgba(180,83,9,0.18); }
+        .pill.tone-note { background:#fff7e6; color:#7a4a00; border-color:rgba(180,83,9,0.24); }
+        .pill.tone-muted { background:#f2f2f2; color:rgba(0,0,0,0.55); border-color:rgba(0,0,0,0.08); }
         .stat-grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:12px; margin:14px 0 6px; }
         .stat { border:1px dashed var(--af-line); border-radius:12px; padding:12px; background:#fff; display:flex; flex-direction:column; gap:4px; }
         .stat .small { font-size:13px; color: rgba(0,0,0,0.6); }
@@ -59,6 +65,8 @@
         .controls { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
         button.brand-btn { border:1px solid var(--af-brown); background:var(--af-brown); color:#fff; border-radius:10px; padding:10px 12px; cursor:pointer; font-weight:600; }
         button.brand-btn.ghost { background:#fff; color:var(--af-brown); }
+        .kitchen-actions { margin:10px 0; }
+        .kitchen-actions .brand-btn { padding:8px 10px; font-size:13px; }
     </style>
 </head>
 <body>

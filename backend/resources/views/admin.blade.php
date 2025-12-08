@@ -302,6 +302,9 @@
                                         <th>Status</th>
                                         <th>Total</th>
                                         <th>Channel</th>
+                                        <th>Kitchen</th>
+                                        <th>ETA</th>
+                                        <th>Action</th>
                                         <th>When</th>
                                     </tr>
                                 </thead>
@@ -373,6 +376,14 @@
                                 <option value="transfer">Transfer</option>
                                 <option value="other">Other</option>
                             </select>
+                        </div>
+                        <div style="display:grid; gap:6px;">
+                            <label style="font-size:13px; color:rgba(0,0,0,0.7);">Kitchen handoff</label>
+                            <label class="pill" style="padding:8px 10px; display:flex; align-items:center; gap:8px; border-radius:12px; border:1px solid var(--af-line); background:#fff;">
+                                <input id="posSendKitchen" type="checkbox" checked style="width:16px; height:16px; accent-color: var(--af-brown);">
+                                <span class="muted" style="color:var(--af-brown);">Send to kitchen immediately</span>
+                            </label>
+                            <small class="muted">Uncheck if you need to confirm on WhatsApp before cooking.</small>
                         </div>
                     </div>
 
@@ -454,10 +465,18 @@
         const posTax = document.getElementById('posTax');
         const posSubtotal = document.getElementById('posSubtotal');
         const posGrandTotal = document.getElementById('posGrandTotal');
+        const posSendKitchen = document.getElementById('posSendKitchen');
         const posParkBtn = document.getElementById('posParkBtn');
         const posParkedList = document.getElementById('posParkedList');
         const posSavedCustomers = document.getElementById('posSavedCustomers');
         const barcodeCache = {};
+        const kitchenStatusMeta = {
+            pending: { label: 'Awaiting send', color: '#b45309', bg: 'rgba(180,83,9,0.08)' },
+            queued: { label: 'Queued', color: '#523700', bg: 'rgba(82,55,0,0.08)' },
+            prepping: { label: 'In progress', color: '#0f5132', bg: 'rgba(15,81,50,0.1)' },
+            ready: { label: 'Ready', color: '#0f5132', bg: 'rgba(15,81,50,0.1)' },
+            served: { label: 'Served', color: 'rgba(0,0,0,0.6)', bg: '#f2f2f2' },
+        };
         let menuCacheReady = false;
         let lastSummary = null;
         let posCart = [];
@@ -466,6 +485,7 @@
         let interactionTimeout;
         let posLookupInFlight = false;
         let scanDebounce = null;
+        let ordersCache = [];
 
         const markInteracting = () => {
             isInteracting = true;
@@ -651,6 +671,18 @@
             statItems.textContent = items.length;
         }
 
+        function renderKitchenStatus(status) {
+            const meta = kitchenStatusMeta[status] ?? { label: status || 'pending', color: '#523700', bg: 'rgba(82,55,0,0.12)' };
+            return `<span class="pill" style="background:${meta.bg}; color:${meta.color}; border-color:${meta.bg};">${meta.label}</span>`;
+        }
+
+        function renderEta(order) {
+            if (!order.kitchen_eta_minutes && !order.kitchen_eta_at) return '<span class="muted">—</span>';
+            const eta = order.kitchen_eta_minutes ? `${order.kitchen_eta_minutes}m` : '';
+            const at = order.kitchen_eta_at ? ` · ${new Date(order.kitchen_eta_at).toLocaleTimeString()}` : '';
+            return `<span class="pill" style="background:#fff; border-color:var(--af-line);">${eta}${at}</span>`;
+        }
+
         if (menuList) {
             menuList.addEventListener('click', (e) => {
                 const btn = e.target.closest('button[data-action]');
@@ -666,9 +698,12 @@
         }
 
         function renderOrders(orders) {
+            ordersCache = orders;
             let revenue = 0;
             ordersTableBody.innerHTML = orders.map(o => {
                 revenue += Number(o.total || 0);
+                const kitchenBadge = renderKitchenStatus(o.kitchen_status);
+                const etaText = renderEta(o);
                 return `
                     <tr>
                         <td>${o.code}</td>
@@ -676,11 +711,97 @@
                         <td>${o.status}</td>
                         <td>₦${Number(o.total).toLocaleString()}</td>
                         <td>${o.channel}</td>
+                        <td>${kitchenBadge}</td>
+                        <td>${etaText}</td>
+                        <td>
+                            <div class="row" style="gap:6px; flex-wrap:wrap;">
+                                ${o.kitchen_status === 'pending' ? `<button class="btn-ghost" onclick="sendOrderToKitchen(${o.id}, this)">Send</button>` : ''}
+                                <button class="btn-ghost" onclick="setKitchenEta(${o.id}, 15, this)">ETA 15m</button>
+                                <button class="btn-ghost" onclick="setKitchenStatus(${o.id}, 'ready', this)">Ready</button>
+                                <button class="btn-ghost" onclick="shareOrderWhatsapp(${o.id})">WhatsApp</button>
+                            </div>
+                        </td>
                         <td>${new Date(o.created_at).toLocaleString()}</td>
                     </tr>
                 `;
             }).join('');
         }
+
+        function upsertOrderCache(order) {
+            if (!order) return;
+            ordersCache = [order, ...ordersCache.filter(o => o.id !== order.id)];
+            renderOrders(ordersCache);
+        }
+
+        window.sendOrderToKitchen = async (id, btn) => {
+            const note = prompt('Add kitchen note (optional)', '') || null;
+            await runAction(btn, async () => {
+                const res = await safeRequest(`/api/orders/${id}/send-to-kitchen`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ note }),
+                });
+                const updated = await res.json();
+                upsertOrderCache(updated);
+            });
+        };
+
+        window.setKitchenEta = async (id, minutes, btn) => {
+            const order = ordersCache.find(o => o.id === id);
+            await runAction(btn, async () => {
+                const res = await safeRequest(`/api/orders/${id}/kitchen-status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        kitchen_status: order?.kitchen_status || 'queued',
+                        eta_minutes: minutes,
+                        note: order?.kitchen_note || null,
+                    }),
+                });
+                const updated = await res.json();
+                upsertOrderCache(updated);
+            });
+        };
+
+        window.setKitchenStatus = async (id, status, btn) => {
+            const order = ordersCache.find(o => o.id === id);
+            await runAction(btn, async () => {
+                const res = await safeRequest(`/api/orders/${id}/kitchen-status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        kitchen_status: status,
+                        eta_minutes: order?.kitchen_eta_minutes || null,
+                        note: order?.kitchen_note || null,
+                    }),
+                });
+                const updated = await res.json();
+                upsertOrderCache(updated);
+            });
+        };
+
+        window.shareOrderWhatsapp = (id) => {
+            const order = ordersCache.find(o => o.id === id);
+            if (!order) {
+                alert('Order not found yet.');
+                return;
+            }
+            const items = (order.items || []).map(item => `• ${item.quantity}x ${item.name}`).join('\n');
+            const kitchenMeta = kitchenStatusMeta[order.kitchen_status] || {};
+            const lines = [
+                `Order ${order.code} (${order.channel})`,
+                order.customer_name || order.customer_phone ? `Customer: ${order.customer_name || 'Walk-in'}${order.customer_phone ? ' · ' + order.customer_phone : ''}` : '',
+                `Total: ₦${Number(order.total || 0).toLocaleString()} (${order.status})`,
+                `Kitchen: ${kitchenMeta.label || order.kitchen_status || 'pending'}${order.kitchen_eta_minutes ? ` · ETA ${order.kitchen_eta_minutes}m` : ''}`,
+                order.kitchen_note ? `Note: ${order.kitchen_note}` : '',
+                items ? 'Items:\n' + items : '',
+            ].filter(Boolean).join('\n');
+            const url = `https://wa.me/?text=${encodeURIComponent(lines)}`;
+            const win = window.open(url, '_blank');
+            if (!win) {
+                navigator.clipboard?.writeText(lines).then(() => alert('Copied to clipboard. Paste in WhatsApp.'));
+            }
+        };
 
         function renderSummary(summary) {
             if (summary) {
@@ -1056,6 +1177,7 @@
                 },
                 discount: Number(posDiscount ? posDiscount.value : 0) || 0,
                 tax: Number(posTax ? posTax.value : 0) || 0,
+                send_to_kitchen: posSendKitchen ? posSendKitchen.checked : true,
             };
 
             await runAction(posCheckoutBtn, async () => {

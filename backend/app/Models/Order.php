@@ -23,6 +23,11 @@ class Order extends Model
         'total',
         'paid_at',
         'cancelled_at',
+        'kitchen_status',
+        'kitchen_eta_minutes',
+        'kitchen_eta_at',
+        'kitchen_sent_at',
+        'kitchen_note',
     ];
 
     protected $casts = [
@@ -32,6 +37,8 @@ class Order extends Model
         'total' => 'decimal:2',
         'paid_at' => 'datetime',
         'cancelled_at' => 'datetime',
+        'kitchen_eta_at' => 'datetime',
+        'kitchen_sent_at' => 'datetime',
     ];
 
     protected static function booted(): void

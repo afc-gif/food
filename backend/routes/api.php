@@ -35,3 +35,8 @@ Route::middleware(['web', 'auth', 'active', 'role:admin'])->group(function () {
     Route::put('/users/{user}', [UserAdminController::class, 'update']);
     Route::delete('/users/{user}', [UserAdminController::class, 'destroy']);
 });
+
+Route::middleware(['web', 'auth', 'active', 'role:admin|pos|kitchen'])->group(function () {
+    Route::post('/orders/{order}/send-to-kitchen', [OrderController::class, 'sendToKitchen']);
+    Route::post('/orders/{order}/kitchen-status', [OrderController::class, 'updateKitchenStatus']);
+});
