@@ -235,22 +235,34 @@ document.querySelectorAll("[data-item]").forEach((btn) => {
 // Initialize displayed count
 updateCartCount();
 
-// Menu filters
-document.querySelectorAll(".af-chip").forEach((chip) => {
-  chip.addEventListener("click", () => {
-    const filter = chip.getAttribute("data-filter");
-    document
+// Menu filters (delegated for SSR + dynamic chips)
+const menuFilters = document.getElementById("menuFilters");
+const menuGrid = document.getElementById("menuGrid");
+let activeFilter = "all";
+
+function applyFilter(filter) {
+  if (!menuGrid) return;
+  const target = filter || activeFilter || "all";
+  menuGrid.querySelectorAll(".af-menu-item").forEach((item) => {
+    const category = item.getAttribute("data-category");
+    item.style.display =
+      target === "all" || category === target ? "" : "none";
+  });
+}
+
+if (menuFilters && menuGrid) {
+  menuFilters.addEventListener("click", (e) => {
+    const chip = e.target.closest(".af-chip");
+    if (!chip) return;
+    activeFilter = chip.getAttribute("data-filter") || "all";
+    menuFilters
       .querySelectorAll(".af-chip")
       .forEach((c) => c.classList.remove("af-chip-active"));
     chip.classList.add("af-chip-active");
-
-    document.querySelectorAll(".af-menu-item").forEach((item) => {
-      const category = item.getAttribute("data-category");
-      item.style.display =
-        filter === "all" || filter === category ? "block" : "none";
-    });
+    applyFilter(activeFilter);
   });
-});
+  applyFilter("all");
+}
 
 // Checkout buttons (WhatsApp only for now)
 

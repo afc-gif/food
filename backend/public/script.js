@@ -286,17 +286,16 @@ const slugify = (text) =>
 let activeFilter = "all";
 
 function bindFilterButtons() {
-  const chips = menuFilters
-    ? menuFilters.querySelectorAll(".af-chip")
-    : document.querySelectorAll(".af-menu-filters .af-chip");
-
-  chips.forEach((chipBtn) => {
-    chipBtn.addEventListener("click", () => {
-      activeFilter = chipBtn.getAttribute("data-filter") || "all";
-      chips.forEach((c) => c.classList.remove("af-chip-active"));
-      chipBtn.classList.add("af-chip-active");
-      applyFilter();
-    });
+  if (!menuFilters) return;
+  menuFilters.addEventListener("click", (e) => {
+    const chipBtn = e.target.closest(".af-chip");
+    if (!chipBtn) return;
+    activeFilter = chipBtn.getAttribute("data-filter") || "all";
+    menuFilters
+      .querySelectorAll(".af-chip")
+      .forEach((c) => c.classList.remove("af-chip-active"));
+    chipBtn.classList.add("af-chip-active");
+    applyFilter();
   });
 }
 
@@ -451,7 +450,7 @@ function applyFilter() {
   menuGrid.querySelectorAll(".af-menu-item").forEach((item) => {
     const category = item.getAttribute("data-category");
     item.style.display =
-      activeFilter === "all" || category === activeFilter ? "block" : "none";
+      activeFilter === "all" || category === activeFilter ? "" : "none";
   });
 }
 
