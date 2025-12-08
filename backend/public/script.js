@@ -507,6 +507,7 @@ async function loadMenuData() {
         renderFeatured(safeItems);
       }
     }
+    applyFilter();
   } catch (err) {
     if (featuredGrid && !hasSSRFeatured) {
       featuredGrid.innerHTML =
