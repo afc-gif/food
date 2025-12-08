@@ -298,6 +298,12 @@ function bindFilterButtons() {
     chipBtn.classList.add("af-chip-active");
     applyFilter();
   });
+
+  const initial = menuFilters.querySelector(".af-chip-active") || menuFilters.querySelector(".af-chip");
+  if (initial) {
+    activeFilter = slugify(initial.getAttribute("data-filter") || "all");
+    applyFilter();
+  }
 }
 
 function renderFilters(categories) {

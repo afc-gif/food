@@ -267,7 +267,11 @@ if (menuFilters && menuGrid) {
     chip.classList.add("af-chip-active");
     applyFilter(activeFilter);
   });
-  applyFilter("all");
+  const initial = menuFilters.querySelector(".af-chip-active") || menuFilters.querySelector(".af-chip");
+  if (initial) {
+    activeFilter = slugify(initial.getAttribute("data-filter") || "all");
+  }
+  applyFilter(activeFilter);
 }
 
 // Checkout buttons (WhatsApp only for now)
