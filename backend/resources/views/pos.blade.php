@@ -371,6 +371,20 @@
             `).join('');
         };
 
+        const loadMenuCacheFromStorage = () => {
+            try {
+                const cached = JSON.parse(localStorage.getItem('pos_menu_cache') || '[]');
+                if (Array.isArray(cached) && cached.length) {
+                    menuCache = cached;
+                    menuCacheReady = true;
+                    Object.keys(barcodeCache).forEach(k => delete barcodeCache[k]);
+                    cached.forEach(item => {
+                        if (item.barcode) barcodeCache[item.barcode] = item;
+                    });
+                }
+            } catch { /* ignore */ }
+        };
+
         const findNameMatches = (term) => {
             if (!term || term.length < 2) return [];
             const t = term.toLowerCase();
@@ -506,6 +520,7 @@
                 menuCache.forEach(item => {
                     if (item.barcode) barcodeCache[item.barcode] = item;
                 });
+                localStorage.setItem('pos_menu_cache', JSON.stringify(menuCache.slice(0, 200)));
                 menuCacheReady = true;
             } catch (e) {
                 console.warn('Menu prefetch failed; will fall back to live lookup.', e);
@@ -517,6 +532,9 @@
 
             // Manual name search if input contains letters
             if (/[a-zA-Z]/.test(barcode)) {
+                if (!menuCacheReady) {
+                    prefetchMenuCache().catch(() => {});
+                }
                 const matches = findNameMatches(barcode);
                 renderSuggestions(matches);
                 if (!matches.length) {
@@ -856,6 +874,7 @@
         renderPosCart();
         renderSavedCustomers();
         renderParkedTickets();
+        loadMenuCacheFromStorage();
         if (posBarcodeInput) posBarcodeInput.focus();
         prefetchMenuCache().catch(() => {});
         menuPoller = createPoller(prefetchMenuCache, 20000, {
