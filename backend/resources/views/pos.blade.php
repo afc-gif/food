@@ -95,7 +95,9 @@
                     <label>Scan / Enter barcode</label>
                     <input id="posBarcodeInput" placeholder="Focus here and scan">
                     <div id="posScanStatus" class="muted status">Ready to scan.</div>
+                    <div id="posSuggestions" style="margin-top:6px;"></div>
                     <div id="posLookupResult" style="margin-top:10px;"></div>
+                    <div id="posKitchenFeed" style="margin-top:10px; display:grid; gap:6px;"></div>
                     <div id="posSavedCustomers" style="margin-top:10px; display:flex; gap:6px; flex-wrap:wrap;"></div>
                 </div>
                 <div style="border:1px solid var(--af-line); border-radius:14px; padding:12px; background:#fff;">
@@ -172,6 +174,7 @@
         const posBarcodeInput = document.getElementById('posBarcodeInput');
         const posLookupResult = document.getElementById('posLookupResult');
         const posScanStatus = document.getElementById('posScanStatus');
+        const posSuggestions = document.getElementById('posSuggestions');
         const posCartList = document.getElementById('posCartList');
         const posCartTotal = document.getElementById('posCartTotal');
         const posSubtotal = document.getElementById('posSubtotal');
@@ -186,14 +189,18 @@
         const posParkedList = document.getElementById('posParkedList');
         const posSavedCustomers = document.getElementById('posSavedCustomers');
         const posSendKitchen = document.getElementById('posSendKitchen');
+        const posKitchenFeed = document.getElementById('posKitchenFeed');
         const barcodeCache = {};
         let menuCacheReady = false;
+        let menuCache = [];
 
         let posCart = [];
         let lastLookup = null;
         let scanDebounce = null;
         let lookupInFlight = false;
         let menuPoller = null;
+        let ordersPoller = null;
+        let posOrders = [];
 
         const createPoller = (task, intervalMs, options = {}) => {
             const { immediate = true, runWhileHidden = false, onError = null } = options;
@@ -272,11 +279,105 @@
             return res;
         };
 
+        const createPoller = (task, intervalMs, options = {}) => {
+            const { immediate = true, runWhileHidden = false, onError = null } = options;
+            let timer = null;
+            let running = false;
+
+            const shouldRun = () => {
+                if (runWhileHidden) return true;
+                if (document.visibilityState === 'hidden') return false;
+                return true;
+            };
+
+            const tick = async () => {
+                if (running || !shouldRun()) return;
+                running = true;
+                try {
+                    await task();
+                } catch (err) {
+                    if (onError) onError(err);
+                    else console.warn('Poller task failed', err);
+                } finally {
+                    running = false;
+                }
+            };
+
+            const start = () => {
+                if (timer) return;
+                if (immediate) tick();
+                timer = setInterval(tick, intervalMs);
+            };
+            document.addEventListener('visibilitychange', () => {
+                if (timer && shouldRun()) tick();
+            });
+            return { start };
+        };
+
         function setPosStatus(message, tone = 'muted') {
             if (!posScanStatus) return;
             posScanStatus.textContent = message;
             posScanStatus.style.color = tone === 'error' ? '#b91c1c' : 'rgba(0,0,0,0.7)';
         }
+
+        const renderPosOrders = () => {
+            if (!posKitchenFeed) return;
+            const active = posOrders
+                .filter(o => (o.kitchen_status || 'queued') !== 'served')
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                .slice(0, 5);
+            if (!active.length) {
+                posKitchenFeed.innerHTML = '<div class="muted" style="font-size:12px;">No kitchen updates yet.</div>';
+                return;
+            }
+            posKitchenFeed.innerHTML = active.map(o => {
+                const eta = o.kitchen_eta_minutes
+                    ? `${o.kitchen_eta_minutes}m`
+                    : (o.kitchen_eta_at ? new Date(o.kitchen_eta_at).toLocaleTimeString() : 'ETA pending');
+                return `
+                    <div style="border:1px solid var(--af-line); border-radius:10px; padding:8px; background:#fff;">
+                        <div style="display:flex; justify-content:space-between; gap:6px; align-items:center;">
+                            <strong>${o.code || 'Order'}</strong>
+                            <span class="pill">${o.kitchen_status || 'queued'}</span>
+                        </div>
+                        <div class="muted" style="font-size:12px;">ETA: ${eta}</div>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        const loadPosOrders = async () => {
+            try {
+                const res = await apiFetch('/api/orders?all=1');
+                if (!res.ok) return;
+                const data = await res.json();
+                posOrders = Array.isArray(data) ? data : (data.data || []);
+                renderPosOrders();
+            } catch (e) {
+                console.warn('Could not load orders', e);
+            }
+        };
+
+        const renderSuggestions = (items) => {
+            if (!posSuggestions) return;
+            if (!items.length) {
+                posSuggestions.innerHTML = '';
+                return;
+            }
+            posSuggestions.innerHTML = items.map(item => `
+                <button class="btn-ghost" data-suggest-id="${item.id}" style="display:block; width:100%; text-align:left; padding:8px 10px; margin-top:4px;">
+                    ${item.name} <span class="muted">(${item.barcode || 'no barcode'})</span>
+                </button>
+            `).join('');
+        };
+
+        const findNameMatches = (term) => {
+            if (!term || term.length < 2) return [];
+            const t = term.toLowerCase();
+            return menuCache.filter(item =>
+                (item.name || '').toLowerCase().includes(t) && item.is_sold_out !== true
+            ).slice(0, 5);
+        };
 
         function computePosTotal() {
             return posCart.reduce((sum, item) => sum + (item.price * item.qty), 0);
@@ -381,8 +482,9 @@
             try {
                 const res = await safeRequest('/api/menu-items');
                 const data = await res.json();
+                menuCache = Array.isArray(data) ? data : [];
                 Object.keys(barcodeCache).forEach(k => delete barcodeCache[k]);
-                data.forEach(item => {
+                menuCache.forEach(item => {
                     if (item.barcode) barcodeCache[item.barcode] = item;
                 });
                 menuCacheReady = true;
@@ -393,6 +495,31 @@
 
         async function lookupBarcode(barcode, { addToCartOnSuccess = false } = {}) {
             if (!barcode) return;
+
+            // Manual name search if input contains letters
+            if (/[a-zA-Z]/.test(barcode)) {
+                const matches = findNameMatches(barcode);
+                renderSuggestions(matches);
+                if (!matches.length) {
+                    showLookupError('No item matches that name.');
+                    setPosStatus('No match found.', 'error');
+                    return;
+                }
+                const item = matches[0];
+                showLookupResult(item);
+                if (addToCartOnSuccess) {
+                    addToPosCart(item);
+                    setPosStatus(`Added ${item.name}. Ready for next scan.`);
+                    if (posBarcodeInput) {
+                        posBarcodeInput.value = '';
+                        posSuggestions.innerHTML = '';
+                        posBarcodeInput.focus();
+                    }
+                } else {
+                    setPosStatus('Found. Add to cart or scan next.');
+                }
+                return;
+            }
 
             if (barcodeCache[barcode]) {
                 const item = barcodeCache[barcode];
@@ -467,6 +594,13 @@
             clearTimeout(scanDebounce);
             if (!code) {
                 setPosStatus('Ready to scan.');
+                renderSuggestions([]);
+                return;
+            }
+            if (/[a-zA-Z]/.test(code)) {
+                const matches = findNameMatches(code);
+                renderSuggestions(matches);
+                setPosStatus(matches.length ? 'Select an item or press Enter to add.' : 'No match found.');
                 return;
             }
             scanDebounce = setTimeout(() => lookupBarcode(code, { addToCartOnSuccess: true }), 10);
@@ -705,6 +839,27 @@
             onError: (err) => console.warn('Menu refresh failed', err),
         });
         menuPoller.start();
+        ordersPoller = createPoller(loadPosOrders, 5000, {
+            onError: (err) => console.warn('Orders refresh failed', err),
+        });
+        ordersPoller.start();
+
+        if (posSuggestions) {
+            posSuggestions.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-suggest-id]');
+                if (!btn) return;
+                const id = Number(btn.getAttribute('data-suggest-id'));
+                const item = menuCache.find(i => i.id === id);
+                if (!item) return;
+                addToPosCart(item);
+                renderSuggestions([]);
+                if (posBarcodeInput) {
+                    posBarcodeInput.value = '';
+                    posBarcodeInput.focus();
+                }
+                setPosStatus(`Added ${item.name}. Ready for next scan.`);
+            });
+        }
     </script>
 </body>
 </html>
