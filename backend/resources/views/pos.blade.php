@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>POS | Acie Fraiche</title>
-    <link rel="icon" href="/assets/logo.png" type="image/png">
+    <link rel="icon" href="/assets/logo2.png" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
@@ -65,7 +65,7 @@
 <body>
     <header>
         <div style="display:flex; align-items:center; gap:12px;">
-            <img src="/assets/logo.png" alt="AFC" style="width:42px; height:42px; border-radius:12px; object-fit:contain;">
+            <img src="/assets/logo2.png" alt="AFC" style="width:42px; height:42px; border-radius:12px; object-fit:contain;">
             <div>
                 <p class="brand-title">POS · Acie Fraiche</p>
                 <p class="brand-tag">Signed in as {{ auth()->user()->name ?? 'POS User' }}</p>

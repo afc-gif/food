@@ -113,7 +113,7 @@
         <div class="auth-shell">
             <aside class="auth-brand">
                 <div style="display:flex;align-items:center;gap:12px;">
-                    <img src="/assets/logo.png" alt="Acie Fraiche Logo" class="brand-logo">
+                    <img src="/assets/logo2.png" alt="Acie Fraiche Logo" class="brand-logo">
                     <div>
                         <p class="brand-title">Acie Fraiche</p>
                         <p style="margin:0;color:rgba(0,0,0,0.65);">Admin & Staff Portal</p>

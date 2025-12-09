@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
-    <link rel="icon" href="/assets/logo.png" type="image/png">
+    <link rel="icon" href="/assets/logo2.png" type="image/png">
     @vite(['resources/js/kitchen.js'])
     <style>
         :root {
@@ -122,7 +122,7 @@
 <body>
     <header class="topbar">
         <div class="brand">
-            <img src="/assets/logo.png" alt="Acie Fraiche">
+            <img src="/assets/logo2.png" alt="Acie Fraiche">
             <div>
                 <h1>Acie Fraiche · Kitchen</h1>
                 <div class="muted">Signed in as {{ auth()->user()->name ?? 'Kitchen User' }}</div>

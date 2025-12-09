@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Acie Fraiche Admin</title>
-    <link rel="icon" href="/assets/logo.png" type="image/png">
+    <link rel="icon" href="/assets/logo2.png" type="image/png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&family=Playfair+Display:wght@600&display=swap" rel="stylesheet">
@@ -156,7 +156,7 @@
     <button class="hamburger" id="toggleSidebar">☰</button>
     <aside class="sidebar" id="sidebar">
         <div class="brand">
-            <img src="/assets/logo.png" alt="Acie Fraiche Logo">
+            <img src="/assets/logo2.png" alt="Acie Fraiche Logo">
             <div>
                 <p class="brand-title">Acie Fraiche</p>
                 <p class="muted">Admin & POS</p>

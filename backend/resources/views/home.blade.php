@@ -7,7 +7,7 @@
   <meta charset="UTF-8" />
   <title>Acie Fraiche Cafe – Freshly Crafted, Simply Delicious</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <link rel="icon" href="{{ asset('assets/logo.png') }}" type="image/png" />
+  <link rel="icon" href="{{ asset('assets/logo2.png') }}" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link
@@ -20,7 +20,7 @@
   <header class="af-header">
     <div class="af-container af-header-inner">
       <div class="af-logo-wrap">
-        <img src="{{ asset('assets/logo.png') }}" alt="Acie Fraiche Cafe Logo" class="af-logo" />
+        <img src="{{ asset('assets/logo2.png') }}" alt="Acie Fraiche Cafe Logo" class="af-logo" />
         <div class="af-logo-text">
           <span class="af-logo-name">Acie Fraiche Cafe</span>
           <span class="af-logo-tagline">Freshly Crafted, Simply Delicious</span>

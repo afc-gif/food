@@ -18,7 +18,6 @@ let notifyEnabled = localStorage.getItem('kitchenNotify') === '1';
 const chime = new Audio('data:audio/wav;base64,UklGRjQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=');
 
 if (ordersEl) {
-    const money = (value) => '₦' + Number(value ?? 0).toLocaleString();
     const escapeHtml = (value = '') =>
         String(value).replace(/[&<>"']/g, (char) =>
             ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char] ?? char)
@@ -318,14 +317,14 @@ if (ordersEl) {
         connectionEl.textContent = label;
         const isPolling = mode === 'polling';
         if (isPolling) {
-            connectionEl.style.background = 'rgba(82,55,0,0.08)';
-            connectionEl.style.borderColor = 'rgba(82,55,0,0.28)';
-            connectionEl.style.color = '#523700';
+            connectionEl.style.background = ok ? '#ecfdf3' : '#fef3c7';
+            connectionEl.style.borderColor = ok ? '#bbf7d0' : '#fcd34d';
+            connectionEl.style.color = ok ? '#166534' : '#92400e';
             return;
         }
-        connectionEl.style.background = ok ? 'rgba(0,128,0,0.08)' : 'rgba(255,165,0,0.12)';
-        connectionEl.style.borderColor = ok ? 'rgba(0,128,0,0.35)' : 'rgba(255,165,0,0.35)';
-        connectionEl.style.color = ok ? '#0f5132' : '#7a4a00';
+        connectionEl.style.background = ok ? '#ecfdf3' : '#fef3c7';
+        connectionEl.style.borderColor = ok ? '#bbf7d0' : '#fcd34d';
+        connectionEl.style.color = ok ? '#166534' : '#92400e';
     }
 
     function showToast(message) {
@@ -345,7 +344,7 @@ if (ordersEl) {
         if (notifyEnabled && Notification?.permission === 'granted') {
             const title = event.code ? `New order ${event.code}` : 'New order received';
             const body = (event.items || []).map(i => `${i.quantity}× ${i.name}`).join(', ') || 'New ticket in the kitchen';
-            new Notification(title, { body, icon: '/assets/logo.png' });
+            new Notification(title, { body, icon: '/assets/logo2.png' });
         }
     }
 
