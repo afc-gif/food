@@ -1,3 +1,52 @@
+function createPoller(task, intervalMs, options = {}) {
+  const { immediate = true, runWhileHidden = false, onError = null } = options;
+  let timer = null;
+  let running = false;
+
+  const shouldRun = () => {
+    if (runWhileHidden) return true;
+    if (typeof document === "undefined") return true;
+    return document.visibilityState !== "hidden";
+  };
+
+  const tick = async () => {
+    if (running || !shouldRun()) return;
+    running = true;
+    try {
+      await task();
+    } catch (error) {
+      if (onError) {
+        onError(error);
+      } else {
+        console.warn("Poller task failed", error);
+      }
+    } finally {
+      running = false;
+    }
+  };
+
+  const start = () => {
+    if (timer) return;
+    if (immediate) tick();
+    timer = setInterval(tick, intervalMs);
+  };
+
+  const stop = () => {
+    if (timer) {
+      clearInterval(timer);
+      timer = null;
+    }
+  };
+
+  if (typeof document !== "undefined") {
+    document.addEventListener("visibilitychange", () => {
+      if (timer && shouldRun()) tick();
+    });
+  }
+
+  return { start, stop, isRunning: () => !!timer };
+}
+
 // Mobile nav
 const navToggle = document.getElementById("navToggle");
 const nav = document.querySelector(".af-nav");
@@ -79,39 +128,6 @@ async function syncMenuAvailability() {
   } catch (error) {
     // network errors are ignored; next poll will retry
   }
-}
-
-// Initialize Echo for real-time updates
-function initializeEcho() {
-  if (!window.Pusher) {
-    // Load Pusher library dynamically
-    const script = document.createElement('script');
-    script.src = 'https://js.pusher.com/8.2.0/pusher.min.js';
-    script.onload = () => {
-      loadEcho();
-    };
-    document.head.appendChild(script);
-  } else {
-    loadEcho();
-  }
-}
-
-function loadEcho() {
-  if (window.Echo) {
-    window.Echo.channel("menu-items").listen(".menu-item.updated", (event) => {
-      upsertMenuItem(event);
-    });
-  }
-}
-
-// Try to initialize Echo if available
-if (window.Echo) {
-  window.Echo.channel("menu-items").listen(".menu-item.updated", (event) => {
-    upsertMenuItem(event);
-  });
-} else {
-  // If Echo is not available, we'll rely on polling
-  console.log('Echo not available, using polling for menu updates');
 }
 
 function bumpCartFab() {
@@ -651,7 +667,8 @@ bindAddToCartButtons();
 bindFilterButtons();
 applyFilter();
 loadMenuData();
-syncMenuAvailability();
+const menuPoller = createPoller(syncMenuAvailability, 20000);
+menuPoller.start();
 document.querySelectorAll("[data-whatsapp-btn]").forEach((btn) => {
   btn.addEventListener("click", () => {
     const formId = btn.getAttribute("data-form");

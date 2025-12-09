@@ -1,4 +1,5 @@
 import './bootstrap';
+import { createPoller } from './polling';
 
 const ordersEl = document.getElementById('kitchenOrders');
 const emptyEl = document.getElementById('kitchenEmpty');
@@ -10,7 +11,6 @@ const toastEl = document.getElementById('kitchenToast');
 const soundBtn = document.getElementById('toggleSound');
 const notifyBtn = document.getElementById('toggleNotify');
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-let pollTimer = null;
 const seenOrders = new Set();
 
 let soundEnabled = localStorage.getItem('kitchenSound') === '1';
@@ -23,7 +23,6 @@ if (ordersEl) {
         String(value).replace(/[&<>"']/g, (char) =>
             ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char] ?? char)
         );
-    const hasReverbKey = Boolean(window.reverbConfig?.hasKey);
     const kitchenStatuses = {
         pending: { label: 'Hold', tone: 'warn' },
         queued: { label: 'Sent to kitchen', tone: 'neutral' },
@@ -45,6 +44,7 @@ if (ordersEl) {
         }
         return fetch(url, {
             credentials: 'same-origin',
+            cache: options.cache ?? 'no-store',
             ...options,
             headers,
         });
@@ -63,102 +63,40 @@ if (ordersEl) {
     };
 
     const pollOrders = async () => {
-        try {
-            const res = await apiFetch('/api/orders?all=1');
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            const normalized = (Array.isArray(data) ? data : data.data || []).map(normalizeOrder).filter((o) => o.kitchen_status !== 'pending');
-            const nextOrders = normalized.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        const res = await apiFetch('/api/orders?all=1', { cache: 'no-store' });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        const normalized = (Array.isArray(data) ? data : data.data || []).map(normalizeOrder).filter((o) => o.kitchen_status !== 'pending');
+        const nextOrders = normalized.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-            // Detect new orders during polling and notify once
-            nextOrders.forEach((order) => {
-                if (!seenOrders.has(order.id)) {
-                    seenOrders.add(order.id);
-                    notifyNewOrder(order);
-                }
-            });
+        // Detect new orders during polling and notify once
+        nextOrders.forEach((order) => {
+            if (!seenOrders.has(order.id)) {
+                seenOrders.add(order.id);
+                notifyNewOrder(order);
+            }
+        });
 
-            orders = nextOrders;
-            renderOrders();
-            updateStats();
-        } catch (err) {
+        orders = nextOrders;
+        renderOrders();
+        updateStats();
+        setConnection('Live via polling', true, 'polling');
+    };
+
+    const ordersPoller = createPoller(pollOrders, 3000, {
+        onError: (err) => {
             console.warn('Polling failed', err);
-        }
-    };
-
-    const startPolling = () => {
-        if (pollTimer) return;
-        pollOrders();
-        pollTimer = setInterval(pollOrders, 3000);
-    };
-
-    const stopPolling = () => {
-        if (pollTimer) {
-            clearInterval(pollTimer);
-            pollTimer = null;
-        }
-    };
+            setConnection('Reconnecting…', false, 'polling');
+        },
+    });
 
     let orders = (window.initialOrders ?? []).map(normalizeOrder).filter((o) => o.kitchen_status !== 'pending');
     orders.forEach(o => seenOrders.add(o.id));
 
     renderOrders();
     updateStats();
-
-    const echo = window.Echo;
-
-    // Show an immediate connection status before Echo wiring resolves
-    if (!echo) {
-        setConnection(hasReverbKey ? 'Polling (Echo not initialized)' : 'Polling (Reverb key missing)', false, 'polling');
-        startPolling();
-    }
-
-    if (echo) {
-        setConnection('Connecting to Reverb…', false);
-        const channel = echo.private('orders');
-
-        channel.listen('.order.created', (event) => {
-            const normalized = normalizeOrder(event);
-            seenOrders.add(normalized.id);
-            upsertOrder(normalized);
-            showToast(`New order ${event.code ?? ''}`.trim() || 'New order received');
-            notifyNewOrder(event);
-        });
-        channel.listen('.order.updated', (event) => {
-            upsertOrder(normalizeOrder(event));
-        });
-
-        if (typeof channel.error === 'function') {
-            channel.error((err) => {
-                setConnection(`Channel error: ${err?.message ?? err?.type ?? 'unknown'}`, false, 'polling');
-                startPolling();
-            });
-        }
-
-        const connector = echo.connector?.pusher ?? echo.connector;
-        const connection = connector?.connection;
-        if (connection) {
-            connection.bind('connected', () => {
-                stopPolling();
-                setConnection('Live', true, 'live');
-            });
-            connection.bind('disconnected', () => {
-                setConnection('Disconnected', false, 'polling');
-                startPolling();
-            });
-            connection.bind('error', (err) => {
-                setConnection(`Connection error${err?.type ? ': '+err.type : ''}`, false, 'polling');
-                startPolling();
-            });
-        } else {
-            setConnection('Live', true, 'live');
-        }
-    } else {
-        const cfg = window.reverbConfig || {};
-        setConnection('Polling (no websocket)', false, 'polling');
-        console.warn('Echo not initialized. Ensure VITE_REVERB_APP_KEY/HOST/PORT/SCHEME are set at build time and REVERB_* at runtime.', cfg);
-        startPolling();
-    }
+    setConnection('Starting polling…', true, 'polling');
+    ordersPoller.start();
 
     if (soundBtn) {
         const setSoundLabel = () => soundBtn.textContent = `Sound: ${soundEnabled ? 'On' : 'Off'}`;

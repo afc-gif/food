@@ -1,3 +1,5 @@
+import { createPoller } from './polling';
+
 // Mobile nav
 const navToggle = document.getElementById("navToggle");
 const nav = document.querySelector(".af-nav");
@@ -70,7 +72,7 @@ function setSoldOutState(itemId, isSoldOut) {
 
 async function syncMenuAvailability() {
   try {
-    const response = await fetch("/api/menu-items?active_only=1");
+    const response = await fetch("/api/menu-items?active_only=1", { cache: "no-store" });
     if (!response.ok) return;
     const items = await response.json();
     if (!Array.isArray(items)) return;
@@ -82,14 +84,14 @@ async function syncMenuAvailability() {
   }
 }
 
+const menuPoller = createPoller(syncMenuAvailability, 20000);
+menuPoller.start();
+
 if (window.Echo) {
   window.Echo.channel("menu-items").listen(".menu-item.updated", (event) => {
     setSoldOutState(event.id, !!event.is_sold_out);
   });
 }
-
-syncMenuAvailability();
-setInterval(syncMenuAvailability, 20000);
 
 function bumpCartFab() {
   if (!cartFab) return;

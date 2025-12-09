@@ -22,12 +22,5 @@ php artisan migrate --force --seed || true
 # Start PHP-FPM
 php-fpm -D
 
-# Optionally start Reverb websocket server inside this container.
-# Enable by setting START_REVERB=1 (for local/dev; in Render we run a dedicated Reverb service).
-if [ "${START_REVERB}" = "1" ]; then
-  REVERB_BIND_PORT="${REVERB_SERVER_PORT:-${PORT:-8080}}"
-  php artisan reverb:start --host=0.0.0.0 --port="${REVERB_BIND_PORT}" --hostname="${REVERB_HOST:-localhost}" --debug &
-fi
-
 # Start Nginx in foreground
 nginx -g 'daemon off;'

@@ -496,6 +496,53 @@
         let scanDebounce = null;
         let ordersCache = [];
 
+        const createPoller = (task, intervalMs, options = {}) => {
+            const { immediate = true, runWhileHidden = false, onError = null } = options;
+            let timer = null;
+            let running = false;
+
+            const shouldRun = () => {
+                if (runWhileHidden) return true;
+                if (document.visibilityState === 'hidden') return false;
+                return true;
+            };
+
+            const tick = async () => {
+                if (running || !shouldRun()) return;
+                running = true;
+                try {
+                    await task();
+                } catch (err) {
+                    if (onError) {
+                        onError(err);
+                    } else {
+                        console.warn('Poller task failed', err);
+                    }
+                } finally {
+                    running = false;
+                }
+            };
+
+            const start = () => {
+                if (timer) return;
+                if (immediate) tick();
+                timer = setInterval(tick, intervalMs);
+            };
+
+            const stop = () => {
+                if (timer) {
+                    clearInterval(timer);
+                    timer = null;
+                }
+            };
+
+            document.addEventListener('visibilitychange', () => {
+                if (timer && shouldRun()) tick();
+            });
+
+            return { start, stop, isRunning: () => !!timer };
+        };
+
         const markInteracting = () => {
             isInteracting = true;
             clearTimeout(interactionTimeout);
@@ -542,6 +589,7 @@
             };
             return fetch(url, {
                 credentials: 'same-origin',
+                cache: options.cache ?? 'no-store',
                 ...options,
                 headers,
             });
@@ -1591,7 +1639,10 @@
                 if (isInteracting) return;
                 await Promise.all([loadCategories(), loadMenu(), loadOrders(), loadOrderSummary(), loadUsers()]);
             };
-            setInterval(refresh, 5000);
+            const refreshPoller = createPoller(refresh, 5000, {
+                onError: (err) => console.warn('Admin refresh failed', err),
+            });
+            refreshPoller.start();
 
             // Pause refresh while typing or focusing inputs
             document.addEventListener('focusin', markInteracting);
