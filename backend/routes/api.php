@@ -28,8 +28,6 @@ Route::middleware(['web', 'auth', 'active', 'role:admin'])->group(function () {
     Route::get('/orders/summary', [OrderController::class, 'summary']);
     Route::get('/orders/export', [OrderController::class, 'export']);
     Route::post('/orders/purge', [OrderController::class, 'purge']);
-    Route::get('/orders', [OrderController::class, 'index']);
-    Route::get('/orders/{order}', [OrderController::class, 'show']);
 
     Route::get('/users', [UserAdminController::class, 'index']);
     Route::put('/users/{user}', [UserAdminController::class, 'update']);
@@ -37,6 +35,8 @@ Route::middleware(['web', 'auth', 'active', 'role:admin'])->group(function () {
 });
 
 Route::middleware(['web', 'auth', 'active', 'role:admin|pos|kitchen'])->group(function () {
+    Route::get('/orders', [OrderController::class, 'index']);
+    Route::get('/orders/{order}', [OrderController::class, 'show']);
     Route::post('/orders/{order}/send-to-kitchen', [OrderController::class, 'sendToKitchen']);
     Route::post('/orders/{order}/kitchen-status', [OrderController::class, 'updateKitchenStatus']);
 });
