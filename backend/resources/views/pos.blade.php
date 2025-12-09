@@ -374,7 +374,8 @@
         const findNameMatches = (term) => {
             if (!term || term.length < 2) return [];
             const t = term.toLowerCase();
-            return menuCache.filter(item =>
+            const source = menuCache.length ? menuCache : Object.values(barcodeCache);
+            return source.filter(item =>
                 (item.name || '').toLowerCase().includes(t) && item.is_sold_out !== true
             ).slice(0, 5);
         };
@@ -856,6 +857,7 @@
         renderSavedCustomers();
         renderParkedTickets();
         if (posBarcodeInput) posBarcodeInput.focus();
+        prefetchMenuCache().catch(() => {});
         menuPoller = createPoller(prefetchMenuCache, 20000, {
             onError: (err) => console.warn('Menu refresh failed', err),
         });
