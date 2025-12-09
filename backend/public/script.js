@@ -409,21 +409,11 @@ const hasSSRFilters = !!(menuFilters && menuFilters.querySelectorAll(".af-chip")
 function renderMenu(items) {
   if (!menuGrid) return;
   if (!items.length) {
-    if (!hasSSRMenuItems) {
-      menuGrid.innerHTML =
-        '<p style="grid-column:1/-1;text-align:center;">Menu is coming soon. Please check back.</p>';
-    }
+    menuGrid.innerHTML =
+      '<p style="grid-column:1/-1;text-align:center;">Menu is coming soon. Please check back.</p>';
     return;
   }
 
-  // If we already have SSR cards, just upsert to avoid wiping the DOM
-  if (hasSSRMenuItems && menuGrid.querySelector("[data-menu-item]")) {
-    items.forEach((item) => upsertMenuItem(item));
-    applyFilter();
-    return;
-  }
-
-  // Otherwise render fresh
   menuGrid.innerHTML = items
     .map((item) => {
       const catName = item.category?.name || "Menu";
@@ -504,9 +494,7 @@ async function loadMenuData() {
 
     if (safeItems.length) {
       renderMenu(safeItems);
-      if (!hasSSRFeatured) {
-        renderFeatured(safeItems);
-      }
+      renderFeatured(safeItems);
     }
     applyFilter();
   } catch (err) {
