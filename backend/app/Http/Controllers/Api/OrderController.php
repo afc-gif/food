@@ -183,6 +183,30 @@ class OrderController extends Controller
         return $order->fresh(['items', 'payments', 'creator']);
     }
 
+    public function approve(Request $request, Order $order)
+    {
+        $data = $request->validate([
+            'note' => 'nullable|string|max:500',
+            'send_to_kitchen' => 'sometimes|boolean',
+        ]);
+
+        $sendToKitchen = array_key_exists('send_to_kitchen', $data)
+            ? (bool) $data['send_to_kitchen']
+            : true;
+
+        $order->fill([
+            'status' => 'paid',
+            'paid_at' => $order->paid_at ?? now(),
+            'kitchen_status' => $sendToKitchen ? 'queued' : 'pending',
+            'kitchen_sent_at' => $sendToKitchen ? ($order->kitchen_sent_at ?? now()) : $order->kitchen_sent_at,
+            'kitchen_note' => $data['note'] ?? $order->kitchen_note,
+        ])->save();
+
+        DB::afterCommit(fn () => $this->broadcastOrderChange($order));
+
+        return $order->fresh(['items', 'payments', 'creator']);
+    }
+
     public function summary()
     {
         $today = Carbon::today();

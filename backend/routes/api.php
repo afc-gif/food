@@ -34,9 +34,10 @@ Route::middleware(['web', 'auth', 'active', 'role:admin'])->group(function () {
     Route::delete('/users/{user}', [UserAdminController::class, 'destroy']);
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:admin|pos|kitchen'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:admin|pos|kitchen|staff'])->group(function () {
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
     Route::post('/orders/{order}/send-to-kitchen', [OrderController::class, 'sendToKitchen']);
     Route::post('/orders/{order}/kitchen-status', [OrderController::class, 'updateKitchenStatus']);
+    Route::post('/orders/{order}/approve', [OrderController::class, 'approve']);
 });
