@@ -23,12 +23,12 @@ if (ordersEl) {
         String(value).replace(/[&<>"']/g, (char) =>
             ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char] ?? char)
         );
-    const kitchenStatuses = {
-        pending: { label: 'Hold', tone: 'warn' },
-        queued: { label: 'Sent to kitchen', tone: 'neutral' },
-        prepping: { label: 'In progress', tone: 'active' },
-        ready: { label: 'Ready', tone: 'success' },
-        served: { label: 'Served', tone: 'muted' },
+            const kitchenStatuses = {
+                pending: { label: 'Hold', tone: 'warn' },
+                queued: { label: 'Sent to kitchen', tone: 'neutral' },
+                prepping: { label: 'In progress', tone: 'active' },
+                ready: { label: 'Ready', tone: 'success' },
+                served: { label: 'Served', tone: 'muted' },
     };
 
     const apiFetch = (url, options = {}) => {
@@ -184,9 +184,9 @@ if (ordersEl) {
                 const etaPill = renderEta(order);
                 const notePill = order.kitchen_note ? `<span class="pill tone-note">${escapeHtml(order.kitchen_note)}</span>` : '';
                 const isFresh = Date.now() - new Date(order.created_at).getTime() < 3 * 60 * 1000;
-                const channelPill = `<span class="pill tone-neutral">${escapeHtml(order.channel ?? 'pos')}</span>`;
-                const etaBroadcast = order.kitchen_eta_minutes || order.kitchen_eta_at
-                    ? `<span class="pill tone-success">ETA sent to POS/Admin</span>`
+            const channelPill = `<span class="pill tone-neutral">${escapeHtml(order.channel ?? 'pos')}</span>`;
+            const etaBroadcast = order.kitchen_eta_minutes || order.kitchen_eta_at
+                    ? `<span class="pill tone-success">ETA sent</span>`
                     : `<span class="pill tone-muted">ETA pending</span>`;
 
                 return `
@@ -201,7 +201,6 @@ if (ordersEl) {
                             </div>
                             <div class="order-channel">
                                 <span class="badge">${escapeHtml(order.status ?? 'pending')}</span>
-                                <span class="pill tone-neutral">${money(order.total)}</span>
                             </div>
                         </div>
                         <div class="order-meta-row">
@@ -286,7 +285,7 @@ if (ordersEl) {
 
     function updateStats() {
         statCountEl.textContent = orders.length;
-        statTotalEl.textContent = money(orders.reduce((sum, order) => sum + (order.total ?? 0), 0));
+        statTotalEl.textContent = '—';
         statLastEl.textContent = orders[0] ? formatTime(orders[0].created_at) : '—';
     }
 
