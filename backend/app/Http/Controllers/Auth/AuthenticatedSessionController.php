@@ -50,6 +50,9 @@ class AuthenticatedSessionController extends Controller
         if ($user->hasRole('kitchen') || $role === 'kitchen') {
             return redirect()->route('kitchen');
         }
+        if ($user->hasRole('staff') || $role === 'staff') {
+            return redirect()->route('staff');
+        }
         if ($user->hasRole('desk') || $role === 'desk') {
             return redirect()->route('home');
         }
