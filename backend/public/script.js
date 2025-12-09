@@ -517,7 +517,8 @@ function upsertMenuItem(item) {
         img.alt = item.name;
       }
     }
-    existing.querySelector(".af-menu-head h3").textContent = item.name;
+    const titleEl = existing.querySelector(".af-menu-head h3, h3");
+    if (titleEl) titleEl.textContent = item.name;
     const priceEl = existing.querySelector(".af-price");
     if (priceEl) priceEl.textContent = `₦${Number(item.price).toLocaleString()}`;
     existing.setAttribute("data-sold-out", item.is_sold_out ? "1" : "0");
