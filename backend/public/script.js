@@ -659,7 +659,38 @@ function handleWhatsApp(form) {
 
   const whatsappNumber = "2347015862018";
   const url = `https://wa.me/${whatsappNumber}?text=${message}`;
+  // Fire-and-forget backend order so staff sees it as pending
+  createBackendOrder({ name, phone, note }).catch((e) => console.warn("Could not create backend order", e));
   window.open(url, "_blank");
+}
+
+async function createBackendOrder({ name, phone, note }) {
+  if (!cart.length) return;
+  const payload = {
+    channel: "web",
+    customer_name: name || null,
+    customer_phone: phone || null,
+    items: cart.map((item) => ({
+      menu_item_id: item.id,
+      quantity: item.qty,
+      price: item.price
+    })),
+    discount: 0,
+    tax: 0,
+    send_to_kitchen: false,
+    note: note || null
+  };
+  const res = await fetch("/api/orders", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    body: JSON.stringify(payload),
+    cache: "no-store"
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(text || `Order save failed (${res.status})`);
+  }
+  return res.json();
 }
 
 // Init: bind existing DOM and hydrate data

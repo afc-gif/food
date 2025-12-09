@@ -59,6 +59,7 @@ class OrderController extends Controller
             'discount' => 'nullable|numeric|min:0',
             'tax' => 'nullable|numeric|min:0',
             'send_to_kitchen' => 'sometimes|boolean',
+            'note' => 'nullable|string|max:500',
         ]);
 
         return DB::transaction(function () use ($data, $request) {
@@ -114,6 +115,7 @@ class OrderController extends Controller
                 'paid_at' => $hasPayment ? now() : null,
                 'kitchen_status' => $sendToKitchen ? 'queued' : 'pending',
                 'kitchen_sent_at' => $sendToKitchen ? now() : null,
+                'kitchen_note' => $data['note'] ?? null,
             ]);
 
             foreach ($itemsData as $item) {
