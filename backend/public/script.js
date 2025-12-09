@@ -417,35 +417,34 @@ function applyFilter() {
   });
 }
 
-function loadMenuData() {
+async function loadMenuData() {
   if (!menuGrid && !featuredGrid && !menuFilters) return;
-  Promise.all([
-    fetch("/api/menu-items?active_only=1", { cache: "no-store" }),
-    fetch("/api/categories?active_only=1", { cache: "no-store" })
-  ])
-    .then(async ([itemsRes, categoriesRes]) => {
-      const items = itemsRes.ok ? await itemsRes.json() : [];
-      const categories = categoriesRes.ok ? await categoriesRes.json() : [];
+  try {
+    const [itemsRes, categoriesRes] = await Promise.all([
+      fetch("/api/menu-items?active_only=1", { cache: "no-store" }),
+      fetch("/api/categories?active_only=1", { cache: "no-store" })
+    ]);
 
-      const safeItems = Array.isArray(items) ? items : [];
-      const safeCategories = Array.isArray(categories) ? categories : [];
+    const items = itemsRes.ok ? await itemsRes.json() : [];
+    const categories = categoriesRes.ok ? await categoriesRes.json() : [];
 
-      if (safeCategories.length && menuFilters && !hasSSRFilters) {
-        renderFilters(safeCategories);
+    const safeItems = Array.isArray(items) ? items : [];
+    const safeCategories = Array.isArray(categories) ? categories : [];
+
+    if (safeCategories.length && menuFilters && !hasSSRFilters) {
+      renderFilters(safeCategories);
+    }
+
+    if (safeItems.length) {
+      renderMenu(safeItems);
+      if (!hasSSRFeatured) {
+        renderFeatured(safeItems);
       }
-
-      if (safeItems.length) {
-        // Update existing cards and append new ones without clearing the grid
-        safeItems.forEach((item) => upsertMenuItem(item));
-        if (!hasSSRFeatured) {
-          renderFeatured(safeItems);
-        }
-        applyFilter();
-      }
-    })
-    .catch((err) => {
-      console.error("Menu data load failed", err);
-    });
+    }
+    applyFilter();
+  } catch (err) {
+    console.error("Menu data load failed", err);
+  }
 }
 
 function ensureCategoryChip(catName) {
