@@ -54,9 +54,10 @@ class AuthenticatedSessionController extends Controller
             return redirect()->route('staff');
         }
         if ($user->hasRole('desk') || $role === 'desk') {
-            return redirect()->route('home');
+            return redirect()->route('staff');
         }
-        return redirect()->route('home');
+        // Default to staff dashboard instead of public site
+        return redirect()->route('staff');
     }
 
     /**
