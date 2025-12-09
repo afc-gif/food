@@ -407,8 +407,60 @@ const hasSSRFeatured = !!(featuredGrid && featuredGrid.querySelector("[data-menu
 const hasSSRFilters = !!(menuFilters && menuFilters.querySelectorAll(".af-chip").length > 1);
 
 function renderMenu(items) {
-  // Render function retained for potential future use; no-op to avoid DOM wipes
-  return;
+  if (!menuGrid) return;
+  if (!items.length) {
+    menuGrid.innerHTML =
+      '<p style="grid-column:1/-1;text-align:center;">Menu is coming soon. Please check back.</p>';
+    return;
+  }
+
+  menuGrid.innerHTML = items
+    .map((item) => {
+      const catName = item.category?.name || "Menu";
+      const catSlug = slugify(catName);
+      return `
+        <article
+          class="af-menu-item"
+          data-menu-item
+          data-item-id="${item.id}"
+          data-sold-out="${item.is_sold_out ? "1" : "0"}"
+          data-category="${catSlug}"
+        >
+          ${item.image_url ? `<div class="af-menu-thumb"><img src="${item.image_url}" alt="${item.name}"></div>` : ""}
+          <div class="af-menu-body">
+            <div class="af-menu-head">
+              <h3>${item.name}</h3>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <span class="af-pill">${catName}</span>
+                <span
+                  class="af-pill"
+                  data-soldout-pill
+                  style="background:#fef2f2;color:#b91c1c;border-color:#fecdd3;${item.is_sold_out ? "" : "display:none;"}"
+                >Sold Out</span>
+              </div>
+            </div>
+            <p>${item.description || "Freshly prepared from our kitchen."}</p>
+            <div class="af-menu-footer">
+              <span class="af-price">₦${Number(item.price).toLocaleString()}</span>
+              <button
+                class="af-btn af-btn-sm af-btn-outline"
+                data-item="${item.name}"
+                data-item-id="${item.id}"
+                data-item-price="${item.price}"
+                data-sold-out="${item.is_sold_out ? "1" : "0"}"
+                ${item.is_sold_out ? "disabled" : ""}
+              >
+                ${item.is_sold_out ? "Sold Out" : "Add to Cart"}
+              </button>
+            </div>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+
+  bindAddToCartButtons();
+  applyFilter();
 }
 
 
@@ -441,27 +493,10 @@ async function loadMenuData() {
     }
 
     if (safeItems.length) {
-      safeItems.forEach((item) => {
-        try {
-          setSoldOutState(item.id, !!item.is_sold_out);
-          const card = document.querySelector(`[data-menu-item][data-item-id="${item.id}"]`);
-          if (card) {
-            const nameEl = card.querySelector("h3");
-            if (nameEl && item.name) nameEl.textContent = item.name;
-            const priceEl = card.querySelector(".af-price");
-            if (priceEl && item.price != null) priceEl.textContent = `₦${Number(item.price).toLocaleString()}`;
-            const imgEl = card.querySelector("img");
-            if (imgEl && item.image_url) {
-              imgEl.src = item.image_url;
-              imgEl.alt = item.name || "";
-            }
-          }
-        } catch (e) {
-          console.warn("Could not update menu card", e, item);
-        }
-      });
-      applyFilter();
+      renderMenu(safeItems);
+      renderFeatured(safeItems);
     }
+    applyFilter();
   } catch (err) {
     console.error("Menu data load failed", err);
   }
