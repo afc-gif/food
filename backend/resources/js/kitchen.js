@@ -66,7 +66,10 @@ if (ordersEl) {
         const res = await apiFetch('/api/orders?all=1', { cache: 'no-store' });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
-        const normalized = (Array.isArray(data) ? data : data.data || []).map(normalizeOrder).filter((o) => o.kitchen_status !== 'pending');
+        const normalized = (Array.isArray(data) ? data : data.data || [])
+            .map(normalizeOrder)
+            // Hide items not yet sent or already cleared
+            .filter((o) => o.kitchen_status !== 'pending' && o.kitchen_status !== 'served');
         const nextOrders = normalized.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         // Detect new orders during polling and notify once
@@ -90,7 +93,9 @@ if (ordersEl) {
         },
     });
 
-    let orders = (window.initialOrders ?? []).map(normalizeOrder).filter((o) => o.kitchen_status !== 'pending');
+    let orders = (window.initialOrders ?? [])
+        .map(normalizeOrder)
+        .filter((o) => o.kitchen_status !== 'pending' && o.kitchen_status !== 'served');
     orders.forEach(o => seenOrders.add(o.id));
 
     renderOrders();
@@ -143,7 +148,8 @@ if (ordersEl) {
     }
 
     function upsertOrder(order) {
-        if (order.kitchen_status === 'pending') {
+        // Remove orders not on the board (pending or already served)
+        if (order.kitchen_status === 'pending' || order.kitchen_status === 'served') {
             orders = orders.filter((existing) => existing.id !== order.id);
             renderOrders();
             updateStats();
