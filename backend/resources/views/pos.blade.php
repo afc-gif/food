@@ -203,53 +203,6 @@
         let ordersPoller = null;
         let posOrders = [];
 
-        const createPoller = (task, intervalMs, options = {}) => {
-            const { immediate = true, runWhileHidden = false, onError = null } = options;
-            let timer = null;
-            let running = false;
-
-            const shouldRun = () => {
-                if (runWhileHidden) return true;
-                if (document.visibilityState === 'hidden') return false;
-                return true;
-            };
-
-            const tick = async () => {
-                if (running || !shouldRun()) return;
-                running = true;
-                try {
-                    await task();
-                } catch (err) {
-                    if (onError) {
-                        onError(err);
-                    } else {
-                        console.warn('Poller task failed', err);
-                    }
-                } finally {
-                    running = false;
-                }
-            };
-
-            const start = () => {
-                if (timer) return;
-                if (immediate) tick();
-                timer = setInterval(tick, intervalMs);
-            };
-
-            const stop = () => {
-                if (timer) {
-                    clearInterval(timer);
-                    timer = null;
-                }
-            };
-
-            document.addEventListener('visibilitychange', () => {
-                if (timer && shouldRun()) tick();
-            });
-
-            return { start, stop, isRunning: () => !!timer };
-        };
-
         const apiFetch = (url, options = {}) => {
             const headers = {
                 Accept: 'application/json',
