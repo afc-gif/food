@@ -169,7 +169,7 @@ if (ordersEl) {
         ordersEl.innerHTML = orders
             .map((order) => {
                 const items = order.items
-                    .map((item) => `<li><span>${escapeHtml(item.name)}</span><span class="small">x${item.quantity} • ${money(item.total ?? item.unit_price ?? 0)}</span></li>`)
+                    .map((item) => `<li><span>${escapeHtml(item.name)}</span><span class="small">x${item.quantity}</span></li>`)
                     .join('');
                 const customer = order.customer_name || order.customer_phone
                     ? `${escapeHtml(order.customer_name || 'Guest')} ${order.customer_phone ? ' · ' + escapeHtml(order.customer_phone) : ''}`
@@ -233,13 +233,11 @@ if (ordersEl) {
 
     function renderEta(order) {
         if (!order.kitchen_eta_minutes && !order.kitchen_eta_at) {
-            return `<span class="pill tone-neutral">ETA not set</span>`;
+            return `<span class="pill tone-warn" style="font-weight:700;">ETA missing · tap a quick ETA</span>`;
         }
-        const etaText = order.kitchen_eta_minutes
-            ? `${order.kitchen_eta_minutes}m`
-            : '';
+        const etaText = order.kitchen_eta_minutes ? `${order.kitchen_eta_minutes}m` : '';
         const atText = order.kitchen_eta_at ? ` · ${formatTime(order.kitchen_eta_at)}` : '';
-        return `<span class="pill tone-active">ETA ${etaText}${atText}</span>`;
+        return `<span class="pill tone-active" style="font-weight:700;">ETA ${etaText}${atText}</span>`;
     }
 
     ordersEl.addEventListener('click', async (event) => {
