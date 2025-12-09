@@ -193,6 +193,7 @@
         const barcodeCache = {};
         let menuCacheReady = false;
         let menuCache = [];
+        let menuCachePromise = null;
 
         let posCart = [];
         let lastLookup = null;
@@ -394,6 +395,14 @@
             ).slice(0, 5);
         };
 
+        const ensureMenuCache = async () => {
+            if (menuCacheReady) return menuCache;
+            if (!menuCachePromise) {
+                menuCachePromise = prefetchMenuCache().catch(() => []);
+            }
+            return menuCachePromise;
+        };
+
         if (posSuggestions) {
             posSuggestions.addEventListener('click', (e) => {
                 const btn = e.target.closest('[data-suggest-id]');
@@ -522,6 +531,7 @@
                 });
                 localStorage.setItem('pos_menu_cache', JSON.stringify(menuCache.slice(0, 200)));
                 menuCacheReady = true;
+                menuCachePromise = null;
             } catch (e) {
                 console.warn('Menu prefetch failed; will fall back to live lookup.', e);
             }
@@ -530,11 +540,11 @@
         async function lookupBarcode(barcode, { addToCartOnSuccess = false } = {}) {
             if (!barcode) return;
 
-            // Manual name search if input contains letters
-            if (/[a-zA-Z]/.test(barcode)) {
-                if (!menuCacheReady) {
-                    prefetchMenuCache().catch(() => {});
-                }
+            const isName = /^[a-zA-Z\s]+$/.test(barcode);
+
+            // Manual name search if input is alphabetic
+            if (isName) {
+                await ensureMenuCache();
                 const matches = findNameMatches(barcode);
                 renderSuggestions(matches);
                 if (!matches.length) {
@@ -617,16 +627,16 @@
             }
         }
 
-        if (posBarcodeInput) posBarcodeInput.addEventListener('keydown', (e) => {
+        if (posBarcodeInput) posBarcodeInput.addEventListener('keydown', async (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 const code = e.target.value.trim();
                 if (!code) return;
-                lookupBarcode(code, { addToCartOnSuccess: true });
+                await lookupBarcode(code, { addToCartOnSuccess: true });
             }
         });
 
-        if (posBarcodeInput) posBarcodeInput.addEventListener('input', (e) => {
+        if (posBarcodeInput) posBarcodeInput.addEventListener('input', async (e) => {
             const code = e.target.value.trim();
             clearTimeout(scanDebounce);
             if (!code) {
@@ -634,10 +644,9 @@
                 renderSuggestions([]);
                 return;
             }
-            if (!menuCacheReady) {
-                prefetchMenuCache().catch(() => {});
-            }
-            if (/[a-zA-Z]/.test(code)) {
+            const isName = /^[a-zA-Z\s]+$/.test(code);
+            if (isName) {
+                await ensureMenuCache();
                 const matches = findNameMatches(code);
                 renderSuggestions(matches);
                 setPosStatus(matches.length ? 'Select an item or press Enter to add.' : 'No match found.');
