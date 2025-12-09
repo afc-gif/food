@@ -503,13 +503,13 @@ async function loadMenuData() {
     }
 
     if (safeItems.length) {
-      renderMenu(safeItems);
+      // Update existing cards / append new without clearing SSR
+      safeItems.forEach((item) => upsertMenuItem(item));
       renderFeatured(safeItems);
+      applyFilter();
     } else {
       console.warn("Menu API returned no items; keeping current menu render.");
-      return;
     }
-    applyFilter();
   } catch (err) {
     if (featuredGrid && !hasSSRFeatured) {
       featuredGrid.innerHTML =
@@ -585,6 +585,13 @@ function upsertMenuItem(item) {
   }
   const existing = document.querySelector(`[data-menu-item][data-item-id="${item.id}"]`);
   if (existing) {
+    if (item.image_url) {
+      const img = existing.querySelector("img");
+      if (img) {
+        img.src = item.image_url;
+        img.alt = item.name;
+      }
+    }
     existing.querySelector(".af-menu-head h3").textContent = item.name;
     const priceEl = existing.querySelector(".af-price");
     if (priceEl) priceEl.textContent = `₦${Number(item.price).toLocaleString()}`;
