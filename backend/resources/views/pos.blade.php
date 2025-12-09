@@ -379,6 +379,24 @@
             ).slice(0, 5);
         };
 
+        if (posSuggestions) {
+            posSuggestions.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-suggest-id]');
+                if (!btn) return;
+                const id = Number(btn.getAttribute('data-suggest-id'));
+                const item = menuCache.find(i => i.id === id);
+                if (!item) return;
+                renderSuggestions([]);
+                showLookupResult(item);
+                addToPosCart(item);
+                setPosStatus(`Added ${item.name}. Ready for next scan.`);
+                if (posBarcodeInput) {
+                    posBarcodeInput.value = '';
+                    posBarcodeInput.focus();
+                }
+            });
+        }
+
         function computePosTotal() {
             return posCart.reduce((sum, item) => sum + (item.price * item.qty), 0);
         }
@@ -596,6 +614,9 @@
                 setPosStatus('Ready to scan.');
                 renderSuggestions([]);
                 return;
+            }
+            if (!menuCacheReady) {
+                prefetchMenuCache().catch(() => {});
             }
             if (/[a-zA-Z]/.test(code)) {
                 const matches = findNameMatches(code);
