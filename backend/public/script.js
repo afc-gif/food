@@ -414,61 +414,54 @@ function renderMenu(items) {
       '<p style="grid-column:1/-1;text-align:center;">Menu is coming soon. Please check back.</p>';
     return;
   }
-  
-  if (!hasSSRMenuItems) {
-    menuGrid.innerHTML = items
-      .map((item) => {
-        const catName = item.category?.name || "Menu";
-        const catSlug = slugify(catName);
-        return `
-          <article
-            class="af-menu-item"
-            data-menu-item
-            data-item-id="${item.id}"
-            data-sold-out="${item.is_sold_out ? "1" : "0"}"
-            data-category="${catSlug}"
-          >
-            ${item.image_url ? `<div class="af-menu-thumb"><img src="${item.image_url}" alt="${item.name}"></div>` : ""}
-            <div class="af-menu-body">
-            <div class="af-menu-head">
-              <h3>${item.name}</h3>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <span class="af-pill">${catName}</span>
-                <span
-                  class="af-pill"
-                  data-soldout-pill
-                  style="background:#fef2f2;color:#b91c1c;border-color:#fecdd3;${item.is_sold_out ? "" : "display:none;"}"
-                >Sold Out</span>
-              </div>
-            </div>
-            <p>${item.description || "Freshly prepared from our kitchen."}</p>
-            <div class="af-menu-footer">
-              <span class="af-price">₦${Number(item.price).toLocaleString()}</span>
-              <button
-                class="af-btn af-btn-sm af-btn-outline"
-                data-item="${item.name}"
-                data-item-id="${item.id}"
-                data-item-price="${item.price}"
-                data-sold-out="${item.is_sold_out ? "1" : "0"}"
-                ${item.is_sold_out ? "disabled" : ""}
-              >
-                ${item.is_sold_out ? "Sold Out" : "Add to Cart"}
-              </button>
-            </div>
-            </div>
-          </article>
-        `;
-      })
-      .join("");
 
-    bindAddToCartButtons();
-    applyFilter(); // Now this function exists!
-  } else {
-    // Only update sold-out state (no render)
-    items.forEach((item) => {
-      setSoldOutState(item.id, !!item.is_sold_out);
-    });
-  }
+  menuGrid.innerHTML = items
+    .map((item) => {
+      const catName = item.category?.name || "Menu";
+      const catSlug = slugify(catName);
+      return `
+        <article
+          class="af-menu-item"
+          data-menu-item
+          data-item-id="${item.id}"
+          data-sold-out="${item.is_sold_out ? "1" : "0"}"
+          data-category="${catSlug}"
+        >
+          ${item.image_url ? `<div class="af-menu-thumb"><img src="${item.image_url}" alt="${item.name}"></div>` : ""}
+          <div class="af-menu-body">
+          <div class="af-menu-head">
+            <h3>${item.name}</h3>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <span class="af-pill">${catName}</span>
+              <span
+                class="af-pill"
+                data-soldout-pill
+                style="background:#fef2f2;color:#b91c1c;border-color:#fecdd3;${item.is_sold_out ? "" : "display:none;"}"
+              >Sold Out</span>
+            </div>
+          </div>
+          <p>${item.description || "Freshly prepared from our kitchen."}</p>
+          <div class="af-menu-footer">
+            <span class="af-price">₦${Number(item.price).toLocaleString()}</span>
+            <button
+              class="af-btn af-btn-sm af-btn-outline"
+              data-item="${item.name}"
+              data-item-id="${item.id}"
+              data-item-price="${item.price}"
+              data-sold-out="${item.is_sold_out ? "1" : "0"}"
+              ${item.is_sold_out ? "disabled" : ""}
+            >
+              ${item.is_sold_out ? "Sold Out" : "Add to Cart"}
+            </button>
+          </div>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+
+  bindAddToCartButtons();
+  applyFilter();
 }
 
 function applyFilter() {
@@ -510,18 +503,8 @@ async function loadMenuData() {
     }
 
     if (safeItems.length) {
-      if (!hasSSRMenuItems) {
-    renderMenu(safeItems);
-} else {
-    // Update sold-out status only; no full re-render
-    safeItems.forEach((item) => {
-        setSoldOutState(item.id, !!item.is_sold_out);
-    });
-}
-
-      if (!hasSSRFeatured) {
-        renderFeatured(safeItems);
-      }
+      renderMenu(safeItems);
+      renderFeatured(safeItems);
     }
     applyFilter();
   } catch (err) {
@@ -660,11 +643,14 @@ function handleWhatsApp(form) {
   const whatsappNumber = "2347015862018";
   const url = `https://wa.me/${whatsappNumber}?text=${message}`;
   // Fire-and-forget backend order so staff sees it as pending
-  createBackendOrder({ name, phone, note }).catch((e) => console.warn("Could not create backend order", e));
+  createBackendOrder({ name, phone, note, service, time }).catch((e) => {
+    console.warn("Could not create backend order", e);
+    alert("We could not save your order for staff. Please confirm your items in WhatsApp.");
+  });
   window.open(url, "_blank");
 }
 
-async function createBackendOrder({ name, phone, note }) {
+async function createBackendOrder({ name, phone, note, service, time }) {
   if (!cart.length) return;
   const payload = {
     channel: "web",
@@ -678,7 +664,9 @@ async function createBackendOrder({ name, phone, note }) {
     discount: 0,
     tax: 0,
     send_to_kitchen: false,
-    note: note || null
+    note: note || null,
+    service: service || null,
+    time: time || null
   };
   const res = await fetch("/api/orders", {
     method: "POST",

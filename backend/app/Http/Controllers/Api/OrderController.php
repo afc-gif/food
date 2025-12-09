@@ -60,6 +60,8 @@ class OrderController extends Controller
             'tax' => 'nullable|numeric|min:0',
             'send_to_kitchen' => 'sometimes|boolean',
             'note' => 'nullable|string|max:500',
+            'service' => 'nullable|string|max:100',
+            'time' => 'nullable|string|max:100',
         ]);
 
         return DB::transaction(function () use ($data, $request) {
@@ -102,6 +104,18 @@ class OrderController extends Controller
                 ? (bool) $data['send_to_kitchen']
                 : true;
 
+            $kitchenNoteParts = [];
+            if (! empty($data['service'])) {
+                $kitchenNoteParts[] = 'Service: '.$data['service'];
+            }
+            if (! empty($data['time'])) {
+                $kitchenNoteParts[] = 'Time: '.$data['time'];
+            }
+            if (! empty($data['note'])) {
+                $kitchenNoteParts[] = 'Note: '.$data['note'];
+            }
+            $kitchenNote = $kitchenNoteParts ? implode(' | ', $kitchenNoteParts) : null;
+
             $order = Order::create([
                 'channel' => $data['channel'] ?? 'pos',
                 'created_by' => $request->user()?->id,
@@ -115,7 +129,7 @@ class OrderController extends Controller
                 'paid_at' => $hasPayment ? now() : null,
                 'kitchen_status' => $sendToKitchen ? 'queued' : 'pending',
                 'kitchen_sent_at' => $sendToKitchen ? now() : null,
-                'kitchen_note' => $data['note'] ?? null,
+                'kitchen_note' => $kitchenNote,
             ]);
 
             foreach ($itemsData as $item) {

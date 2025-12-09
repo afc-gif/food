@@ -12,7 +12,7 @@ Route::get('/health', fn () => ['status' => 'ok']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/menu-items', [MenuItemController::class, 'index']);
 Route::get('/menu-items/lookup', [MenuItemController::class, 'lookup']);
-Route::post('/orders', [OrderController::class, 'store']);
+Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:15,1');
 
 Route::middleware(['web', 'auth', 'active', 'role:admin'])->group(function () {
     Route::post('/categories', [CategoryController::class, 'store']);
