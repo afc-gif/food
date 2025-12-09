@@ -505,6 +505,9 @@ async function loadMenuData() {
     if (safeItems.length) {
       renderMenu(safeItems);
       renderFeatured(safeItems);
+    } else {
+      console.warn("Menu API returned no items; keeping current menu render.");
+      return;
     }
     applyFilter();
   } catch (err) {

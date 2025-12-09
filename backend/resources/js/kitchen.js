@@ -66,9 +66,7 @@ if (ordersEl) {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const normalized = (Array.isArray(data) ? data : data.data || [])
-            .map(normalizeOrder)
-            // Hide items not yet sent or already cleared
-            .filter((o) => o.kitchen_status !== 'pending' && o.kitchen_status !== 'served');
+            .map(normalizeOrder);
         const nextOrders = normalized.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
         // Detect new orders during polling and notify once
@@ -93,8 +91,7 @@ if (ordersEl) {
     });
 
     let orders = (window.initialOrders ?? [])
-        .map(normalizeOrder)
-        .filter((o) => o.kitchen_status !== 'pending' && o.kitchen_status !== 'served');
+        .map(normalizeOrder);
     orders.forEach(o => seenOrders.add(o.id));
 
     renderOrders();
@@ -164,14 +161,15 @@ if (ordersEl) {
     }
 
     function renderOrders() {
-        if (!orders.length) {
+        const visible = orders.filter((o) => o.kitchen_status !== 'pending' && o.kitchen_status !== 'served');
+        if (!visible.length) {
             ordersEl.innerHTML = '';
             emptyEl.style.display = 'block';
             return;
         }
 
         emptyEl.style.display = 'none';
-        ordersEl.innerHTML = orders
+        ordersEl.innerHTML = visible
             .map((order) => {
                 const items = order.items
                     .map((item) => `<li><span>${escapeHtml(item.name)}</span><span class="small">x${item.quantity}</span></li>`)
@@ -183,8 +181,8 @@ if (ordersEl) {
                 const etaPill = renderEta(order);
                 const notePill = order.kitchen_note ? `<span class="pill tone-note">${escapeHtml(order.kitchen_note)}</span>` : '';
                 const isFresh = Date.now() - new Date(order.created_at).getTime() < 3 * 60 * 1000;
-            const channelPill = `<span class="pill tone-neutral">${escapeHtml(order.channel ?? 'pos')}</span>`;
-            const etaBroadcast = order.kitchen_eta_minutes || order.kitchen_eta_at
+                const channelPill = `<span class="pill tone-neutral">${escapeHtml(order.channel ?? 'pos')}</span>`;
+                const etaBroadcast = order.kitchen_eta_minutes || order.kitchen_eta_at
                     ? `<span class="pill tone-success">ETA sent</span>`
                     : `<span class="pill tone-muted">ETA pending</span>`;
 
