@@ -428,11 +428,16 @@ document.addEventListener("DOMContentLoaded", () => {
     return card;
   };
 
+  const renderMenuError = (message) => {
+    const html = `<p style="grid-column:1/-1;text-align:center;">${message}</p>`;
+    if (dom.menuGrid) dom.menuGrid.innerHTML = html;
+    if (dom.featuredGrid) dom.featuredGrid.innerHTML = html;
+  };
+
   const renderMenu = (items) => {
     if (!dom.menuGrid) return;
     if (!items.length) {
-      dom.menuGrid.innerHTML =
-        '<p style="grid-column:1/-1;text-align:center;">Menu is coming soon. Please check back.</p>';
+      renderMenuError("Menu is coming soon. Please check back.");
       return;
     }
 
@@ -534,11 +539,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const loadMenuData = async () => {
     if (!dom.menuGrid && !dom.featuredGrid && !dom.menuFilters) return;
+    if (window.location.protocol === "file:") {
+      renderMenuError("Menu needs the server running (API unreachable from file://).");
+      return;
+    }
     try {
       const [itemsRes, categoriesRes] = await Promise.all([
         fetch("/api/menu-items?active_only=1", { cache: "no-store" }),
         fetch("/api/categories?active_only=1", { cache: "no-store" })
       ]);
+
+      if (!itemsRes.ok || !categoriesRes.ok) {
+        const statusMsg = `${itemsRes.status}/${categoriesRes.status}`;
+        renderMenuError("Menu is unavailable right now. Please refresh in a moment.");
+        console.error("Menu fetch failed", { status: statusMsg });
+        return;
+      }
 
       const items = itemsRes.ok ? await itemsRes.json() : [];
       const categories = categoriesRes.ok ? await categoriesRes.json() : [];
@@ -555,6 +571,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       applyFilter();
     } catch (err) {
+      renderMenuError("Menu failed to load. Please retry shortly.");
       console.error("Menu data load failed", err);
     }
   };
