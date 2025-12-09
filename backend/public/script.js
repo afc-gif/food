@@ -414,7 +414,6 @@ function renderMenu(items) {
       '<p style="grid-column:1/-1;text-align:center;">Menu is coming soon. Please check back.</p>';
     return;
   }
-
   menuGrid.innerHTML = items
     .map((item) => {
       const catName = item.category?.name || "Menu";
@@ -474,53 +473,32 @@ function applyFilter() {
   });
 }
 
-async function loadMenuData() {
+function loadMenuData() {
   if (!menuGrid && !featuredGrid && !menuFilters) return;
-  try {
-    const [itemsRes, categoriesRes] = await Promise.all([
-      fetch("/api/menu-items?active_only=1", { cache: "no-store" }),
-      fetch("/api/categories?active_only=1", { cache: "no-store" })
-    ]);
+  Promise.all([
+    fetch("/api/menu-items?active_only=1", { cache: "no-store" }),
+    fetch("/api/categories?active_only=1", { cache: "no-store" })
+  ])
+    .then(async ([itemsRes, categoriesRes]) => {
+      const items = itemsRes.ok ? await itemsRes.json() : [];
+      const categories = categoriesRes.ok ? await categoriesRes.json() : [];
 
-    if (!itemsRes.ok || !categoriesRes.ok) {
-      throw new Error("Could not load menu data.");
-    }
+      const safeItems = Array.isArray(items) ? items : [];
+      const safeCategories = Array.isArray(categories) ? categories : [];
 
-    const [items, categories] = await Promise.all([
-      itemsRes.json(),
-      categoriesRes.json()
-    ]);
-
-    const safeItems = Array.isArray(items) ? items : [];
-    const safeCategories = Array.isArray(categories) ? categories : [];
-
-    if (safeCategories.length && menuFilters) {
-      if (!hasSSRFilters) {
+      if (safeCategories.length) {
         renderFilters(safeCategories);
-      } else {
-        safeCategories.forEach((c) => ensureCategoryChip(c.name));
       }
-    }
 
-    if (safeItems.length) {
-      // Update existing cards / append new without clearing SSR
-      safeItems.forEach((item) => upsertMenuItem(item));
-      renderFeatured(safeItems);
+      if (safeItems.length) {
+        renderMenu(safeItems);
+        renderFeatured(safeItems);
+      }
       applyFilter();
-    } else {
-      console.warn("Menu API returned no items; keeping current menu render.");
-    }
-  } catch (err) {
-    if (featuredGrid && !hasSSRFeatured) {
-      featuredGrid.innerHTML =
-        '<p style="grid-column:1/-1;text-align:center;">Unable to load menu right now.</p>';
-    }
-    if (menuGrid && !hasSSRMenuItems) {
-      menuGrid.innerHTML =
-        '<p style="grid-column:1/-1;text-align:center;">Unable to load menu right now.</p>';
-    }
-    console.error(err);
-  }
+    })
+    .catch((err) => {
+      console.error("Menu data load failed", err);
+    });
 }
 
 function ensureCategoryChip(catName) {

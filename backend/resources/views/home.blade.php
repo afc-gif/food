@@ -402,6 +402,6 @@
     </div>
   </footer>
 
-  <script src="{{ asset('script.js') }}?v=10"></script>
+  <script src="{{ asset('script.js') }}?v=11"></script>
 </body>
 </html>
