@@ -635,11 +635,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const loadMenuData = async () => {
     if (!dom.menuGrid && !dom.featuredGrid && !dom.menuFilters) return;
-    // On SSR pages, just sync availability/prices and exit. Avoid DOM rebuilds.
-    if (state.hasSSRMenuItems || state.hasSSRFeatured) {
-      await syncMenuAvailability();
-      return;
-    }
+    // SSR pages keep existing markup; skip fetch/render to avoid wiping content.
+    if (state.hasSSRMenuItems || state.hasSSRFeatured) return;
     if (window.location.protocol === "file:") {
       renderMenuError("Menu needs the server running (API unreachable from file://).");
       return;
@@ -803,12 +800,12 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCart();
     bindWhatsAppButtons();
 
-    loadMenuData();
-    const menuPoller = createPoller(
-      state.hasSSRMenuItems || state.hasSSRFeatured ? syncMenuAvailability : loadMenuData,
-      20000
-    );
-    menuPoller.start();
+    // Only non-SSR pages fetch/poll; SSR stays static to avoid disappearing menus.
+    if (!state.hasSSRMenuItems && !state.hasSSRFeatured) {
+      loadMenuData();
+      const menuPoller = createPoller(loadMenuData, 20000);
+      menuPoller.start();
+    }
   };
 
   init();
