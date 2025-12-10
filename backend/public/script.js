@@ -56,6 +56,39 @@ const slugify = (text) =>
 
 const formatMoney = (value) => `₦${Number(value || 0).toLocaleString()}`;
 
+const ensureErrorBanner = () => {
+  let bar = document.getElementById("afErrorBanner");
+  if (!bar) {
+    bar = document.createElement("div");
+    bar.id = "afErrorBanner";
+    bar.style.position = "fixed";
+    bar.style.top = "0";
+    bar.style.left = "0";
+    bar.style.right = "0";
+    bar.style.zIndex = "9999";
+    bar.style.padding = "12px 16px";
+    bar.style.background = "#b91c1c";
+    bar.style.color = "#fff";
+    bar.style.fontSize = "14px";
+    bar.style.fontFamily = "system-ui, -apple-system, sans-serif";
+    bar.style.boxShadow = "0 8px 24px rgba(0,0,0,0.15)";
+    bar.style.display = "none";
+    document.body.appendChild(bar);
+  }
+  return bar;
+};
+
+const showErrorBanner = (message, detail = null) => {
+  const bar = ensureErrorBanner();
+  bar.textContent = message + (detail ? ` — ${detail}` : "");
+  bar.style.display = "block";
+};
+
+const hideErrorBanner = () => {
+  const bar = document.getElementById("afErrorBanner");
+  if (bar) bar.style.display = "none";
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   const dom = {
     navToggle: document.getElementById("navToggle"),
@@ -329,32 +362,74 @@ document.addEventListener("DOMContentLoaded", () => {
     bindFilterButtons();
   };
 
+  const resolveImageUrl = (item) => {
+    const raw =
+      item?.image_url ||
+      item?.image ||
+      item?.photo_url ||
+      (item?.media && item.media[0]?.url) ||
+      "";
+    if (!raw) return "";
+    if (/^https?:\/\//i.test(raw) || raw.startsWith("data:")) return raw;
+    if (raw.startsWith("/")) return raw;
+    // assume it is a storage-relative path
+    return `/storage/${raw}`;
+  };
+
+  const normalizeItem = (item) => {
+    if (!item) return { valid: false, reason: "empty item" };
+    const id = item?.id ?? item?.menu_item_id ?? null;
+    const name = item?.name ?? item?.title ?? "";
+    const rawPrice = Number(item?.price);
+    const price = Number.isFinite(rawPrice) ? rawPrice : null;
+    const categoryName = item?.category?.name ?? item?.category_name ?? "Menu";
+    const description = item?.description ?? "";
+    const imageUrl = resolveImageUrl(item);
+    const isValid = !!id && !!name && price !== null;
+    return {
+      ...item,
+      id,
+      name,
+      description,
+      price,
+      categoryName,
+      categorySlug: slugify(categoryName),
+      is_sold_out: !!item?.is_sold_out,
+      imageUrl,
+      valid: isValid
+    };
+  };
+
   const renderFeatured = (items) => {
     if (!dom.featuredGrid) return;
-    if (!items.length) {
+    const normalized = items.map(normalizeItem).filter((i) => i.valid);
+    const skipped = items.length - normalized.length;
+    if (skipped > 0) {
+      console.warn("Skipped invalid featured items", { skipped });
+    }
+    if (!normalized.length) {
       dom.featuredGrid.innerHTML =
         '<p style="grid-column:1/-1;text-align:center;">Featured items coming soon.</p>';
       return;
     }
 
-    const topThree = items.slice(0, 3);
+    const topThree = normalized.slice(0, 3);
     dom.featuredGrid.innerHTML = topThree
       .map((item) => {
-        const catName = item.category?.name || "Signature";
         return `
           <article
             class="af-card"
             data-menu-item
             data-item-id="${item.id}"
             data-sold-out="${item.is_sold_out ? "1" : "0"}"
-            data-category="${slugify(catName)}"
+            data-category="${item.categorySlug}"
           >
-            ${item.image_url ? `<img src="${item.image_url}" alt="${item.name}" class="af-card-img" />` : ""}
+            ${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}" class="af-card-img" />` : ""}
             <div class="af-card-body">
               <div class="af-card-top">
                 <h3>${item.name}</h3>
                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                  <span class="af-tag">${catName}</span>
+                  <span class="af-tag">${item.categoryName}</span>
                   <span
                     class="af-pill"
                     data-soldout-pill
@@ -362,7 +437,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   >Sold Out</span>
                 </div>
               </div>
-              <p>${item.description || "Fresh from our kitchen."}</p>
+              <p>${item.description}</p>
               <div class="af-card-footer">
                 <span class="af-price">${formatMoney(item.price)}</span>
                 <button
@@ -385,23 +460,22 @@ document.addEventListener("DOMContentLoaded", () => {
     bindAddToCartButtons();
   };
 
-  const createMenuCard = (item) => {
-    const catName = item.category?.name || "Menu";
-    const catSlug = slugify(catName);
+  const createMenuCard = (rawItem) => {
+    const item = normalizeItem(rawItem);
     const soldOut = item.is_sold_out ? "1" : "0";
     const card = document.createElement("article");
     card.className = "af-menu-item";
     card.setAttribute("data-menu-item", "");
     card.setAttribute("data-item-id", item.id);
     card.setAttribute("data-sold-out", soldOut);
-    card.setAttribute("data-category", catSlug);
+    card.setAttribute("data-category", item.categorySlug);
     card.innerHTML = `
-      ${item.image_url ? `<div class="af-menu-thumb"><img src="${item.image_url}" alt="${item.name}"></div>` : ""}
+      ${item.imageUrl ? `<div class="af-menu-thumb"><img src="${item.imageUrl}" alt="${item.name}"></div>` : ""}
       <div class="af-menu-body">
       <div class="af-menu-head">
         <h3>${item.name}</h3>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <span class="af-pill">${catName}</span>
+          <span class="af-pill">${item.categoryName}</span>
           <span
             class="af-pill"
             data-soldout-pill
@@ -409,7 +483,7 @@ document.addEventListener("DOMContentLoaded", () => {
           >Sold Out</span>
         </div>
       </div>
-      <p>${item.description || "Freshly prepared from our kitchen."}</p>
+      <p>${item.description}</p>
       <div class="af-menu-footer">
         <span class="af-price">${formatMoney(item.price)}</span>
         <button
@@ -432,72 +506,80 @@ document.addEventListener("DOMContentLoaded", () => {
     const html = `<p style="grid-column:1/-1;text-align:center;">${message}</p>`;
     if (dom.menuGrid) dom.menuGrid.innerHTML = html;
     if (dom.featuredGrid) dom.featuredGrid.innerHTML = html;
+    showErrorBanner(message);
   };
 
   const renderMenu = (items) => {
     if (!dom.menuGrid) return;
-    if (!items.length) {
+    const normalized = items.map(normalizeItem).filter((i) => i.valid);
+    const skipped = items.length - normalized.length;
+    if (skipped > 0) {
+      console.warn("Skipped invalid menu items", { skipped });
+    }
+    if (!normalized.length) {
       renderMenuError("Menu is coming soon. Please check back.");
       return;
     }
 
-    dom.menuGrid.innerHTML = items
-      .map((item) => {
-        const catName = item.category?.name || "Menu";
-        const catSlug = slugify(catName);
-        return `
-          <article
-            class="af-menu-item"
-            data-menu-item
-            data-item-id="${item.id}"
-            data-sold-out="${item.is_sold_out ? "1" : "0"}"
-            data-category="${catSlug}"
-          >
-            ${item.image_url ? `<div class="af-menu-thumb"><img src="${item.image_url}" alt="${item.name}"></div>` : ""}
-            <div class="af-menu-body">
-              <div class="af-menu-head">
-                <h3>${item.name}</h3>
-                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                  <span class="af-pill">${catName}</span>
-                  <span
-                    class="af-pill"
-                    data-soldout-pill
-                    style="background:#fef2f2;color:#b91c1c;border-color:#fecdd3;${item.is_sold_out ? "" : "display:none;"}"
-                  >Sold Out</span>
-                </div>
-              </div>
-              <p>${item.description || "Freshly prepared from our kitchen."}</p>
-              <div class="af-menu-footer">
-                <span class="af-price">${formatMoney(item.price)}</span>
-                <button
-                  class="af-btn af-btn-sm af-btn-outline"
-                  data-item="${item.name}"
-                  data-item-id="${item.id}"
-                  data-item-price="${item.price}"
-                  data-sold-out="${item.is_sold_out ? "1" : "0"}"
-                  ${item.is_sold_out ? "disabled" : ""}
-                >
-                  ${item.is_sold_out ? "Sold Out" : "Add to Cart"}
-                </button>
+    dom.menuGrid.innerHTML = normalized
+      .map(
+        (item) => `
+        <article
+          class="af-menu-item"
+          data-menu-item
+          data-item-id="${item.id}"
+          data-sold-out="${item.is_sold_out ? "1" : "0"}"
+          data-category="${item.categorySlug}"
+        >
+          ${item.imageUrl ? `<div class="af-menu-thumb"><img src="${item.imageUrl}" alt="${item.name}"></div>` : ""}
+          <div class="af-menu-body">
+            <div class="af-menu-head">
+              <h3>${item.name}</h3>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                <span class="af-pill">${item.categoryName}</span>
+                <span
+                  class="af-pill"
+                  data-soldout-pill
+                  style="background:#fef2f2;color:#b91c1c;border-color:#fecdd3;${item.is_sold_out ? "" : "display:none;"}"
+                >Sold Out</span>
               </div>
             </div>
-          </article>
-        `;
-      })
+            <p>${item.description}</p>
+            <div class="af-menu-footer">
+              <span class="af-price">${formatMoney(item.price)}</span>
+              <button
+                class="af-btn af-btn-sm af-btn-outline"
+                data-item="${item.name}"
+                data-item-id="${item.id}"
+                data-item-price="${item.price}"
+                data-sold-out="${item.is_sold_out ? "1" : "0"}"
+                ${item.is_sold_out ? "disabled" : ""}
+              >
+                ${item.is_sold_out ? "Sold Out" : "Add to Cart"}
+              </button>
+            </div>
+          </div>
+        </article>
+      `
+      )
       .join("");
 
     bindAddToCartButtons();
     applyFilter();
   };
 
-  const upsertMenuItem = (item) => {
-    if (!item || item.is_active === false) return;
+  const upsertMenuItem = (rawItem) => {
+    const item = normalizeItem(rawItem);
+    if (!rawItem || rawItem.is_active === false || !item.valid) {
+      if (rawItem && !item.valid) console.warn("Skipping invalid menu item", rawItem);
+      return;
+    }
     const existing = document.querySelector(`[data-menu-item][data-item-id="${item.id}"]`);
     if (existing) {
-      if (item.image_url) {
+      if (item.imageUrl) {
         const img = existing.querySelector("img");
         if (img) {
-          img.src = item.image_url;
+          img.src = item.imageUrl;
           img.alt = item.name;
         }
       }
@@ -518,7 +600,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } else if (dom.menuGrid) {
       const card = createMenuCard(item);
       dom.menuGrid.appendChild(card);
-      ensureCategoryChip(item.category?.name);
+    ensureCategoryChip(item.categoryName);
       bindAddToCartButtons();
       applyFilter();
     }
@@ -532,8 +614,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const items = await res.json();
       if (!Array.isArray(items)) return;
       items.forEach((item) => upsertMenuItem(item));
+      hideErrorBanner();
     } catch (error) {
       // network errors are ignored; next poll will retry
+      showErrorBanner("Live availability check failed", error?.message);
     }
   };
 
@@ -553,6 +637,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const statusMsg = `${itemsRes.status}/${categoriesRes.status}`;
         renderMenuError("Menu is unavailable right now. Please refresh in a moment.");
         console.error("Menu fetch failed", { status: statusMsg });
+        showErrorBanner("Menu/API fetch failed", `status ${statusMsg}`);
         return;
       }
 
@@ -560,6 +645,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const categories = categoriesRes.ok ? await categoriesRes.json() : [];
       const safeItems = Array.isArray(items) ? items : [];
       const safeCategories = Array.isArray(categories) ? categories : [];
+      console.info("Menu data loaded", {
+        items: safeItems.length,
+        categories: safeCategories.length,
+        sample: safeItems[0]
+      });
+      hideErrorBanner();
 
       if (safeCategories.length && dom.menuFilters && !state.hasSSRFilters) {
         renderFilters(safeCategories);
@@ -657,6 +748,15 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     });
   };
+
+  // Surface unexpected runtime errors to the page for quicker debugging
+  window.addEventListener("error", (evt) => {
+    showErrorBanner("A script error occurred", evt?.message || "Unknown error");
+  });
+  window.addEventListener("unhandledrejection", (evt) => {
+    const msg = evt?.reason?.message || evt?.reason || "Unknown promise rejection";
+    showErrorBanner("A network or script error occurred", msg);
+  });
 
   const init = () => {
     setYear();
