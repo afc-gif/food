@@ -73,6 +73,11 @@ const ensureErrorBanner = () => {
     bar.style.fontFamily = "system-ui, -apple-system, sans-serif";
     bar.style.boxShadow = "0 8px 24px rgba(0,0,0,0.15)";
     bar.style.display = "none";
+    bar.style.cursor = "pointer";
+    bar.title = "Click to dismiss";
+    bar.addEventListener("click", () => {
+      bar.style.display = "none";
+    });
     document.body.appendChild(bar);
   }
   return bar;
@@ -562,7 +567,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </article>
       `
       )
-      .join("");
+      .join("") || '<p style="grid-column:1/-1;text-align:center;">Menu failed to render.</p>';
 
     bindAddToCartButtons();
     applyFilter();
@@ -659,6 +664,8 @@ document.addEventListener("DOMContentLoaded", () => {
       if (safeItems.length) {
         renderMenu(safeItems);
         renderFeatured(safeItems);
+      } else {
+        renderMenuError("Menu returned empty from API. Check admin content or API response.");
       }
       applyFilter();
     } catch (err) {

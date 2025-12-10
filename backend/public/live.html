@@ -12,7 +12,7 @@
     rel="stylesheet"
   />
   <link rel="stylesheet" href="styles.css?v=6" />
-  <script src="script.js?v=20" defer></script>
+  <script src="script.js?v=21" defer></script>
 
 </head>
 <body>
@@ -252,20 +252,20 @@
           </div>
         </div>
         <div class="af-cart-overlay-form">
-          <form id="checkoutFormOverlay">
+          <form id="checkoutFormOverlay" autocomplete="on">
             <label>
               Full Name
-              <input type="text" name="name" required />
+              <input type="text" name="name" autocomplete="name" required />
             </label>
 
             <label>
               Phone Number
-              <input type="tel" name="phone" required />
+              <input type="tel" name="phone" autocomplete="tel" required />
             </label>
 
             <label>
               Service Option
-              <select name="service" required>
+              <select name="service" autocomplete="off" required>
                 <option value="Pickup">Pickup</option>
                 <option value="Takeout">Takeout</option>
                 <option value="Dine-in">Dine-in</option>
@@ -274,12 +274,12 @@
 
             <label>
               Preferred Time
-              <input type="text" name="time" placeholder="e.g., 6:30 PM" required />
+              <input type="text" name="time" placeholder="e.g., 6:30 PM" autocomplete="off" required />
             </label>
 
             <label>
               Order Note (optional)
-              <textarea name="note" rows="2"></textarea>
+              <textarea name="note" rows="2" autocomplete="off"></textarea>
             </label>
 
             <div class="af-payment-options">
@@ -305,7 +305,6 @@
     </div>
   </footer>
 
-  <script src="script.js?v=4"></script>
+  <script src="script.js?v=21" defer></script>
 </body>
 </html>
-  <script src="script.js?v=10"></script>
