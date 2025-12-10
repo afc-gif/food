@@ -635,6 +635,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const loadMenuData = async () => {
     if (!dom.menuGrid && !dom.featuredGrid && !dom.menuFilters) return;
+    if (state.hasSSRMenuItems || state.hasSSRFeatured) {
+      // Keep server-rendered menu; rely on availability sync and filters only.
+      bindFilterButtons();
+      applyFilter();
+      return;
+    }
     if (window.location.protocol === "file:") {
       renderMenuError("Menu needs the server running (API unreachable from file://).");
       return;
