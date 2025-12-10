@@ -798,12 +798,19 @@ document.addEventListener("DOMContentLoaded", () => {
     initNav();
     initCartOverlay();
     bindCartQuantityButtons();
+    const isSSRPage = state.hasSSRMenuItems || state.hasSSRFeatured;
     bindFilterButtons();
     bindAddToCartButtons(); // in case items are server-rendered
     applyFilter();
     renderCart();
-    loadMenuData();
     bindWhatsAppButtons();
+
+    if (isSSRPage) {
+      // Keep SSR menu intact; skip fetch/poller that could clear it.
+      return;
+    }
+
+    loadMenuData();
     const menuPoller = createPoller(syncMenuAvailability, 20000);
     menuPoller.start();
   };
