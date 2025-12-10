@@ -664,10 +664,11 @@ document.addEventListener("DOMContentLoaded", () => {
       if (safeItems.length) {
         renderMenu(safeItems);
         renderFeatured(safeItems);
+        applyFilter();
       } else {
-        renderMenuError("Menu returned empty from API. Check admin content or API response.");
+        console.warn("Menu API returned empty; keeping existing DOM");
+        showErrorBanner("Menu returned empty from API. Check admin content or API response.");
       }
-      applyFilter();
     } catch (err) {
       renderMenuError("Menu failed to load. Please retry shortly.");
       console.error("Menu data load failed", err);
