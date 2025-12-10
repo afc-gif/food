@@ -609,7 +609,7 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.textContent = item.is_sold_out ? "Sold Out" : "Add to Cart";
         btn.setAttribute("data-item-price", item.price ?? 0);
       }
-    } else if (dom.menuGrid && !state.hasSSRMenuItems) {
+    } else if (dom.menuGrid) {
       const card = createMenuCard(item);
       dom.menuGrid.appendChild(card);
       ensureCategoryChip(item.categoryName);
@@ -635,11 +635,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const loadMenuData = async () => {
     if (!dom.menuGrid && !dom.featuredGrid && !dom.menuFilters) return;
-    if (state.hasSSRMenuItems || state.hasSSRFeatured) {
-      // SSR page: only sync availability and prices, no DOM rebuild.
-      await syncMenuAvailability();
-      return;
-    }
     if (window.location.protocol === "file:") {
       renderMenuError("Menu needs the server running (API unreachable from file://).");
       return;
@@ -797,7 +792,6 @@ document.addEventListener("DOMContentLoaded", () => {
     initNav();
     initCartOverlay();
     bindCartQuantityButtons();
-    const isSSRPage = state.hasSSRMenuItems || state.hasSSRFeatured;
     bindFilterButtons();
     bindAddToCartButtons(); // in case items are server-rendered
     applyFilter();
