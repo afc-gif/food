@@ -113,7 +113,8 @@
                     <span
                       class="af-pill"
                       data-soldout-pill
-                      style="background:#fef2f2;color:#b91c1c;border-color:#fecdd3;{{ $isSoldOut ? '' : 'display:none;' }}"
+                      style="background:#fef2f2;color:#b91c1c;border-color:#fecdd3;"
+                      @if(!$isSoldOut) hidden @endif
                     >Sold Out</span>
                   </div>
                 </div>
@@ -178,11 +179,12 @@
                   <h3>{{ $item->name }}</h3>
                   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                     <span class="af-pill">{{ optional($item->category)->name ?? 'Menu' }}</span>
-                    <span
-                      class="af-pill"
-                      data-soldout-pill
-                      style="background:#fef2f2;color:#b91c1c;border-color:#fecdd3;{{ $isSoldOut ? '' : 'display:none;' }}"
-                    >Sold Out</span>
+                <span
+                  class="af-pill"
+                  data-soldout-pill
+                  style="background:#fef2f2;color:#b91c1c;border-color:#fecdd3;"
+                  @if(!$isSoldOut) hidden @endif
+                >Sold Out</span>
                   </div>
                 </div>
                 <p>{{ $item->description ?? 'Freshly prepared from our kitchen.' }}</p>

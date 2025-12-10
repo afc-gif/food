@@ -66,7 +66,14 @@ function setSoldOutState(itemId, isSoldOut) {
     .forEach((card) => {
       card.setAttribute("data-sold-out", soldOut);
       const pill = card.querySelector("[data-soldout-pill]");
-      if (pill) pill.style.display = isSoldOut ? "inline-flex" : "none";
+      if (pill) {
+        pill.style.display = isSoldOut ? "inline-flex" : "none";
+        if (isSoldOut) {
+          pill.removeAttribute("hidden");
+        } else {
+          pill.setAttribute("hidden", "");
+        }
+      }
     });
 }
 
@@ -201,8 +208,12 @@ function addToCart(name, price) {
 
 // Attach to "Add to Cart" buttons
 document.querySelectorAll("[data-item]").forEach((btn) => {
+  if (btn.dataset.bound === "1") return;
+  btn.dataset.bound = "1";
   btn.addEventListener("click", () => {
     const name = btn.getAttribute("data-item");
+    const soldOut = btn.getAttribute("data-sold-out") === "1" || btn.disabled;
+    if (soldOut) return;
     // TODO: Get real price from dataset or DB; using placeholder for now
     const priceEl = btn.closest("article")?.querySelector(".af-price");
     const price = priceEl

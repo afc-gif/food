@@ -205,7 +205,14 @@ document.addEventListener("DOMContentLoaded", () => {
     document.querySelectorAll(`[data-menu-item][data-item-id="${itemId}"]`).forEach((card) => {
       card.setAttribute("data-sold-out", soldOut);
       const pill = card.querySelector("[data-soldout-pill]");
-      if (pill) pill.style.display = isSoldOut ? "inline-flex" : "none";
+      if (pill) {
+        pill.style.display = isSoldOut ? "inline-flex" : "none";
+        if (isSoldOut) {
+          pill.removeAttribute("hidden");
+        } else {
+          pill.setAttribute("hidden", "");
+        }
+      }
     });
   };
 
@@ -509,8 +516,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const renderMenuError = (message) => {
     const html = `<p style="grid-column:1/-1;text-align:center;">${message}</p>`;
-    if (dom.menuGrid) dom.menuGrid.innerHTML = html;
-    if (dom.featuredGrid) dom.featuredGrid.innerHTML = html;
+    if (!state.hasSSRMenuItems && dom.menuGrid) dom.menuGrid.innerHTML = html;
+    if (!state.hasSSRFeatured && dom.featuredGrid) dom.featuredGrid.innerHTML = html;
     showErrorBanner(message);
   };
 
@@ -640,9 +647,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!itemsRes.ok || !categoriesRes.ok) {
         const statusMsg = `${itemsRes.status}/${categoriesRes.status}`;
-        renderMenuError("Menu is unavailable right now. Please refresh in a moment.");
+        if (!state.hasSSRMenuItems && !state.hasSSRFeatured) {
+          renderMenuError("Menu is unavailable right now. Please refresh in a moment.");
+        } else {
+          showErrorBanner("Menu/API fetch failed", `status ${statusMsg}`);
+        }
         console.error("Menu fetch failed", { status: statusMsg });
-        showErrorBanner("Menu/API fetch failed", `status ${statusMsg}`);
         return;
       }
 
@@ -670,7 +680,11 @@ document.addEventListener("DOMContentLoaded", () => {
         showErrorBanner("Menu returned empty from API. Check admin content or API response.");
       }
     } catch (err) {
-      renderMenuError("Menu failed to load. Please retry shortly.");
+      if (!state.hasSSRMenuItems && !state.hasSSRFeatured) {
+        renderMenuError("Menu failed to load. Please retry shortly.");
+      } else {
+        showErrorBanner("Menu failed to load. Please retry shortly.", err?.message);
+      }
       console.error("Menu data load failed", err);
     }
   };
