@@ -609,10 +609,10 @@ document.addEventListener("DOMContentLoaded", () => {
         btn.textContent = item.is_sold_out ? "Sold Out" : "Add to Cart";
         btn.setAttribute("data-item-price", item.price ?? 0);
       }
-    } else if (dom.menuGrid) {
+    } else if (dom.menuGrid && !state.hasSSRMenuItems) {
       const card = createMenuCard(item);
       dom.menuGrid.appendChild(card);
-    ensureCategoryChip(item.categoryName);
+      ensureCategoryChip(item.categoryName);
       bindAddToCartButtons();
       applyFilter();
     }
@@ -636,9 +636,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const loadMenuData = async () => {
     if (!dom.menuGrid && !dom.featuredGrid && !dom.menuFilters) return;
     if (state.hasSSRMenuItems || state.hasSSRFeatured) {
-      // Keep server-rendered menu; rely on availability sync and filters only.
-      bindFilterButtons();
-      applyFilter();
+      // SSR page: only sync availability and prices, no DOM rebuild.
+      await syncMenuAvailability();
       return;
     }
     if (window.location.protocol === "file:") {
@@ -804,11 +803,6 @@ document.addEventListener("DOMContentLoaded", () => {
     applyFilter();
     renderCart();
     bindWhatsAppButtons();
-
-    if (isSSRPage) {
-      // Keep SSR menu intact; skip fetch/poller that could clear it.
-      return;
-    }
 
     loadMenuData();
     const menuPoller = createPoller(syncMenuAvailability, 20000);
