@@ -196,30 +196,40 @@ function renderCart() {
   updateCartCount();
 }
 
-function addToCart(name, price) {
-  const existing = cart.find((i) => i.name === name);
+function addToCart(item) {
+  if (!item?.id) {
+    alert("Missing menu item ID; please refresh and try again.");
+    return;
+  }
+  const existing = cart.find((i) => i.id === item.id);
   if (existing) {
     existing.qty += 1;
   } else {
-    cart.push({ name, price, qty: 1 });
+    cart.push({ id: item.id, name: item.name, price: item.price || 0, qty: 1 });
   }
   renderCart();
 }
 
-// Attach to "Add to Cart" buttons
+// Attach to "Add to Cart" buttons (guarded against double-binding)
 document.querySelectorAll("[data-item]").forEach((btn) => {
   if (btn.dataset.bound === "1") return;
   btn.dataset.bound = "1";
   btn.addEventListener("click", () => {
     const name = btn.getAttribute("data-item");
+    const id = parseInt(btn.getAttribute("data-item-id"), 10);
     const soldOut = btn.getAttribute("data-sold-out") === "1" || btn.disabled;
     if (soldOut) return;
-    // TODO: Get real price from dataset or DB; using placeholder for now
+
     const priceEl = btn.closest("article")?.querySelector(".af-price");
-    const price = priceEl
-      ? parseInt(priceEl.textContent.replace(/[^\d]/g, ""), 10)
-      : 0;
-    addToCart(name, price);
+    const priceAttr = btn.getAttribute("data-item-price");
+    const parsedPrice = priceAttr
+      ? parseFloat(priceAttr)
+      : priceEl
+        ? parseInt(priceEl.textContent.replace(/[^\d]/g, ""), 10)
+        : 0;
+    const price = Number.isFinite(parsedPrice) ? parsedPrice : 0;
+
+    addToCart({ id, name, price });
     flyToCart(btn);
   });
 });
