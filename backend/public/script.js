@@ -635,6 +635,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const loadMenuData = async () => {
     if (!dom.menuGrid && !dom.featuredGrid && !dom.menuFilters) return;
+    // On SSR pages, just sync availability/prices and exit. Avoid DOM rebuilds.
+    if (state.hasSSRMenuItems || state.hasSSRFeatured) {
+      await syncMenuAvailability();
+      return;
+    }
     if (window.location.protocol === "file:") {
       renderMenuError("Menu needs the server running (API unreachable from file://).");
       return;
@@ -799,7 +804,10 @@ document.addEventListener("DOMContentLoaded", () => {
     bindWhatsAppButtons();
 
     loadMenuData();
-    const menuPoller = createPoller(syncMenuAvailability, 20000);
+    const menuPoller = createPoller(
+      state.hasSSRMenuItems || state.hasSSRFeatured ? syncMenuAvailability : loadMenuData,
+      20000
+    );
     menuPoller.start();
   };
 
