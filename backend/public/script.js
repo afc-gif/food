@@ -671,13 +671,20 @@ document.addEventListener("DOMContentLoaded", () => {
         renderFilters(safeCategories);
       }
 
-      if (safeItems.length) {
-        renderMenu(safeItems);
-        renderFeatured(safeItems);
+      const hasSSR = state.hasSSRMenuItems || state.hasSSRFeatured;
+      if (hasSSR) {
+        // Keep server-rendered markup; only sync availability and prices.
+        safeItems.forEach((item) => upsertMenuItem(item));
         applyFilter();
       } else {
-        console.warn("Menu API returned empty; keeping existing DOM");
-        showErrorBanner("Menu returned empty from API. Check admin content or API response.");
+        if (safeItems.length) {
+          renderMenu(safeItems);
+          renderFeatured(safeItems);
+          applyFilter();
+        } else {
+          console.warn("Menu API returned empty; keeping existing DOM");
+          showErrorBanner("Menu returned empty from API. Check admin content or API response.");
+        }
       }
     } catch (err) {
       if (!state.hasSSRMenuItems && !state.hasSSRFeatured) {
