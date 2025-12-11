@@ -241,7 +241,7 @@ if (ordersEl) {
             .map(o => o.kitchen_eta_minutes)
             .sort((a, b) => a - b);
         const avgEta = etas.length ? Math.round(etas.reduce((a, b) => a + b) / etas.length) : '—';
-        
+
         statCountEl.textContent = total;
         document.getElementById('kitchenStatPending').textContent = pending;
         document.getElementById('kitchenStatETA').textContent = avgEta === '—' ? '—' : `${avgEta}m`;
