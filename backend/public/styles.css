@@ -831,6 +831,10 @@ a {
   background: var(--af-white);
   cursor: pointer;
   font-size: 1.1rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .af-cart-overlay-head h3 {
@@ -906,6 +910,14 @@ body.af-modal-open {
   .af-cart-overlay-card {
     width: 94vw;
     padding: 1.2rem;
+  }
+
+  .af-cart-overlay-close {
+    top: 16px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    font-size: 1.3rem;
   }
 
   .af-cart-overlay-body {

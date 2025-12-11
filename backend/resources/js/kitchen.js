@@ -165,6 +165,7 @@ if (ordersEl) {
         if (!visible.length) {
             ordersEl.innerHTML = '';
             emptyEl.style.display = 'block';
+            updateStats();
             return;
         }
 
@@ -182,16 +183,15 @@ if (ordersEl) {
                 const notePill = order.kitchen_note ? `<span class="pill tone-note">${escapeHtml(order.kitchen_note)}</span>` : '';
                 const isFresh = Date.now() - new Date(order.created_at).getTime() < 3 * 60 * 1000;
                 const channelPill = `<span class="pill tone-neutral">${escapeHtml(order.channel ?? 'pos')}</span>`;
-                const etaBroadcast = order.kitchen_eta_minutes || order.kitchen_eta_at
-                    ? `<span class="pill tone-success">ETA sent</span>`
-                    : `<span class="pill tone-muted">ETA pending</span>`;
+                const isReady = order.kitchen_status === 'ready';
+                const isPrepping = order.kitchen_status === 'prepping';
 
                 return `
-                    <div class="order" data-order-id="${order.id}">
-                        ${isFresh ? `<span style="position:absolute; top:10px; right:10px;" class="pill tone-active">New</span>` : ''}
+                    <div class="order ${isFresh ? 'live' : ''}" data-order-id="${order.id}">
+                        ${isFresh ? `<span style="position:absolute; top:10px; right:10px;" class="pill tone-live">🟢 New</span>` : ''}
                         <div class="order-header">
                             <div class="order-title">
-                                <span style="font-size:17px;">${escapeHtml(order.code ?? 'New order')}</span>
+                                <span style="font-size:17px;">${escapeHtml(order.code ?? 'Order')}</span>
                                 ${channelPill}
                                 <span class="pill warn" data-elapsed="${order.created_at}">${elapsed(order.created_at)}</span>
                                 <span class="pill tone-neutral">${formatTime(order.created_at)}</span>
@@ -203,19 +203,22 @@ if (ordersEl) {
                         <div class="order-meta-row">
                             ${statusPill}
                             ${etaPill}
-                            ${etaBroadcast}
                             ${notePill}
                         </div>
-                        <div class="order-customer">Customer · ${customer}</div>
-                        <div class="controls kitchen-actions" data-order="${order.id}">
-                            <button class="brand-btn ghost" data-action="status" data-status="prepping" data-order="${order.id}">Start</button>
-                            <button class="brand-btn ghost" data-action="eta" data-eta="10" data-order="${order.id}">ETA 10m</button>
-                            <button class="brand-btn ghost" data-action="eta" data-eta="15" data-order="${order.id}">ETA 15m</button>
-                            <button class="brand-btn ghost" data-action="eta" data-eta="20" data-order="${order.id}">ETA 20m</button>
-                            <button class="brand-btn" data-action="status" data-status="ready" data-order="${order.id}">Ready</button>
-                            <button class="brand-btn ghost" data-action="status" data-status="served" data-order="${order.id}">Served</button>
-                        </div>
+                        <div class="order-customer">👤 ${customer}</div>
                         <ul class="items">${items}</ul>
+                        <div class="controls kitchen-actions" data-order="${order.id}">
+                            <button class="brand-btn ghost" data-action="status" data-status="prepping" data-order="${order.id}" ${isPrepping ? 'disabled' : ''}>🍳 Start</button>
+                            <button class="brand-btn ghost" data-action="eta" data-eta="10" data-order="${order.id}">⏱ 10m</button>
+                            <button class="brand-btn ghost" data-action="eta" data-eta="15" data-order="${order.id}">⏱ 15m</button>
+                            <button class="brand-btn ghost" data-action="eta" data-eta="20" data-order="${order.id}">⏱ 20m</button>
+                            <div class="eta-input-group">
+                                <input type="number" data-custom-eta data-order="${order.id}" placeholder="mins" min="1" max="180" value="">
+                                <button class="brand-btn ghost" data-action="custom-eta" data-order="${order.id}">Set</button>
+                            </div>
+                            <button class="brand-btn" data-action="status" data-status="ready" data-order="${order.id}" ${isReady ? 'disabled' : ''}>✓ Ready</button>
+                            <button class="brand-btn ghost" data-action="status" data-status="served" data-order="${order.id}">✓✓ Served</button>
+                        </div>
                         <div class="order-footer">
                             <div class="order-channel">
                                 <span class="pill tone-neutral">Ticket #${order.id}</span>
@@ -226,6 +229,23 @@ if (ordersEl) {
                 `;
             })
             .join('');
+        
+        updateStats();
+    }
+
+    function updateStats() {
+        const total = orders.length;
+        const pending = orders.filter(o => o.kitchen_status === 'prepping' || o.kitchen_status === 'queued').length;
+        const etas = orders
+            .filter(o => o.kitchen_eta_minutes)
+            .map(o => o.kitchen_eta_minutes)
+            .sort((a, b) => a - b);
+        const avgEta = etas.length ? Math.round(etas.reduce((a, b) => a + b) / etas.length) : '—';
+        
+        statCountEl.textContent = total;
+        document.getElementById('kitchenStatPending').textContent = pending;
+        document.getElementById('kitchenStatETA').textContent = avgEta === '—' ? '—' : `${avgEta}m`;
+        statTotalEl.textContent = '₦' + (orders.reduce((sum, o) => sum + (o.total || 0), 0) || 0).toLocaleString('en-NG');
     }
 
     function renderStatus(status) {
@@ -260,7 +280,7 @@ if (ordersEl) {
                     note: current?.kitchen_note ?? null,
                 });
                 upsertOrder(normalizeOrder(updated));
-                showToast(`Order ${updated.code ?? orderId} → ${kitchenStatuses[targetStatus]?.label ?? targetStatus}`);
+                showToast(`✓ Order ${updated.code ?? orderId} → ${kitchenStatuses[targetStatus]?.label ?? targetStatus}`);
             }
 
             if (btn.dataset.action === 'eta') {
@@ -272,7 +292,24 @@ if (ordersEl) {
                     note: current?.kitchen_note ?? null,
                 });
                 upsertOrder(normalizeOrder(updated));
-                showToast(`ETA set to ${eta}m`);
+                showToast(`⏱ ETA set to ${eta}m for order ${updated.code ?? orderId}`);
+            }
+
+            if (btn.dataset.action === 'custom-eta') {
+                const input = event.target.closest('.kitchen-actions').querySelector(`[data-custom-eta][data-order="${orderId}"]`);
+                const eta = Number(input?.value);
+                if (Number.isNaN(eta) || eta < 1) {
+                    alert('Please enter a valid number of minutes (1-180)');
+                    return;
+                }
+                const updated = await updateKitchen(orderId, {
+                    kitchen_status: currentStatus,
+                    eta_minutes: eta,
+                    note: current?.kitchen_note ?? null,
+                });
+                upsertOrder(normalizeOrder(updated));
+                input.value = '';
+                showToast(`⏱ ETA set to ${eta}m for order ${updated.code ?? orderId}`);
             }
         } catch (error) {
             console.error(error);

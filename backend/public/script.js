@@ -106,8 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cartOverlayBackdrop: document.getElementById("cartOverlayBackdrop"),
     featuredGrid: document.getElementById("featuredGrid"),
     menuGrid: document.getElementById("menuGrid"),
-    menuFilters: document.getElementById("menuFilters"),
-    menuRefreshBtn: document.getElementById("menuRefreshBtn")
+    menuFilters: document.getElementById("menuFilters")
   };
 
   const state = {
@@ -802,20 +801,6 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCart();
     bindWhatsAppButtons();
 
-    // Add refresh button handler
-    if (dom.menuRefreshBtn) {
-      dom.menuRefreshBtn.addEventListener("click", () => {
-        dom.menuRefreshBtn.disabled = true;
-        dom.menuRefreshBtn.textContent = "⟳ Refreshing...";
-        loadMenuData().then(() => {
-          dom.menuRefreshBtn.disabled = false;
-          dom.menuRefreshBtn.textContent = "↻ Refresh Menu";
-        }).catch(() => {
-          dom.menuRefreshBtn.disabled = false;
-          dom.menuRefreshBtn.textContent = "↻ Refresh Menu";
-        });
-      });
-    }
     const hasSSR = state.hasSSRMenuItems || state.hasSSRFeatured;
     if (!hasSSR) {
       loadMenuData();

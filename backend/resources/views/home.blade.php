@@ -14,7 +14,7 @@
     href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=6" />
+  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=7" />
 </head>
 <body>
   <header class="af-header">
@@ -141,7 +141,6 @@
           <p class="af-kicker">All-Day Menu</p>
           <h2>Freshly prepared, beautifully plated.</h2>
           <p>Choose your craving; we will prepare it hot and have it ready in minutes.</p>
-          <button id="menuRefreshBtn" style="margin-top: 16px; padding: 8px 16px; background: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">↻ Refresh Menu</button>
         </div>
 
           <div class="af-menu-panel">
@@ -393,6 +392,6 @@
     </div>
   </footer>
 
-  <script src="{{ asset('script.js') }}?v=28" defer></script>
+  <script src="{{ asset('script.js') }}?v=29" defer></script>
 </body>
 </html>
