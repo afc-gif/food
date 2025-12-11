@@ -188,7 +188,7 @@ if (ordersEl) {
 
                 return `
                     <div class="order ${isFresh ? 'live' : ''}" data-order-id="${order.id}">
-                        ${isFresh ? `<span style="position:absolute; top:10px; right:10px;" class="pill tone-live">🟢 New</span>` : ''}
+                        ${isFresh ? `<span style="position:absolute; top:10px; right:10px;" class="pill tone-live">New</span>` : ''}
                         <div class="order-header">
                             <div class="order-title">
                                 <span style="font-size:17px;">${escapeHtml(order.code ?? 'Order')}</span>
@@ -205,19 +205,19 @@ if (ordersEl) {
                             ${etaPill}
                             ${notePill}
                         </div>
-                        <div class="order-customer">👤 ${customer}</div>
+                        <div class="order-customer">${customer}</div>
                         <ul class="items">${items}</ul>
                         <div class="controls kitchen-actions" data-order="${order.id}">
-                            <button class="brand-btn ghost" data-action="status" data-status="prepping" data-order="${order.id}" ${isPrepping ? 'disabled' : ''}>🍳 Start</button>
-                            <button class="brand-btn ghost" data-action="eta" data-eta="10" data-order="${order.id}">⏱ 10m</button>
-                            <button class="brand-btn ghost" data-action="eta" data-eta="15" data-order="${order.id}">⏱ 15m</button>
-                            <button class="brand-btn ghost" data-action="eta" data-eta="20" data-order="${order.id}">⏱ 20m</button>
+                            <button class="brand-btn ghost" data-action="status" data-status="prepping" data-order="${order.id}" ${isPrepping ? 'disabled' : ''}>Start</button>
+                            <button class="brand-btn ghost" data-action="eta" data-eta="10" data-order="${order.id}">10m</button>
+                            <button class="brand-btn ghost" data-action="eta" data-eta="15" data-order="${order.id}">15m</button>
+                            <button class="brand-btn ghost" data-action="eta" data-eta="20" data-order="${order.id}">20m</button>
                             <div class="eta-input-group">
                                 <input type="number" data-custom-eta data-order="${order.id}" placeholder="mins" min="1" max="180" value="">
-                                <button class="brand-btn ghost" data-action="custom-eta" data-order="${order.id}">Set</button>
+                                <button type="button" class="brand-btn ghost" data-action="custom-eta" data-order="${order.id}">Set</button>
                             </div>
-                            <button class="brand-btn" data-action="status" data-status="ready" data-order="${order.id}" ${isReady ? 'disabled' : ''}>✓ Ready</button>
-                            <button class="brand-btn ghost" data-action="status" data-status="served" data-order="${order.id}">✓✓ Served</button>
+                            <button class="brand-btn" data-action="status" data-status="ready" data-order="${order.id}" ${isReady ? 'disabled' : ''}>Ready</button>
+                            <button class="brand-btn ghost" data-action="status" data-status="served" data-order="${order.id}">Served</button>
                         </div>
                         <div class="order-footer">
                             <div class="order-channel">
@@ -241,14 +241,11 @@ if (ordersEl) {
             .map(o => o.kitchen_eta_minutes)
             .sort((a, b) => a - b);
         const avgEta = etas.length ? Math.round(etas.reduce((a, b) => a + b) / etas.length) : '—';
-
+        
         statCountEl.textContent = total;
         document.getElementById('kitchenStatPending').textContent = pending;
         document.getElementById('kitchenStatETA').textContent = avgEta === '—' ? '—' : `${avgEta}m`;
-        statTotalEl.textContent = '₦' + (orders.reduce((sum, o) => sum + (o.total || 0), 0) || 0).toLocaleString('en-NG');
-    }
-
-    function renderStatus(status) {
+    }    function renderStatus(status) {
         const meta = kitchenStatuses[status] ?? { label: status || 'Pending', tone: 'neutral' };
         return `<span class="pill tone-${meta.tone}">${meta.label}</span>`;
     }
@@ -280,7 +277,7 @@ if (ordersEl) {
                     note: current?.kitchen_note ?? null,
                 });
                 upsertOrder(normalizeOrder(updated));
-                showToast(`✓ Order ${updated.code ?? orderId} → ${kitchenStatuses[targetStatus]?.label ?? targetStatus}`);
+                showToast(`Order ${updated.code ?? orderId} -> ${kitchenStatuses[targetStatus]?.label ?? targetStatus}`);
             }
 
             if (btn.dataset.action === 'eta') {
@@ -292,7 +289,7 @@ if (ordersEl) {
                     note: current?.kitchen_note ?? null,
                 });
                 upsertOrder(normalizeOrder(updated));
-                showToast(`⏱ ETA set to ${eta}m for order ${updated.code ?? orderId}`);
+                showToast(`ETA set to ${eta}m for order ${updated.code ?? orderId}`);
             }
 
             if (btn.dataset.action === 'custom-eta') {
@@ -309,7 +306,7 @@ if (ordersEl) {
                 });
                 upsertOrder(normalizeOrder(updated));
                 input.value = '';
-                showToast(`⏱ ETA set to ${eta}m for order ${updated.code ?? orderId}`);
+                showToast(`ETA set to ${eta}m for order ${updated.code ?? orderId}`);
             }
         } catch (error) {
             console.error(error);

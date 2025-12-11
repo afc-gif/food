@@ -64,7 +64,7 @@
         .stat { border:1px dashed var(--af-line); border-radius:14px; padding:14px; background:#fff; display:flex; flex-direction:column; gap:6px; box-shadow:0 8px 18px rgba(0,0,0,0.04); }
         .stat .small { font-size:13px; color: var(--af-ink-soft); letter-spacing:0.01em; }
         .stat .highlight { color:var(--af-accent); font-weight:700; font-size:20px; }
-        .orders { display:grid; gap:14px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+        .orders { display:grid; gap:14px; grid-template-columns: 1fr; }
         .order {
             border:2px solid var(--af-line);
             border-radius:16px;
@@ -136,9 +136,9 @@
             </div>
         </div>
         <div class="controls">
-            <div id="kitchenConnection" class="pill" style="font-weight:700;">Connecting…</div>
-            <button id="toggleSound" class="brand-btn ghost" type="button">🔔 Sound: Off</button>
-            <button id="toggleNotify" class="brand-btn ghost" type="button">📢 Alerts: Off</button>
+            <div id="kitchenConnection" class="pill" style="font-weight:700;">Connecting</div>
+            <button id="toggleSound" class="brand-btn ghost" type="button">Sound: Off</button>
+            <button id="toggleNotify" class="brand-btn ghost" type="button">Alerts: Off</button>
             <form method="POST" action="{{ route('logout') }}">
                 @csrf
                 <button type="submit" class="brand-btn ghost">Logout</button>
@@ -148,11 +148,11 @@
     <main>
         <div class="hero">
             <div>
-                <h2>Kitchen Board Live 🟢</h2>
+                <h2>Kitchen Board Live</h2>
                 <p>Real-time order feed. Set ETAs, mark items ready, send updates instantly to staff.</p>
             </div>
             <div style="display:flex; gap:8px; align-items:center;">
-                <div class="pill tone-live">● LIVE FEED</div>
+                <div class="pill tone-live">LIVE FEED</div>
             </div>
         </div>
 
@@ -174,13 +174,9 @@
                     <div class="small">Avg ETA</div>
                     <div class="highlight" id="kitchenStatETA">—</div>
                 </div>
-                <div class="stat">
-                    <div class="small">Total Value</div>
-                    <div class="highlight" id="kitchenStatTotal">₦0</div>
-                </div>
             </div>
             <div class="soft-card" style="margin-top:10px;">
-                <div class="small">⚡ All updates sync instantly. Set ETA, update status, kitchen board refreshes in real-time.</div>
+                <div class="small">All updates sync instantly. Set ETA, update status, kitchen board refreshes in real-time.</div>
             </div>
         </div>
 
@@ -190,7 +186,7 @@
                     <h2 style="margin:0 0 4px;">Active Tickets</h2>
                     <p class="muted" style="margin:0;">Responsive card layout. Click "Ready" when food is prepared, set ETA for delivery.</p>
                 </div>
-                <div class="pill tone-live">⚡ LIVE UPDATE</div>
+                <div class="pill tone-live">LIVE UPDATE</div>
             </div>
             <div class="divider"></div>
             <div id="kitchenOrders" class="orders"></div>
