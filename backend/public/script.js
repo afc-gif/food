@@ -800,7 +800,20 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCart();
     bindWhatsAppButtons();
 
-    // For non-SSR pages: load menu from API immediately
+    // Add refresh button handler
+    if (dom.menuRefreshBtn) {
+      dom.menuRefreshBtn.addEventListener("click", () => {
+        dom.menuRefreshBtn.disabled = true;
+        dom.menuRefreshBtn.textContent = "⟳ Refreshing...";
+        loadMenuData().then(() => {
+          dom.menuRefreshBtn.disabled = false;
+          dom.menuRefreshBtn.textContent = "↻ Refresh Menu";
+        }).catch(() => {
+          dom.menuRefreshBtn.disabled = false;
+          dom.menuRefreshBtn.textContent = "↻ Refresh Menu";
+        });
+      });
+    }
     const hasSSR = state.hasSSRMenuItems || state.hasSSRFeatured;
     if (!hasSSR) {
       loadMenuData();
