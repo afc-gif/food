@@ -648,11 +648,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (!itemsRes.ok || !categoriesRes.ok) {
         const statusMsg = `${itemsRes.status}/${categoriesRes.status}`;
-        if (!state.hasSSRMenuItems && !state.hasSSRFeatured) {
-          renderMenuError("Menu is unavailable right now. Please refresh in a moment.");
-        } else {
-          showErrorBanner("Menu/API fetch failed", `status ${statusMsg}`);
-        }
         console.error("Menu fetch failed", { status: statusMsg });
         return;
       }
@@ -661,29 +656,36 @@ document.addEventListener("DOMContentLoaded", () => {
       const categories = categoriesRes.ok ? await categoriesRes.json() : [];
       const safeItems = Array.isArray(items) ? items : [];
       const safeCategories = Array.isArray(categories) ? categories : [];
+
       console.info("Menu data loaded", {
         items: safeItems.length,
-        categories: safeCategories.length,
-        hasSSRMenu: state.hasSSRMenuItems,
-        hasSSRFeatured: state.hasSSRFeatured,
-        sample: safeItems[0]
+        categories: safeCategories.length
       });
+
+      if (!safeItems.length) {
+        console.warn("API returned no items");
+        return;
+      }
+
+      // Render the full menu from API response
+      if (safeItems.length && dom.menuGrid) {
+        renderMenu(safeItems);
+      }
+
+      if (safeItems.length && dom.featuredGrid) {
+        renderFeatured(safeItems);
+      }
+
+      // Re-apply current filter
+      applyFilter();
+
+      // Rebind add to cart buttons
+      bindAddToCartButtons();
+
       hideErrorBanner();
-
-      if (safeCategories.length && dom.menuFilters && !state.hasSSRFilters) {
-        renderFilters(safeCategories);
-      }
-
-      // Only update items, never re-render the entire menu from polling
-      // This preserves the server-rendered DOM while syncing real-time changes
-      safeItems.forEach((item) => upsertMenuItem(item));
     } catch (err) {
-      if (!state.hasSSRMenuItems && !state.hasSSRFeatured) {
-        renderMenuError("Menu failed to load. Please retry shortly.");
-      } else {
-        showErrorBanner("Menu failed to load. Please retry shortly.", err?.message);
-      }
       console.error("Menu data load failed", err);
+      showErrorBanner("Failed to load menu", err?.message);
     }
   };
 
