@@ -330,10 +330,10 @@ document.addEventListener("DOMContentLoaded", () => {
       applyFilter();
     });
 
+    // Initialize active filter from the DOM (for SSR pages)
     const initial = dom.menuFilters.querySelector(".af-chip-active") || dom.menuFilters.querySelector(".af-chip");
     if (initial) {
       state.activeFilter = slugify(initial.getAttribute("data-filter") || "all");
-      applyFilter();
     }
   };
 
@@ -794,6 +794,17 @@ document.addEventListener("DOMContentLoaded", () => {
     initNav();
     initCartOverlay();
     bindCartQuantityButtons();
+
+    // Initialize filter state BEFORE binding filter buttons or applying filters
+    if (dom.menuFilters) {
+      const initial = dom.menuFilters.querySelector(".af-chip-active") || dom.menuFilters.querySelector(".af-chip");
+      if (initial) {
+        state.activeFilter = slugify(initial.getAttribute("data-filter") || "all");
+      } else {
+        state.activeFilter = "all";
+      }
+    }
+
     bindFilterButtons();
     bindAddToCartButtons(); // in case items are server-rendered
     applyFilter();
