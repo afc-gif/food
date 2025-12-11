@@ -822,7 +822,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // No SSR: need to fetch menu immediately
       loadMenuData();
     }
-    
+
     // Start polling after 2 seconds to sync updates (whether or not we have SSR)
     setTimeout(() => {
       const menuPoller = createPoller(loadMenuData, 5000);
