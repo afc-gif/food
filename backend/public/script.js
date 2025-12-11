@@ -816,12 +816,18 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCart();
     bindWhatsAppButtons();
 
-    // Always enable polling to sync menu updates (sold out status, prices, deletions)
-    // For SSR pages, upsertMenuItem will update existing items in place
-    // For non-SSR pages, loadMenuData will render fresh menu data
-    loadMenuData();
-    const menuPoller = createPoller(loadMenuData, 5000);
-    menuPoller.start();
+    // Only start polling if we DON'T have SSR content
+    // If we have SSR content, wait a moment before first poll to let user see the page
+    if (!state.hasSSRMenuItems && !state.hasSSRFeatured) {
+      // No SSR: need to fetch menu immediately
+      loadMenuData();
+    }
+    
+    // Start polling after 2 seconds to sync updates (whether or not we have SSR)
+    setTimeout(() => {
+      const menuPoller = createPoller(loadMenuData, 5000);
+      menuPoller.start();
+    }, 2000);
   };
 
   init();
