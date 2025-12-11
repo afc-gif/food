@@ -186,8 +186,9 @@
         </div>
     </main>
     <div id="kitchenToast" class="toast"></div>
+    {{-- Pass initial orders from server to JavaScript --}}
     <script>
-        window.initialOrders = @json($initialOrders ?? []);
+        window.initialOrders = JSON.parse('@php echo json_encode($initialOrders ?? []); @endphp');
     </script>
 </body>
 </html>
