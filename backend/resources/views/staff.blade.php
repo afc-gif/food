@@ -83,7 +83,13 @@
                 <p class="muted">Confirm orders, push to kitchen, update customers.</p>
             </div>
         </div>
-        <div class="pill neutral" id="connection">Connecting…</div>
+        <div style="display:flex; align-items:center; gap:10px;">
+            <div class="pill neutral" id="connection">Connecting…</div>
+            <form method="POST" action="{{ route('logout') }}" style="margin:0;">
+                @csrf
+                <button type="submit" style="padding:8px 14px; font-size:13px;">Logout</button>
+            </form>
+        </div>
     </header>
 
     <main>

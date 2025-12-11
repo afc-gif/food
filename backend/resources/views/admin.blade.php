@@ -172,8 +172,16 @@
             <button class="nav-btn" data-tab="health"><span class="nav-label">Health</span></button>
             <button class="nav-btn" data-tab="site"><span class="nav-label">Public Site</span></button>
         </nav>
-        <div class="muted" style="margin-top:12px;">
-            Signed in as {{ auth()->user()->name ?? 'User' }}
+        <div style="margin-top:12px;">
+            <div class="muted" style="margin-bottom:8px;">
+                Signed in as {{ auth()->user()->name ?? 'User' }}
+            </div>
+            <form method="POST" action="{{ route('logout') }}" style="margin:0;">
+                @csrf
+                <button type="submit" class="nav-btn" style="width:100%; justify-content:center;">
+                    <span class="nav-label">Logout</span>
+                </button>
+            </form>
         </div>
     </aside>
 
