@@ -811,12 +811,12 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCart();
     bindWhatsAppButtons();
 
-    // Only non-SSR pages fetch/poll; SSR stays static to avoid disappearing menus.
-    if (!state.hasSSRMenuItems && !state.hasSSRFeatured) {
-      loadMenuData();
-      const menuPoller = createPoller(loadMenuData, 20000);
-      menuPoller.start();
-    }
+    // Always enable polling to sync menu updates (sold out status, prices, deletions)
+    // For SSR pages, upsertMenuItem will update existing items in place
+    // For non-SSR pages, loadMenuData will render fresh menu data
+    loadMenuData();
+    const menuPoller = createPoller(loadMenuData, 20000);
+    menuPoller.start();
   };
 
   init();
