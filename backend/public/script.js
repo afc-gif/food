@@ -114,7 +114,8 @@ document.addEventListener("DOMContentLoaded", () => {
     activeFilter: "all",
     hasSSRMenuItems: !!(dom.menuGrid && dom.menuGrid.querySelector("[data-menu-item]")),
     hasSSRFeatured: !!(dom.featuredGrid && dom.featuredGrid.querySelector("[data-menu-item]")),
-    hasSSRFilters: !!(dom.menuFilters && dom.menuFilters.querySelectorAll(".af-chip").length > 1)
+    hasSSRFilters: !!(dom.menuFilters && dom.menuFilters.querySelectorAll(".af-chip").length > 1),
+    menuPollingStarted: false
   };
 
   const setYear = () => {
@@ -635,6 +636,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const loadMenuData = async () => {
     if (!dom.menuGrid && !dom.featuredGrid && !dom.menuFilters) return;
+    // Only skip fetch on first load if SSR content exists; polling should continue
+    if (state.hasSSRMenuItems || state.hasSSRFeatured) {
+      if (!state.menuPollingStarted) {
+        // First load - keep SSR markup, don't fetch
+        return;
+      }
+      // Subsequent polls - fetch and update SSR content
+    }
     if (window.location.protocol === "file:") {
       renderMenuError("Menu needs the server running (API unreachable from file://).");
       return;
@@ -813,6 +822,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // For SSR pages, upsertMenuItem will update existing items in place
     // For non-SSR pages, loadMenuData will render fresh menu data
     loadMenuData();
+    state.menuPollingStarted = true;
     const menuPoller = createPoller(loadMenuData, 5000);
     menuPoller.start();
   };
