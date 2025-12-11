@@ -114,8 +114,7 @@ document.addEventListener("DOMContentLoaded", () => {
     activeFilter: "all",
     hasSSRMenuItems: !!(dom.menuGrid && dom.menuGrid.querySelector("[data-menu-item]")),
     hasSSRFeatured: !!(dom.featuredGrid && dom.featuredGrid.querySelector("[data-menu-item]")),
-    hasSSRFilters: !!(dom.menuFilters && dom.menuFilters.querySelectorAll(".af-chip").length > 1),
-    menuPollingStarted: false
+    hasSSRFilters: !!(dom.menuFilters && dom.menuFilters.querySelectorAll(".af-chip").length > 1)
   };
 
   const setYear = () => {
@@ -636,14 +635,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const loadMenuData = async () => {
     if (!dom.menuGrid && !dom.featuredGrid && !dom.menuFilters) return;
-    // Only skip fetch on first load if SSR content exists; polling should continue
-    if (state.hasSSRMenuItems || state.hasSSRFeatured) {
-      if (!state.menuPollingStarted) {
-        // First load - keep SSR markup, don't fetch
-        return;
-      }
-      // Subsequent polls - fetch and update SSR content
-    }
     if (window.location.protocol === "file:") {
       renderMenuError("Menu needs the server running (API unreachable from file://).");
       return;
@@ -672,6 +663,8 @@ document.addEventListener("DOMContentLoaded", () => {
       console.info("Menu data loaded", {
         items: safeItems.length,
         categories: safeCategories.length,
+        hasSSRMenu: state.hasSSRMenuItems,
+        hasSSRFeatured: state.hasSSRFeatured,
         sample: safeItems[0]
       });
       hideErrorBanner();
@@ -681,11 +674,16 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const hasSSR = state.hasSSRMenuItems || state.hasSSRFeatured;
+      console.log("[loadMenuData]", { hasSSR, hasSSRMenuItems: state.hasSSRMenuItems, hasSSRFeatured: state.hasSSRFeatured, menuGridItems: dom.menuGrid?.querySelectorAll("[data-menu-item]").length || 0 });
       if (hasSSR) {
         // Keep server-rendered markup; sync availability, prices, and images in place
+        console.log("[loadMenuData] SSR mode: updating items in place");
         safeItems.forEach((item) => upsertMenuItem(item));
+        console.log("[loadMenuData] after upsertMenuItem, menuGrid items:", dom.menuGrid?.querySelectorAll("[data-menu-item]").length || 0);
         applyFilter();
+        console.log("[loadMenuData] after applyFilter");
       } else {
+        console.log("[loadMenuData] Non-SSR mode: rendering fresh");
         if (safeItems.length) {
           renderMenu(safeItems);
           renderFeatured(safeItems);
@@ -822,7 +820,6 @@ document.addEventListener("DOMContentLoaded", () => {
     // For SSR pages, upsertMenuItem will update existing items in place
     // For non-SSR pages, loadMenuData will render fresh menu data
     loadMenuData();
-    state.menuPollingStarted = true;
     const menuPoller = createPoller(loadMenuData, 5000);
     menuPoller.start();
   };
