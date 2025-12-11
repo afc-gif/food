@@ -635,8 +635,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const loadMenuData = async () => {
     if (!dom.menuGrid && !dom.featuredGrid && !dom.menuFilters) return;
-    // SSR pages keep existing markup; skip fetch/render to avoid wiping content.
-    if (state.hasSSRMenuItems || state.hasSSRFeatured) return;
     if (window.location.protocol === "file:") {
       renderMenuError("Menu needs the server running (API unreachable from file://).");
       return;
@@ -675,7 +673,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const hasSSR = state.hasSSRMenuItems || state.hasSSRFeatured;
       if (hasSSR) {
-        // Keep server-rendered markup; only sync availability and prices.
+        // Keep server-rendered markup; sync availability, prices, and images in place
         safeItems.forEach((item) => upsertMenuItem(item));
         applyFilter();
       } else {
