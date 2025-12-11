@@ -804,7 +804,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!hasSSR) {
       loadMenuData();
     }
-    
+
     // Start polling to sync real-time updates (sold out status, prices, etc)
     const menuPoller = createPoller(loadMenuData, 5000);
     menuPoller.start();
