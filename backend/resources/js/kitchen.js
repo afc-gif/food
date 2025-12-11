@@ -317,12 +317,6 @@ if (ordersEl) {
         }
     });
 
-    function updateStats() {
-        statCountEl.textContent = orders.length;
-        statTotalEl.textContent = '—';
-        statLastEl.textContent = orders[0] ? formatTime(orders[0].created_at) : '—';
-    }
-
     function formatTime(timestamp) {
         const date = new Date(timestamp);
         if (Number.isNaN(date.getTime())) {
