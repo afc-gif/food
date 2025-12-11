@@ -864,6 +864,59 @@
                 setPosStatus(`Added ${item.name}. Ready for next scan.`);
             });
         }
+
+        // Toast notification for ETA updates
+        const showPosToast = (message, duration = 4000) => {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                left: 20px;
+                background: #166534;
+                color: white;
+                padding: 12px 16px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 100;
+                font-size: 14px;
+                font-weight: 600;
+                animation: slideInUp 0.3s ease;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideOutDown 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        };
+
+        // Add animation styles if not already present
+        if (!document.querySelector('style[data-toast-animations]')) {
+            const style = document.createElement('style');
+            style.setAttribute('data-toast-animations', 'true');
+            style.textContent = `
+                @keyframes slideInUp {
+                    from { transform: translateY(100px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                @keyframes slideOutDown {
+                    from { transform: translateY(0); opacity: 1; }
+                    to { transform: translateY(100px); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // Listen for ETA assignments
+        window.addEventListener('order:eta-assigned', (event) => {
+            const data = event.detail;
+            if (!data) return;
+            const order = posOrders.find(o => o.id === data.id);
+            if (order) {
+                const eta = data.kitchen_eta_minutes ? `${data.kitchen_eta_minutes}m` : 'ETA set';
+                showPosToast(`Order ${data.code}: ${eta}`);
+            }
+        });
     </script>
 </body>
 </html>

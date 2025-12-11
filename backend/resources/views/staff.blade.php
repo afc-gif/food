@@ -328,7 +328,13 @@
                 });
                 const order = await res.json();
                 upsertOrder(order);
-                alert('Approved and sent to kitchen.');
+                // Redirect to print receipt page
+                const printWindow = window.open(`/print/${order.id}`, 'print_receipt', 'width=600,height=800');
+                if (printWindow) {
+                    printWindow.focus();
+                } else {
+                    alert('Approved and sent to kitchen.\n\nPlease enable pop-ups to print receipt.');
+                }
             } catch (e) {
                 alert(e.message || 'Could not approve this order.');
             } finally {
@@ -368,10 +374,70 @@
             connectionEl.style.color = ok ? '#166534' : '#92400e';
         };
 
+        const showToast = (message, duration = 4000) => {
+            const toast = document.createElement('div');
+            toast.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: #166534;
+                color: white;
+                padding: 12px 16px;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                z-index: 100;
+                font-size: 14px;
+                font-weight: 600;
+                animation: slideInUp 0.3s ease;
+            `;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.style.animation = 'slideOutDown 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, duration);
+        };
+
+        const addAnimationStyles = () => {
+            const style = document.createElement('style');
+            style.textContent = `
+                @keyframes slideInUp {
+                    from { transform: translateY(100px); opacity: 0; }
+                    to { transform: translateY(0); opacity: 1; }
+                }
+                @keyframes slideOutDown {
+                    from { transform: translateY(0); opacity: 1; }
+                    to { transform: translateY(100px); opacity: 0; }
+                }
+            `;
+            document.head.appendChild(style);
+        };
+        addAnimationStyles();
+
         const poller = createPoller(loadOrders, 5000, {
             onError: (err) => setConnection(false, err.message || 'Reconnecting…'),
         });
         poller.start();
+
+        // Listen for ETA assignments
+        const etaHandler = (event) => {
+            const data = event.detail;
+            if (!data) return;
+            const order = ordersCache.find(o => o.id === data.id);
+            if (order) {
+                const eta = data.kitchen_eta_minutes ? `${data.kitchen_eta_minutes}m` : 'ETA set';
+                const customer = data.customer_name || data.customer_phone || 'Walk-in';
+                showToast(`Order ${data.code} (${customer}): ${eta}`);
+                if (Notification?.permission === 'granted') {
+                    new Notification(`ETA Updated - ${data.code}`, {
+                        body: `Order for ${customer}: ${eta}`,
+                        tag: `order-${data.id}`,
+                        badge: '/assets/logo2.png',
+                    });
+                }
+            }
+        };
+        window.addEventListener('order:eta-assigned', etaHandler);
     </script>
 </body>
 </html>

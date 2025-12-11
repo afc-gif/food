@@ -290,6 +290,8 @@ if (ordersEl) {
                 });
                 upsertOrder(normalizeOrder(updated));
                 showToast(`ETA set to ${eta}m for order ${updated.code ?? orderId}`);
+                // Notify staff and POS about ETA assignment
+                window.dispatchEvent(new CustomEvent('order:eta-assigned', { detail: updated }));
             }
 
             if (btn.dataset.action === 'custom-eta') {
@@ -307,6 +309,8 @@ if (ordersEl) {
                 upsertOrder(normalizeOrder(updated));
                 input.value = '';
                 showToast(`ETA set to ${eta}m for order ${updated.code ?? orderId}`);
+                // Notify staff and POS about ETA assignment
+                window.dispatchEvent(new CustomEvent('order:eta-assigned', { detail: updated }));
             }
         } catch (error) {
             console.error(error);

@@ -70,6 +70,9 @@ Route::middleware('auth')->group(function () {
 
         return view('kitchen', ['initialOrders' => $orders]);
     })->middleware(['active', 'role:admin|kitchen'])->name('kitchen');
+    Route::get('/print/{order}', function (Order $order) {
+        return view('print-receipt', ['order' => $order->load(['items', 'payments'])]);
+    })->middleware(['active', 'role:admin|pos|staff'])->name('print-receipt');
     Route::get('/profile', [ProfileController::class, 'edit'])->middleware('active')->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->middleware('active')->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->middleware('active')->name('profile.destroy');

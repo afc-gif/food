@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\OrderCreated;
 use App\Events\OrderUpdated;
+use App\Events\ETAAssigned;
 use App\Http\Controllers\Controller;
 use App\Models\MenuItem;
 use App\Models\Order;
@@ -186,6 +187,9 @@ class OrderController extends Controller
 
         $etaAt = $this->resolveEta($data['eta_minutes'] ?? $order->kitchen_eta_minutes);
 
+        $hadEta = $order->kitchen_eta_minutes !== null;
+        $hasEta = isset($data['eta_minutes']) && $data['eta_minutes'] !== null;
+
         $order->fill([
             'kitchen_status' => $data['kitchen_status'],
             'kitchen_eta_minutes' => $data['eta_minutes'] ?? $order->kitchen_eta_minutes,
@@ -194,7 +198,13 @@ class OrderController extends Controller
             'kitchen_sent_at' => $order->kitchen_sent_at ?? now(),
         ])->save();
 
-        DB::afterCommit(fn () => $this->broadcastOrderChange($order));
+        DB::afterCommit(function () use ($order, $hadEta, $hasEta) {
+            $this->broadcastOrderChange($order);
+            // Broadcast ETA assignment only if ETA was just set
+            if (!$hadEta && $hasEta) {
+                broadcast(new ETAAssigned($order))->toOthers();
+            }
+        });
 
         return $order->fresh(['items', 'payments', 'creator']);
     }
