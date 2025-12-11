@@ -815,7 +815,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // For SSR pages, upsertMenuItem will update existing items in place
     // For non-SSR pages, loadMenuData will render fresh menu data
     loadMenuData();
-    const menuPoller = createPoller(loadMenuData, 20000);
+    const menuPoller = createPoller(loadMenuData, 5000);
     menuPoller.start();
   };
 
