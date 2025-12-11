@@ -673,26 +673,9 @@ document.addEventListener("DOMContentLoaded", () => {
         renderFilters(safeCategories);
       }
 
-      const hasSSR = state.hasSSRMenuItems || state.hasSSRFeatured;
-      console.log("[loadMenuData]", { hasSSR, hasSSRMenuItems: state.hasSSRMenuItems, hasSSRFeatured: state.hasSSRFeatured, menuGridItems: dom.menuGrid?.querySelectorAll("[data-menu-item]").length || 0 });
-      if (hasSSR) {
-        // Keep server-rendered markup; sync availability, prices, and images in place
-        console.log("[loadMenuData] SSR mode: updating items in place");
-        safeItems.forEach((item) => upsertMenuItem(item));
-        console.log("[loadMenuData] after upsertMenuItem, menuGrid items:", dom.menuGrid?.querySelectorAll("[data-menu-item]").length || 0);
-        applyFilter();
-        console.log("[loadMenuData] after applyFilter");
-      } else {
-        console.log("[loadMenuData] Non-SSR mode: rendering fresh");
-        if (safeItems.length) {
-          renderMenu(safeItems);
-          renderFeatured(safeItems);
-          applyFilter();
-        } else {
-          console.warn("Menu API returned empty; keeping existing DOM");
-          showErrorBanner("Menu returned empty from API. Check admin content or API response.");
-        }
-      }
+      // Only update items, never re-render the entire menu from polling
+      // This preserves the server-rendered DOM while syncing real-time changes
+      safeItems.forEach((item) => upsertMenuItem(item));
     } catch (err) {
       if (!state.hasSSRMenuItems && !state.hasSSRFeatured) {
         renderMenuError("Menu failed to load. Please retry shortly.");
@@ -816,19 +799,14 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCart();
     bindWhatsAppButtons();
 
-    // Only start polling if we DON'T have SSR content
-    // If we have SSR content, wait a moment before first poll to let user see the page
-    if (!state.hasSSRMenuItems && !state.hasSSRFeatured) {
-      // No SSR: need to fetch menu immediately
+    // For non-SSR pages: load menu from API immediately
+    const hasSSR = state.hasSSRMenuItems || state.hasSSRFeatured;
+    if (!hasSSR) {
       loadMenuData();
     }
-
-    // Start polling after 2 seconds to sync updates (whether or not we have SSR)
-    setTimeout(() => {
-      const menuPoller = createPoller(loadMenuData, 5000);
-      menuPoller.start();
-    }, 2000);
-  };
-
-  init();
+    
+    // Start polling to sync real-time updates (sold out status, prices, etc)
+    const menuPoller = createPoller(loadMenuData, 5000);
+    menuPoller.start();
+  };  init();
 });
