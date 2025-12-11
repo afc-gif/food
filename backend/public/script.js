@@ -106,7 +106,8 @@ document.addEventListener("DOMContentLoaded", () => {
     cartOverlayBackdrop: document.getElementById("cartOverlayBackdrop"),
     featuredGrid: document.getElementById("featuredGrid"),
     menuGrid: document.getElementById("menuGrid"),
-    menuFilters: document.getElementById("menuFilters")
+    menuFilters: document.getElementById("menuFilters"),
+    menuRefreshBtn: document.getElementById("menuRefreshBtn")
   };
 
   const state = {
@@ -805,8 +806,11 @@ document.addEventListener("DOMContentLoaded", () => {
       loadMenuData();
     }
 
-    // Start polling to sync real-time updates (sold out status, prices, etc)
-    const menuPoller = createPoller(loadMenuData, 5000);
-    menuPoller.start();
-  };  init();
+    // DISABLED: Polling was causing menu to disappear
+    // User will refresh manually or we can add a refresh button
+    // const menuPoller = createPoller(loadMenuData, 5000);
+    // menuPoller.start();
+  };
+
+  init();
 });

@@ -141,6 +141,7 @@
           <p class="af-kicker">All-Day Menu</p>
           <h2>Freshly prepared, beautifully plated.</h2>
           <p>Choose your craving; we will prepare it hot and have it ready in minutes.</p>
+          <button id="menuRefreshBtn" style="margin-top: 16px; padding: 8px 16px; background: #333; color: #fff; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">↻ Refresh Menu</button>
         </div>
 
           <div class="af-menu-panel">
