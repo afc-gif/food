@@ -821,10 +821,10 @@ document.addEventListener("DOMContentLoaded", () => {
       loadMenuData();
     }
 
-    // DISABLED: Polling was causing menu to disappear
-    // User will refresh manually or we can add a refresh button
-    // const menuPoller = createPoller(loadMenuData, 5000);
-    // menuPoller.start();
+    // Enable polling: automatically sync menu updates every 10 seconds
+    // Using loadMenuData which safely re-renders the menu from API
+    const menuPoller = createPoller(loadMenuData, 10000);
+    menuPoller.start();
   };
 
   init();
