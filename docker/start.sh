@@ -16,8 +16,8 @@ php artisan route:clear || true
 php artisan config:cache
 php artisan route:cache
 
-# Run migrations (and seed) if DB is reachable
-php artisan migrate --force --seed || true
+# Run migrations only (don't seed on every deploy)
+php artisan migrate --force || true
 
 # Start PHP-FPM
 php-fpm -D
