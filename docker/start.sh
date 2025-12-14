@@ -79,8 +79,8 @@ echo "[$(date)] Running migrations..." | tee -a $LOG_FILE
 php artisan migrate --force 2>&1 | tee -a $LOG_FILE || echo "[$(date)] Migrations skipped" | tee -a $LOG_FILE
 echo "[$(date)] ✓ Migrations complete" | tee -a $LOG_FILE
 
-# Validate Nginx
-echo "[$(date)] Validating Nginx..." | tee -a $LOG_FILE
+# Validate Nginx (after rendering)
+echo "[$(date)] Validating Nginx (PORT=$PORT)..." | tee -a $LOG_FILE
 if ! nginx -t 2>&1 | tee -a $LOG_FILE; then
     echo "[$(date)] ❌ Nginx config invalid!" | tee -a $LOG_FILE
     exit 1
@@ -99,7 +99,7 @@ sleep 1
 # NGINX START - skip verification, just start
 {
     echo ""
-    echo "[$(date)] ===== STARTING NGINX ON PORT 0.0.0.0:80 ====="
+    echo "[$(date)] ===== STARTING NGINX ON PORT 0.0.0.0:${PORT} ====="
     echo "[$(date)] ===== APP READY FOR REQUESTS ====="
     echo ""
 } | tee -a $LOG_FILE
