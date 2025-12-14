@@ -7,7 +7,8 @@ echo "[$(date)] Starting application..."
 
 # Ensure writable dirs exist
 mkdir -p storage/framework/{cache,data,sessions,views} bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
+mkdir -p /run/nginx
+chown -R www-data:www-data storage bootstrap/cache /run/nginx
 echo "[$(date)] Directories prepared"
 
 # Ensure storage symlink for uploaded images
@@ -33,9 +34,17 @@ echo "[$(date)] Testing Nginx config..."
 nginx -t 2>&1 || { echo "Nginx config invalid!"; exit 1; }
 
 echo "[$(date)] Starting PHP-FPM..."
+# Run as www-data user
 php-fpm -D
 
 sleep 2
 
-echo "[$(date)] Starting Nginx..."
-exec nginx -g 'daemon off;'
+echo "[$(date)] Nginx config test..."
+nginx -t
+
+echo "[$(date)] Starting Nginx in foreground..."
+# Run nginx in foreground (runs as root by default, workers run as www-data)
+nginx -g 'daemon off;' 2>&1 || {
+    echo "[$(date)] Nginx failed to start"
+    exit 1
+}
