@@ -112,5 +112,54 @@ chown -R www-data:www-data storage/logs 2>/dev/null || true
 
 echo "[$(date)] Starting Nginx..." | tee -a $LOG_FILE
 
-# Start Nginx in foreground
-exec nginx -g 'daemon off;' 2>&1 | tee -a $LOG_FILE
+# Start Nginx and capture any errors
+nginx -g 'daemon off;' 2>&1 | tee -a $LOG_FILE &
+NGINX_PID=$!
+sleep 2
+
+# Check if Nginx is still running
+if ! ps -p $NGINX_PID > /dev/null 2>&1; then
+    echo "[$(date)] ❌ CRITICAL ERROR: Nginx crashed after startup!" | tee -a $LOG_FILE
+    echo "" | tee -a $LOG_FILE
+    echo "===== NGINX ERROR LOG =====" | tee -a $LOG_FILE
+    cat storage/logs/nginx-error.log 2>/dev/null | tee -a $LOG_FILE || echo "No nginx-error.log found" | tee -a $LOG_FILE
+    echo "" | tee -a $LOG_FILE
+    echo "===== LARAVEL ERROR LOG =====" | tee -a $LOG_FILE
+    cat storage/logs/laravel.log 2>/dev/null | tail -100 | tee -a $LOG_FILE || echo "No laravel.log found" | tee -a $LOG_FILE
+    echo "" | tee -a $LOG_FILE
+    echo "===== LAST 20 LINES OF STARTUP LOG =====" | tee -a $LOG_FILE
+    tail -20 $LOG_FILE | tee -a $LOG_FILE
+    exit 1
+fi
+
+# Verify Nginx is listening on port 80
+echo "[$(date)] Verifying Nginx is listening on port 80..." | tee -a $LOG_FILE
+LISTEN_CHECK=$(ss -tlnp 2>/dev/null | grep ':80 ')
+if [ -n "$LISTEN_CHECK" ]; then
+    echo "[$(date)] ✓ Nginx is listening on port 80" | tee -a $LOG_FILE
+    echo "$LISTEN_CHECK" | tee -a $LOG_FILE
+else
+    echo "[$(date)] ❌ ERROR: Nginx is NOT listening on port 80!" | tee -a $LOG_FILE
+    echo "" | tee -a $LOG_FILE
+    echo "===== NGINX PROCESS INFO =====" | tee -a $LOG_FILE
+    ps aux | grep nginx | grep -v grep | tee -a $LOG_FILE
+    echo "" | tee -a $LOG_FILE
+    echo "===== ALL LISTENING PORTS =====" | tee -a $LOG_FILE
+    ss -tlnp 2>/dev/null | tee -a $LOG_FILE
+    echo "" | tee -a $LOG_FILE
+    echo "===== NGINX ERROR LOG =====" | tee -a $LOG_FILE
+    cat storage/logs/nginx-error.log 2>/dev/null | tee -a $LOG_FILE || echo "No nginx-error.log found" | tee -a $LOG_FILE
+    exit 1
+fi
+
+echo "[$(date)] ===== APP IS READY FOR REQUESTS =====" | tee -a $LOG_FILE
+echo "[$(date)] Nginx PID: $NGINX_PID" | tee -a $LOG_FILE
+
+# Wait for Nginx to exit (should run forever)
+wait $NGINX_PID
+EXIT_CODE=$?
+echo "[$(date)] ❌ Nginx exited with code $EXIT_CODE" | tee -a $LOG_FILE
+echo "" | tee -a $LOG_FILE
+echo "===== NGINX ERROR LOG =====" | tee -a $LOG_FILE
+cat storage/logs/nginx-error.log 2>/dev/null | tee -a $LOG_FILE || echo "No nginx-error.log" | tee -a $LOG_FILE
+exit 1
