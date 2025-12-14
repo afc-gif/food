@@ -8,7 +8,8 @@ echo "[$(date)] Starting application..."
 # Ensure writable dirs exist
 mkdir -p storage/framework/{cache,data,sessions,views} bootstrap/cache
 mkdir -p /run/nginx
-chown -R www-data:www-data storage bootstrap/cache /run/nginx
+chmod -R 775 storage bootstrap/cache
+chown -R www-data:www-data storage bootstrap/cache /run/nginx public
 echo "[$(date)] Directories prepared"
 
 # Ensure storage symlink for uploaded images
