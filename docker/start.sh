@@ -5,6 +5,34 @@ cd /app/backend
 LOG_FILE="storage/logs/startup.log"
 mkdir -p storage/logs
 
+# Ensure .env exists - create from environment variables if needed
+if [ ! -f .env ]; then
+    echo "[$(date)] Creating .env from environment variables..." | tee -a $LOG_FILE
+    {
+        echo "APP_NAME=\"${APP_NAME:-Acie Fraiche Cafe}\""
+        echo "APP_ENV=${APP_ENV:-production}"
+        echo "APP_DEBUG=${APP_DEBUG:-false}"
+        echo "APP_URL=${APP_URL:-https://afc.com.ng}"
+        echo "APP_KEY=${APP_KEY:-base64:FjOkA8pS+80LCAG9Dk8ufkH3PcDn8VY3GMLlfdpt2wg=}"
+        echo ""
+        echo "LOG_CHANNEL=stack"
+        echo "LOG_LEVEL=${LOG_LEVEL:-debug}"
+        echo ""
+        echo "DB_CONNECTION=${DB_CONNECTION:-pgsql}"
+        echo "DB_HOST=${DB_HOST:-localhost}"
+        echo "DB_PORT=${DB_PORT:-5432}"
+        echo "DB_DATABASE=${DB_DATABASE:-railway}"
+        echo "DB_USERNAME=${DB_USERNAME:-postgres}"
+        echo "DB_PASSWORD=${DB_PASSWORD}"
+        echo ""
+        echo "SESSION_DRIVER=database"
+        echo "CACHE_STORE=database"
+        echo "BROADCAST_CONNECTION=log"
+        echo "QUEUE_CONNECTION=database"
+    } > .env
+    chmod 644 .env
+fi
+
 {
     echo "===== APP STARTUP: $(date) ====="
     
@@ -154,6 +182,17 @@ fi
 
 echo "[$(date)] ===== APP IS READY FOR REQUESTS =====" | tee -a $LOG_FILE
 echo "[$(date)] Nginx PID: $NGINX_PID" | tee -a $LOG_FILE
+
+# Test if the app actually responds
+echo "[$(date)] Testing app health..." | tee -a $LOG_FILE
+sleep 1
+if curl -s -f http://127.0.0.1/health > /dev/null 2>&1; then
+    echo "[$(date)] ✓ App health check passed" | tee -a $LOG_FILE
+elif curl -s http://127.0.0.1/ > /dev/null 2>&1; then
+    echo "[$(date)] ✓ App responds to requests" | tee -a $LOG_FILE
+else
+    echo "[$(date)] ⚠ App may not be responding to requests" | tee -a $LOG_FILE
+fi
 
 # Wait for Nginx to exit (should run forever)
 wait $NGINX_PID
