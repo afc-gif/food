@@ -162,21 +162,28 @@ fi
 
 # Verify Nginx is listening on port 80
 echo "[$(date)] Verifying Nginx is listening on port 80..." | tee -a $LOG_FILE
-LISTEN_CHECK=$(ss -tlnp 2>/dev/null | grep ':80 ')
+sleep 1
+
+# Try multiple ways to check
+LISTEN_CHECK=$(ss -tlnp 2>/dev/null | grep -E ':(80|8080) ' || true)
+
 if [ -n "$LISTEN_CHECK" ]; then
-    echo "[$(date)] ✓ Nginx is listening on port 80" | tee -a $LOG_FILE
+    echo "[$(date)] ✓ Nginx is listening" | tee -a $LOG_FILE
     echo "$LISTEN_CHECK" | tee -a $LOG_FILE
 else
-    echo "[$(date)] ❌ ERROR: Nginx is NOT listening on port 80!" | tee -a $LOG_FILE
+    echo "[$(date)] ❌ ERROR: No service listening on port 80 or 8080!" | tee -a $LOG_FILE
     echo "" | tee -a $LOG_FILE
     echo "===== NGINX PROCESS INFO =====" | tee -a $LOG_FILE
-    ps aux | grep nginx | grep -v grep | tee -a $LOG_FILE
+    ps aux | grep nginx | grep -v grep | tee -a $LOG_FILE || echo "No nginx process found" | tee -a $LOG_FILE
     echo "" | tee -a $LOG_FILE
     echo "===== ALL LISTENING PORTS =====" | tee -a $LOG_FILE
-    ss -tlnp 2>/dev/null | tee -a $LOG_FILE
+    ss -tlnp 2>/dev/null | grep LISTEN | tee -a $LOG_FILE || echo "No listening ports detected" | tee -a $LOG_FILE
     echo "" | tee -a $LOG_FILE
     echo "===== NGINX ERROR LOG =====" | tee -a $LOG_FILE
-    cat storage/logs/nginx-error.log 2>/dev/null | tee -a $LOG_FILE || echo "No nginx-error.log found" | tee -a $LOG_FILE
+    cat storage/logs/nginx-error.log 2>/dev/null | head -50 | tee -a $LOG_FILE || echo "No nginx-error.log found" | tee -a $LOG_FILE
+    echo "" | tee -a $LOG_FILE
+    echo "===== PHP-FPM STATUS =====" | tee -a $LOG_FILE
+    ps aux | grep php-fpm | grep -v grep | tee -a $LOG_FILE || echo "No PHP-FPM process found" | tee -a $LOG_FILE
     exit 1
 fi
 
