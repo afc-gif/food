@@ -99,12 +99,40 @@ chmod -R 777 storage/logs 2>/dev/null || true
 chown -R www-data:www-data storage/logs 2>/dev/null || true
 
 echo "[$(date)] Starting Nginx in foreground..." | tee -a $LOG_FILE
-if ! nginx -g 'daemon off;' 2>&1 | tee -a $LOG_FILE; then
-    echo ""
-    echo "===== NGINX ERROR LOG ====="
-    tail -50 storage/logs/nginx-error.log 2>/dev/null || echo "No nginx error log"
-    echo "===== LARAVEL ERROR LOG ====="
-    tail -50 storage/logs/laravel.log 2>/dev/null || echo "No laravel log"
+
+# Start Nginx in background first to check if it actually stays running
+nginx -g 'daemon off;' &
+NGINX_PID=$!
+sleep 2
+
+# Verify Nginx is still running
+if ! ps -p $NGINX_PID > /dev/null 2>&1; then
+    echo "[$(date)] ❌ ERROR: Nginx crashed immediately after startup" | tee -a $LOG_FILE
+    echo "===== NGINX ERROR LOG =====" | tee -a $LOG_FILE
+    tail -50 storage/logs/nginx-error.log 2>/dev/null || echo "No nginx error log" | tee -a $LOG_FILE
+    echo "===== LARAVEL ERROR LOG =====" | tee -a $LOG_FILE
+    tail -50 storage/logs/laravel.log 2>/dev/null || echo "No laravel log" | tee -a $LOG_FILE
+    exit 1
+fi
+
+# Verify port 80 is listening
+echo "[$(date)] Verifying Nginx is listening on port 80..." | tee -a $LOG_FILE
+if netstat -tlnp 2>/dev/null | grep -q ':80 '; then
+    echo "[$(date)] ✓ Nginx listening on port 80" | tee -a $LOG_FILE
+elif ss -tlnp 2>/dev/null | grep -q ':80 '; then
+    echo "[$(date)] ✓ Nginx listening on port 80" | tee -a $LOG_FILE
+else
+    echo "[$(date)] ⚠ Port 80 not detected, but Nginx process running" | tee -a $LOG_FILE
+fi
+
+echo "[$(date)] ===== APP READY FOR REQUESTS =====" | tee -a $LOG_FILE
+
+# Wait for Nginx process to exit
+wait $NGINX_PID
+if [ $? -ne 0 ]; then
+    echo "[$(date)] ❌ Nginx exited with error" | tee -a $LOG_FILE
+    echo "===== NGINX ERROR LOG =====" | tee -a $LOG_FILE
+    tail -50 storage/logs/nginx-error.log 2>/dev/null || echo "No nginx error log" | tee -a $LOG_FILE
     exit 1
 fi
     echo "===== LARAVEL ERROR LOG ====="
