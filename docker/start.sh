@@ -107,33 +107,9 @@ fi
         fi
     fi
     
-    # Start Nginx
-    echo "[$(date)] Starting Nginx..."
-    echo "[$(date)] ===== APP READY FOR REQUESTS ====="
-    
 } | tee -a $LOG_FILE 2>&1
 
-echo "[$(date)] Testing PHP-FPM connectivity..." | tee -a $LOG_FILE
-sleep 2
-
-# Verify PHP-FPM is actually running and listening
-echo "[$(date)] Checking PHP-FPM process..." | tee -a $LOG_FILE
-if ps aux | grep -v grep | grep php-fpm > /dev/null; then
-    echo "[$(date)] ✓ PHP-FPM process running" | tee -a $LOG_FILE
-else
-    echo "[$(date)] ❌ PHP-FPM process NOT running!" | tee -a $LOG_FILE
-    exit 1
-fi
-
-# Try to connect to PHP-FPM port
-echo "[$(date)] Testing PHP-FPM port 9000..." | tee -a $LOG_FILE
-if timeout 3 bash -c "</dev/tcp/127.0.0.1/9000" 2>/dev/null; then
-    echo "[$(date)] ✓ Successfully connected to PHP-FPM port 9000" | tee -a $LOG_FILE
-else
-    echo "[$(date)] ⚠ Could not connect to PHP-FPM port 9000, but continuing..." | tee -a $LOG_FILE
-fi
-
-# Final permission check
+# === NGINX STARTUP === 
 echo "[$(date)] Final permission checks..." | tee -a $LOG_FILE
 chmod -R 777 storage/logs 2>/dev/null || true
 chown -R www-data:www-data storage/logs 2>/dev/null || true
@@ -144,9 +120,9 @@ echo "[$(date)] Starting Nginx..." | tee -a $LOG_FILE
 touch storage/logs/nginx-error.log storage/logs/nginx-access.log 2>/dev/null || true
 chmod 666 storage/logs/nginx-*.log 2>/dev/null || true
 
-# Start Nginx and capture all output
-echo "[$(date)] Nginx starting in foreground (PID $$)..." | tee -a $LOG_FILE
-echo "[$(date)] ===== APP READY FOR REQUESTS ON PORT 80 =====" | tee -a $LOG_FILE
+# Nginx startup message
+echo "[$(date)] Nginx starting in foreground on port 80..." | tee -a $LOG_FILE
+echo "[$(date)] ===== APP READY FOR REQUESTS =====" | tee -a $LOG_FILE
 
-# Start Nginx - run in foreground with output redirected to logs and stdout
+# Start Nginx - run in foreground
 nginx -g 'daemon off;' >> $LOG_FILE 2>&1
