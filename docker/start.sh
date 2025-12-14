@@ -9,27 +9,29 @@ echo "===== APP STARTUP: $(date) =====" | tee $LOG_FILE
 
 # Ensure .env exists
 if [ ! -f .env ]; then
-    echo "[$(date)] Creating .env from environment variables..." | tee -a $LOG_FILE
-    cat > .env << 'EOF'
-APP_NAME="Acie Fraiche Cafe"
-APP_ENV=production
-APP_DEBUG=false
-APP_URL=https://afc.com.ng
-APP_KEY=base64:FjOkA8pS+80LCAG9Dk8ufkH3PcDn8VY3GMLlfdpt2wg=
-LOG_CHANNEL=stack
-LOG_LEVEL=debug
-DB_CONNECTION=pgsql
-DB_HOST=switchback.proxy.rlwy.net
-DB_PORT=49743
-DB_DATABASE=railway
-DB_USERNAME=postgres
-DB_PASSWORD=QrreLCphAXwYVfAJzODFGeWeWUXMLDBT
-SESSION_DRIVER=database
-CACHE_STORE=database
-BROADCAST_CONNECTION=log
-QUEUE_CONNECTION=database
+    echo "[$(date)] Creating .env from container environment..." | tee -a $LOG_FILE
+    cat > .env << EOF
+APP_NAME="${APP_NAME:-Acie Fraiche Cafe}"
+APP_ENV=${APP_ENV:-production}
+APP_DEBUG=${APP_DEBUG:-false}
+APP_URL=${APP_URL:-https://food-app-production-e680.up.railway.app/}
+APP_KEY=${APP_KEY:-base64:FjOkA8pS+80LCAG9Dk8ufkH3PcDn8VY3GMLlfdpt2wg=}
+LOG_CHANNEL=${LOG_CHANNEL:-stack}
+LOG_LEVEL=${LOG_LEVEL:-debug}
+
+DB_CONNECTION=${DB_CONNECTION:-pgsql}
+DB_HOST=${DB_HOST:-${PGHOST:-postgres.railway.internal}}
+DB_PORT=${DB_PORT:-${PGPORT:-5432}}
+DB_DATABASE=${DB_DATABASE:-${PGDATABASE:-railway}}
+DB_USERNAME=${DB_USERNAME:-${PGUSER:-postgres}}
+DB_PASSWORD=${DB_PASSWORD:-${PGPASSWORD:-}}
+
+SESSION_DRIVER=${SESSION_DRIVER:-database}
+CACHE_STORE=${CACHE_STORE:-database}
+BROADCAST_CONNECTION=${BROADCAST_CONNECTION:-log}
+QUEUE_CONNECTION=${QUEUE_CONNECTION:-database}
 EOF
-    chmod 644 .env
+    chmod 640 .env
 fi
 
 # Setup directories
