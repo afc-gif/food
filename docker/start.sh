@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 cd /app/backend
 
@@ -7,14 +6,15 @@ LOG_FILE="storage/logs/startup.log"
 mkdir -p storage/logs
 
 {
-    echo "===== START: $(date) ====="
+    echo "===== APP STARTUP: $(date) ====="
     
     # Ensure writable dirs exist
     echo "[$(date)] Creating directories..."
     mkdir -p storage/logs storage/framework/{cache,data,sessions,views} bootstrap/cache /run/nginx
     chmod -R 775 storage bootstrap/cache /run/nginx
     chown -R www-data:www-data storage bootstrap/cache /run/nginx public
-    echo "[$(date)] ✓ Directories ready"
+    chown -R www-data:www-data storage/logs
+    echo "[$(date)] ✓ Directories created and permissions set"
     
     # Ensure storage symlink
     echo "[$(date)] Setting up storage link..."
@@ -83,59 +83,34 @@ mkdir -p storage/logs
     echo "[$(date)] Starting Nginx..."
     echo "[$(date)] ===== APP READY FOR REQUESTS ====="
     
-} | tee -a $LOG_FILE
+} | tee -a $LOG_FILE 2>&1
 
-# Test PHP-FPM connectivity before starting Nginx
 echo "[$(date)] Testing PHP-FPM connectivity..." | tee -a $LOG_FILE
-if timeout 5 bash -c "</dev/tcp/127.0.0.1/9000" 2>/dev/null; then
-    echo "[$(date)] ✓ PHP-FPM port 9000 is reachable" | tee -a $LOG_FILE
+sleep 2
+
+# Verify PHP-FPM is actually running and listening
+echo "[$(date)] Checking PHP-FPM process..." | tee -a $LOG_FILE
+if ps aux | grep -v grep | grep php-fpm > /dev/null; then
+    echo "[$(date)] ✓ PHP-FPM process running" | tee -a $LOG_FILE
 else
-    echo "[$(date)] ⚠ Warning: PHP-FPM port may not be reachable" | tee -a $LOG_FILE
+    echo "[$(date)] ❌ PHP-FPM process NOT running!" | tee -a $LOG_FILE
+    exit 1
 fi
 
-# Final permission check before Nginx
-echo "[$(date)] Final permissions check..." | tee -a $LOG_FILE
+# Try to connect to PHP-FPM port
+echo "[$(date)] Testing PHP-FPM port 9000..." | tee -a $LOG_FILE
+if timeout 3 bash -c "</dev/tcp/127.0.0.1/9000" 2>/dev/null; then
+    echo "[$(date)] ✓ Successfully connected to PHP-FPM port 9000" | tee -a $LOG_FILE
+else
+    echo "[$(date)] ⚠ Could not connect to PHP-FPM port 9000, but continuing..." | tee -a $LOG_FILE
+fi
+
+# Final permission check
+echo "[$(date)] Final permission checks..." | tee -a $LOG_FILE
 chmod -R 777 storage/logs 2>/dev/null || true
 chown -R www-data:www-data storage/logs 2>/dev/null || true
 
-echo "[$(date)] Starting Nginx in foreground..." | tee -a $LOG_FILE
+echo "[$(date)] Starting Nginx..." | tee -a $LOG_FILE
 
-# Start Nginx in background first to check if it actually stays running
-nginx -g 'daemon off;' &
-NGINX_PID=$!
-sleep 2
-
-# Verify Nginx is still running
-if ! ps -p $NGINX_PID > /dev/null 2>&1; then
-    echo "[$(date)] ❌ ERROR: Nginx crashed immediately after startup" | tee -a $LOG_FILE
-    echo "===== NGINX ERROR LOG =====" | tee -a $LOG_FILE
-    tail -50 storage/logs/nginx-error.log 2>/dev/null || echo "No nginx error log" | tee -a $LOG_FILE
-    echo "===== LARAVEL ERROR LOG =====" | tee -a $LOG_FILE
-    tail -50 storage/logs/laravel.log 2>/dev/null || echo "No laravel log" | tee -a $LOG_FILE
-    exit 1
-fi
-
-# Verify port 80 is listening
-echo "[$(date)] Verifying Nginx is listening on port 80..." | tee -a $LOG_FILE
-if netstat -tlnp 2>/dev/null | grep -q ':80 '; then
-    echo "[$(date)] ✓ Nginx listening on port 80" | tee -a $LOG_FILE
-elif ss -tlnp 2>/dev/null | grep -q ':80 '; then
-    echo "[$(date)] ✓ Nginx listening on port 80" | tee -a $LOG_FILE
-else
-    echo "[$(date)] ⚠ Port 80 not detected, but Nginx process running" | tee -a $LOG_FILE
-fi
-
-echo "[$(date)] ===== APP READY FOR REQUESTS =====" | tee -a $LOG_FILE
-
-# Wait for Nginx process to exit
-wait $NGINX_PID
-if [ $? -ne 0 ]; then
-    echo "[$(date)] ❌ Nginx exited with error" | tee -a $LOG_FILE
-    echo "===== NGINX ERROR LOG =====" | tee -a $LOG_FILE
-    tail -50 storage/logs/nginx-error.log 2>/dev/null || echo "No nginx error log" | tee -a $LOG_FILE
-    exit 1
-fi
-    echo "===== LARAVEL ERROR LOG ====="
-    tail -50 storage/logs/laravel.log 2>/dev/null || echo "No laravel log"
-    exit 1
-fi
+# Start Nginx in foreground
+exec nginx -g 'daemon off;' 2>&1 | tee -a $LOG_FILE
