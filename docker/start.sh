@@ -39,7 +39,12 @@ fi
 
 # Render nginx config with PORT
 echo "[$(date)] Rendering nginx config with PORT=$PORT..." | tee -a $LOG_FILE
-envsubst '$PORT' < /etc/nginx/nginx.conf > /tmp/nginx.conf && mv /tmp/nginx.conf /etc/nginx/nginx.conf
+if command -v envsubst >/dev/null 2>&1; then
+    envsubst '$PORT' < /etc/nginx/nginx.conf > /tmp/nginx.conf && mv /tmp/nginx.conf /etc/nginx/nginx.conf
+else
+    # Fallback if envsubst is unavailable
+    sed -i "s/\\\${PORT}/${PORT}/g" /etc/nginx/nginx.conf
+fi
 
 # Setup directories
 echo "[$(date)] Setting up directories..." | tee -a $LOG_FILE
