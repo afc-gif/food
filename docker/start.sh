@@ -35,13 +35,7 @@ nginx -t 2>&1 || { echo "Nginx config invalid!"; exit 1; }
 echo "[$(date)] Starting PHP-FPM..."
 php-fpm -D
 
-sleep 1
-
-echo "[$(date)] Verifying FPM is running..."
-if ! pgrep -x "php-fpm" > /dev/null; then
-    echo "[$(date)] ERROR: PHP-FPM failed to start"
-    exit 1
-fi
+sleep 2
 
 echo "[$(date)] Starting Nginx..."
 exec nginx -g 'daemon off;'
