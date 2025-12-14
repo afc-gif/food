@@ -110,6 +110,7 @@ fi
 } | tee -a $LOG_FILE 2>&1
 
 # === NGINX STARTUP === 
+echo "[$(date)] NGINX_STARTUP_BEGIN" >> $LOG_FILE 2>&1
 echo "[$(date)] Final permission checks..." | tee -a $LOG_FILE
 chmod -R 777 storage/logs 2>/dev/null || true
 chown -R www-data:www-data storage/logs 2>/dev/null || true
@@ -124,5 +125,9 @@ chmod 666 storage/logs/nginx-*.log 2>/dev/null || true
 echo "[$(date)] Nginx starting in foreground on port 80..." | tee -a $LOG_FILE
 echo "[$(date)] ===== APP READY FOR REQUESTS =====" | tee -a $LOG_FILE
 
+echo "[$(date)] About to start nginx..." >> $LOG_FILE 2>&1
+
 # Start Nginx - run in foreground
-nginx -g 'daemon off;' >> $LOG_FILE 2>&1
+echo "[$(date)] nginx -g daemon off; starting..." >> $LOG_FILE 2>&1
+nginx -g 'daemon off;' 2>&1 | tee -a $LOG_FILE
+echo "[$(date)] nginx exited with code $?" >> $LOG_FILE 2>&1
