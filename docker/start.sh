@@ -73,4 +73,12 @@ mkdir -p storage/logs
 } | tee -a $LOG_FILE
 
 # Start Nginx in foreground (keeps container alive)
-nginx -g 'daemon off;' 2>&1 | tee -a $LOG_FILE
+# If Nginx exits, show error logs before exiting
+if ! nginx -g 'daemon off;' 2>&1 | tee -a $LOG_FILE; then
+    echo ""
+    echo "===== NGINX ERROR LOG ====="
+    tail -50 storage/logs/nginx-error.log 2>/dev/null || echo "No nginx error log"
+    echo "===== LARAVEL ERROR LOG ====="
+    tail -50 storage/logs/laravel.log 2>/dev/null || echo "No laravel log"
+    exit 1
+fi
