@@ -7,6 +7,9 @@ mkdir -p storage/logs
 
 echo "===== APP STARTUP: $(date) =====" | tee $LOG_FILE
 
+# Ensure PORT is set (Railway injects it)
+PORT=${PORT:-80}
+
 # Ensure .env exists
 if [ ! -f .env ]; then
     echo "[$(date)] Creating .env from container environment..." | tee -a $LOG_FILE
@@ -33,6 +36,10 @@ QUEUE_CONNECTION=${QUEUE_CONNECTION:-database}
 EOF
     chmod 640 .env
 fi
+
+# Render nginx config with PORT
+echo "[$(date)] Rendering nginx config with PORT=$PORT..." | tee -a $LOG_FILE
+envsubst '$PORT' < /etc/nginx/nginx.conf > /tmp/nginx.conf && mv /tmp/nginx.conf /etc/nginx/nginx.conf
 
 # Setup directories
 echo "[$(date)] Setting up directories..." | tee -a $LOG_FILE
