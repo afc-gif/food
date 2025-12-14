@@ -78,15 +78,9 @@ echo "[$(date)] Starting PHP-FPM..." | tee -a $LOG_FILE
 php-fpm -D 2>&1 | tee -a $LOG_FILE || { echo "[$(date)] ❌ PHP-FPM failed!" | tee -a $LOG_FILE; exit 1; }
 echo "[$(date)] ✓ PHP-FPM started" | tee -a $LOG_FILE
 
-sleep 2
-
-# Verify PHP-FPM (with timeout)
-echo "[$(date)] Verifying PHP-FPM listening on 9000..." | tee -a $LOG_FILE
-timeout 5 ss -tlnp 2>/dev/null | grep -q 9000 && echo "[$(date)] ✓ PHP-FPM listening on 9000" | tee -a $LOG_FILE || echo "[$(date)] ⚠ Cannot verify PHP-FPM port" | tee -a $LOG_FILE
-
-# NGINX START
+# NGINX START - skip verification, just start
 echo "" | tee -a $LOG_FILE
-echo "[$(date)] ===== STARTING NGINX ON PORT 80 =====" | tee -a $LOG_FILE
+echo "[$(date)] ===== STARTING NGINX ON PORT 0.0.0.0:80 =====" | tee -a $LOG_FILE
 echo "[$(date)] ===== APP READY FOR REQUESTS =====" | tee -a $LOG_FILE
 echo "" | tee -a $LOG_FILE
 
@@ -94,7 +88,5 @@ echo "" | tee -a $LOG_FILE
 touch storage/logs/nginx-error.log storage/logs/nginx-access.log 2>/dev/null || true
 chmod 666 storage/logs/nginx-*.log 2>/dev/null || true
 
-echo "[$(date)] Starting nginx -g 'daemon off;'..." | tee -a $LOG_FILE
-
-# Start Nginx in foreground
-exec nginx -g 'daemon off;' 2>&1 | tee -a $LOG_FILE
+# Start Nginx in foreground - replace this process
+exec nginx -g 'daemon off;'
