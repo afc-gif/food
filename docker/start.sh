@@ -140,5 +140,13 @@ chown -R www-data:www-data storage/logs 2>/dev/null || true
 
 echo "[$(date)] Starting Nginx..." | tee -a $LOG_FILE
 
-# Start Nginx in foreground and capture all output
-nginx -g 'daemon off;' 2>&1 | tee -a $LOG_FILE
+# Ensure Nginx can write logs
+touch storage/logs/nginx-error.log storage/logs/nginx-access.log 2>/dev/null || true
+chmod 666 storage/logs/nginx-*.log 2>/dev/null || true
+
+# Start Nginx and capture all output
+echo "[$(date)] Nginx starting in foreground (PID $$)..." | tee -a $LOG_FILE
+echo "[$(date)] ===== APP READY FOR REQUESTS ON PORT 80 =====" | tee -a $LOG_FILE
+
+# Start Nginx - this will run forever
+exec nginx -g 'daemon off;' 2>&1 | tee -a $LOG_FILE
