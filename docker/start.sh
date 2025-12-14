@@ -64,7 +64,20 @@ mkdir -p storage/logs
     php-fpm -D 2>&1 || { echo "[$(date)] ❌ ERROR: PHP-FPM failed to start"; exit 1; }
     echo "[$(date)] ✓ PHP-FPM started"
     
-    sleep 2
+    sleep 3
+    
+    # Verify PHP-FPM is listening
+    echo "[$(date)] Verifying PHP-FPM is listening..."
+    if netstat -tlnp 2>/dev/null | grep -q 9000; then
+        echo "[$(date)] ✓ PHP-FPM listening on port 9000"
+    else
+        echo "[$(date)] ⚠ Port 9000 not found, trying ss command..."
+        if ss -tlnp 2>/dev/null | grep -q 9000; then
+            echo "[$(date)] ✓ PHP-FPM listening on port 9000"
+        else
+            echo "[$(date)] ⚠ Cannot verify PHP-FPM listening (netstat/ss not available)"
+        fi
+    fi
     
     # Start Nginx
     echo "[$(date)] Starting Nginx..."
@@ -72,12 +85,24 @@ mkdir -p storage/logs
     
 } | tee -a $LOG_FILE
 
+# Test PHP-FPM connectivity before starting Nginx
+echo "[$(date)] Testing PHP-FPM connectivity..." | tee -a $LOG_FILE
+if timeout 5 bash -c "</dev/tcp/127.0.0.1/9000" 2>/dev/null; then
+    echo "[$(date)] ✓ PHP-FPM port 9000 is reachable" | tee -a $LOG_FILE
+else
+    echo "[$(date)] ⚠ Warning: PHP-FPM port may not be reachable" | tee -a $LOG_FILE
+fi
+
 # Start Nginx in foreground (keeps container alive)
 # If Nginx exits, show error logs before exiting
 if ! nginx -g 'daemon off;' 2>&1 | tee -a $LOG_FILE; then
     echo ""
     echo "===== NGINX ERROR LOG ====="
     tail -50 storage/logs/nginx-error.log 2>/dev/null || echo "No nginx error log"
+    echo "===== LARAVEL ERROR LOG ====="
+    tail -50 storage/logs/laravel.log 2>/dev/null || echo "No laravel log"
+    exit 1
+fi
     echo "===== LARAVEL ERROR LOG ====="
     tail -50 storage/logs/laravel.log 2>/dev/null || echo "No laravel log"
     exit 1
