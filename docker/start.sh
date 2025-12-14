@@ -19,6 +19,7 @@ echo "[$(date)] Storage link verified"
 # Cache config/routes for speed
 php artisan config:clear 2>&1 || true
 php artisan route:clear 2>&1 || true
+php artisan view:clear 2>&1 || true
 echo "[$(date)] Cache cleared"
 
 php artisan config:cache 2>&1
