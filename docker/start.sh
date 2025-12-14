@@ -148,5 +148,5 @@ chmod 666 storage/logs/nginx-*.log 2>/dev/null || true
 echo "[$(date)] Nginx starting in foreground (PID $$)..." | tee -a $LOG_FILE
 echo "[$(date)] ===== APP READY FOR REQUESTS ON PORT 80 =====" | tee -a $LOG_FILE
 
-# Start Nginx - this will run forever
-exec nginx -g 'daemon off;' 2>&1 | tee -a $LOG_FILE
+# Start Nginx - run in foreground with output redirected to logs and stdout
+nginx -g 'daemon off;' >> $LOG_FILE 2>&1
