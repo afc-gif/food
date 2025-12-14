@@ -11,8 +11,8 @@ mkdir -p storage/logs
     
     # Ensure writable dirs exist
     echo "[$(date)] Creating directories..."
-    mkdir -p storage/framework/{cache,data,sessions,views} bootstrap/cache /run/nginx
-    chmod -R 775 storage bootstrap/cache
+    mkdir -p storage/logs storage/framework/{cache,data,sessions,views} bootstrap/cache /run/nginx
+    chmod -R 775 storage bootstrap/cache /run/nginx
     chown -R www-data:www-data storage bootstrap/cache /run/nginx public
     echo "[$(date)] ✓ Directories ready"
     
@@ -93,8 +93,12 @@ else
     echo "[$(date)] ⚠ Warning: PHP-FPM port may not be reachable" | tee -a $LOG_FILE
 fi
 
-# Start Nginx in foreground (keeps container alive)
-# If Nginx exits, show error logs before exiting
+# Final permission check before Nginx
+echo "[$(date)] Final permissions check..." | tee -a $LOG_FILE
+chmod -R 777 storage/logs 2>/dev/null || true
+chown -R www-data:www-data storage/logs 2>/dev/null || true
+
+echo "[$(date)] Starting Nginx in foreground..." | tee -a $LOG_FILE
 if ! nginx -g 'daemon off;' 2>&1 | tee -a $LOG_FILE; then
     echo ""
     echo "===== NGINX ERROR LOG ====="
