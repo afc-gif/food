@@ -11,6 +11,7 @@ echo "===== APP STARTUP: $(date) =====" | tee $LOG_FILE
 PORT=${PORT:-80}
 
 # Resolve DB settings up front so we can reuse them below.
+
 DB_HOST_VALUE=${DB_HOST:-${PGHOST:-${RENDER_EXTERNAL_DB_HOST:-}}}
 DB_PORT_VALUE=${DB_PORT:-${PGPORT:-5432}}
 DB_DATABASE_VALUE=${DB_DATABASE:-${PGDATABASE:-railway}}
@@ -108,29 +109,31 @@ fi
 echo "[$(date)] ✓ Nginx config valid" | tee -a $LOG_FILE
 
 # Start PHP-FPM
-echo "[$(date)] Starting PHP-FPM..." | tee -a $LOG_FILE
-php-fpm -D 2>&1 | tee -a $LOG_FILE || { echo "[$(date)] ❌ PHP-FPM failed!" | tee -a $LOG_FILE; exit 1; }
-echo "[$(date)] ✓ PHP-FPM started" | tee -a $LOG_FILE
+echo "[$(date)] Starting PHP-FPM..." 2>&1 | tee -a $LOG_FILE
+php-fpm -D 2>&1 | tee -a $LOG_FILE || { echo "[$(date)] ❌ PHP-FPM failed!" 2>&1 | tee -a $LOG_FILE; exit 1; }
+echo "[$(date)] ✓ PHP-FPM started" 2>&1 | tee -a $LOG_FILE
 
-# Log checkpoint before sleep
-echo "[$(date)] [CHECKPOINT] Before sleep" | tee -a $LOG_FILE
+# Log checkpoint - NO BUFFERING
+echo "[$(date)] [CHECKPOINT-1] Before sleep" >&2
+echo "[$(date)] [CHECKPOINT-1] Before sleep" >> $LOG_FILE
 
-# Flush output
-sync
-echo "[$(date)] [CHECKPOINT] After sync, sleeping for 1 second..." | tee -a $LOG_FILE
-sleep 1
-echo "[$(date)] [CHECKPOINT] After sleep, about to start Nginx" | tee -a $LOG_FILE
+# Flush output - force it
+( sync; sleep 1 )
 
-# NGINX START - skip verification, just start
-{
-    echo ""
-    echo "[$(date)] ===== STARTING NGINX ON PORT 0.0.0.0:${PORT:-80} ====="
-    echo "[$(date)] ===== APP READY FOR REQUESTS ====="
-    echo ""
-} | tee -a $LOG_FILE
+echo "[$(date)] [CHECKPOINT-2] After sleep, about to start Nginx" >&2
+echo "[$(date)] [CHECKPOINT-2] After sleep, about to start Nginx" >> $LOG_FILE
+
+# NGINX START
+echo "[$(date)] ===== STARTING NGINX ON PORT 0.0.0.0:${PORT:-80} =====" >&2
+echo "[$(date)] ===== APP READY FOR REQUESTS =====" >&2
 
 # Ensure log files exist and are writable
 touch storage/logs/nginx-error.log storage/logs/nginx-access.log 2>/dev/null || true
+chmod 666 storage/logs/nginx-*.log 2>/dev/null || true
+
+# Start Nginx in foreground
+echo "[$(date)] [CHECKPOINT-3] Executing nginx..." >&2
+exec nginx -g 'daemon off;'
 chmod 666 storage/logs/nginx-*.log 2>/dev/null || true
 
 # Start Nginx in foreground - replace this process
