@@ -15,7 +15,7 @@ if [ ! -f .env ]; then
 APP_NAME=Acie
 APP_ENV=production
 APP_DEBUG=false
-APP_URL=https://afc.com.ng
+APP_URL=https://www.afc.com.ng
 APP_KEY=base64:FjOkA8pS+80LCAG9Dk8ufkH3PcDn8VY3GMLlfdpt2wg=
 LOG_CHANNEL=stack
 LOG_LEVEL=debug
