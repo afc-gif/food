@@ -1,2 +1,27 @@
 User-agent: *
-Disallow:
+Allow: /
+Allow: /styles.css
+Allow: /script.js
+Allow: /assets/
+
+# Disallow admin pages and authentication
+Disallow: /admin
+Disallow: /pos
+Disallow: /staff
+Disallow: /kitchen
+Disallow: /profile
+Disallow: /api/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+
+# Disallow sensitive paths
+Disallow: /storage/
+Disallow: /vendor/
+Disallow: /bootstrap/
+Disallow: /.env
+Disallow: /artisan
+
+# Sitemap location
+Sitemap: https://www.afc.com.ng/sitemap.xml

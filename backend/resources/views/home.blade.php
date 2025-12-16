@@ -6,7 +6,29 @@
 <head>
   <meta charset="UTF-8" />
   <title>Acie Fraiche Cafe – Freshly Crafted, Simply Delicious</title>
+  <meta name="description" content="Discover Acie Fraiche Cafe - freshly crafted, simply delicious food. Browse our menu, place orders online, and enjoy quality meals delivered with care." />
+  <meta name="keywords" content="cafe, fresh food, restaurant, online ordering, menu, food delivery, Acie Fraiche" />
+  <meta name="author" content="Acie Fraiche Cafe" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://www.afc.com.ng/" />
+  <meta property="og:title" content="Acie Fraiche Cafe – Freshly Crafted, Simply Delicious" />
+  <meta property="og:description" content="Discover Acie Fraiche Cafe - freshly crafted, simply delicious food. Browse our menu and place orders online." />
+  <meta property="og:image" content="{{ asset('assets/logo2.png') }}" />
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image" />
+  <meta property="twitter:url" content="https://www.afc.com.ng/" />
+  <meta property="twitter:title" content="Acie Fraiche Cafe – Freshly Crafted, Simply Delicious" />
+  <meta property="twitter:description" content="Discover Acie Fraiche Cafe - freshly crafted, simply delicious food. Browse our menu and place orders online." />
+  <meta property="twitter:image" content="{{ asset('assets/logo2.png') }}" />
+  
+  <!-- Canonical URL -->
+  <link rel="canonical" href="https://www.afc.com.ng/" />
+  
+  <!-- Favicon -->
   <link rel="icon" href="{{ asset('assets/logo2.png') }}" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -15,6 +37,50 @@
     rel="stylesheet"
   />
   <link rel="stylesheet" href="{{ asset('styles.css') }}?v=7" />
+  
+  <!-- JSON-LD Structured Data for Restaurant -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org/",
+    "@type": "Restaurant",
+    "name": "Acie Fraiche Cafe",
+    "image": "{{ asset('assets/logo2.png') }}",
+    "description": "Freshly Crafted, Simply Delicious",
+    "url": "https://www.afc.com.ng/",
+    "telephone": "+234XXX-XXX-XXXX",
+    "servesCuisine": ["International", "Cafe"],
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "Your Street Address",
+      "addressLocality": "Lagos",
+      "addressRegion": "Lagos",
+      "postalCode": "XXXXX",
+      "addressCountry": "NG"
+    },
+    "sameAs": [
+      "https://www.facebook.com/",
+      "https://www.instagram.com/",
+      "https://www.twitter.com/"
+    ]
+  }
+  </script>
+  
+  <!-- JSON-LD Structured Data for Organization -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "Acie Fraiche Cafe",
+    "url": "https://www.afc.com.ng/",
+    "logo": "{{ asset('assets/logo2.png') }}",
+    "description": "Freshly Crafted, Simply Delicious Food",
+    "contactPoint": {
+      "@type": "ContactPoint",
+      "contactType": "Customer Service",
+      "telephone": "+234XXX-XXX-XXXX"
+    }
+  }
+  </script>
 </head>
 <body>
   <header class="af-header">

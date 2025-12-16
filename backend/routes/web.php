@@ -38,6 +38,24 @@ Route::get('/assets/{file}', function ($file) {
     return abort(404);
 })->where('file', '.*');
 
+// SEO: Sitemap
+Route::get('/sitemap.xml', function () {
+    $xml = '<?xml version="1.0" encoding="UTF-8"?>' . "\n";
+    $xml .= '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">' . "\n";
+    
+    // Home page - highest priority
+    $xml .= '  <url>' . "\n";
+    $xml .= '    <loc>https://www.afc.com.ng/</loc>' . "\n";
+    $xml .= '    <lastmod>' . now()->toAtomString() . '</lastmod>' . "\n";
+    $xml .= '    <changefreq>daily</changefreq>' . "\n";
+    $xml .= '    <priority>1.0</priority>' . "\n";
+    $xml .= '  </url>' . "\n";
+    
+    $xml .= '</urlset>';
+    
+    return response($xml, 200, ['Content-Type' => 'application/xml']);
+});
+
 Route::get('/', function () {
     try {
         $categories = Category::orderBy('sort_order')->orderBy('name')->get();
