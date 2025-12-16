@@ -57,4 +57,7 @@ if ! nginx -t 2>&1; then
 fi
 
 echo "=== STARTING NGINX ON PORT 80 ==="
+echo "Nginx PID: $$"
+
+# Start Nginx in foreground - if it exits, this script exits
 exec nginx -g 'daemon off;'
