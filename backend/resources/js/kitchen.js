@@ -170,6 +170,16 @@ if (ordersEl) {
         }
 
         emptyEl.style.display = 'none';
+        
+        // Save current input values before re-render
+        const savedInputs = {};
+        document.querySelectorAll('[data-custom-eta]').forEach(input => {
+            const orderId = input.getAttribute('data-order');
+            if (input.value) {
+                savedInputs[orderId] = input.value;
+            }
+        });
+        
         ordersEl.innerHTML = visible
             .map((order) => {
                 const items = order.items
@@ -185,6 +195,9 @@ if (ordersEl) {
                 const channelPill = `<span class="pill tone-neutral">${escapeHtml(order.channel ?? 'pos')}</span>`;
                 const isReady = order.kitchen_status === 'ready';
                 const isPrepping = order.kitchen_status === 'prepping';
+                
+                // Restore saved input value if it exists
+                const savedValue = savedInputs[order.id] ? ` value="${escapeHtml(savedInputs[order.id])}"` : '';
 
                 return `
                     <div class="order ${isFresh ? 'live' : ''}" data-order-id="${order.id}">
@@ -213,7 +226,7 @@ if (ordersEl) {
                             <button class="brand-btn ghost" data-action="eta" data-eta="15" data-order="${order.id}">15m</button>
                             <button class="brand-btn ghost" data-action="eta" data-eta="20" data-order="${order.id}">20m</button>
                             <div class="eta-input-group">
-                                <input type="number" data-custom-eta data-order="${order.id}" placeholder="mins" min="1" max="180" value="">
+                                <input type="number" data-custom-eta data-order="${order.id}" placeholder="mins" min="1" max="180"${savedValue}>
                                 <button type="button" class="brand-btn ghost" data-action="custom-eta" data-order="${order.id}">Set</button>
                             </div>
                             <button class="brand-btn" data-action="status" data-status="ready" data-order="${order.id}" ${isReady ? 'disabled' : ''}>Ready</button>
