@@ -10,6 +10,13 @@ echo "===== APP STARTUP: $(date) =====" | tee $LOG_FILE
 # Ensure PORT is set (Railway injects it)
 PORT=${PORT:-80}
 
+# Resolve DB settings up front so we can reuse them below.
+DB_HOST_VALUE=${DB_HOST:-${PGHOST:-${RENDER_EXTERNAL_DB_HOST:-}}}
+DB_PORT_VALUE=${DB_PORT:-${PGPORT:-5432}}
+DB_DATABASE_VALUE=${DB_DATABASE:-${PGDATABASE:-railway}}
+DB_USERNAME_VALUE=${DB_USERNAME:-${PGUSER:-postgres}}
+DB_PASSWORD_VALUE=${DB_PASSWORD:-${PGPASSWORD:-}}
+
 # Ensure .env exists
 if [ ! -f .env ]; then
     echo "[$(date)] Creating .env from container environment..." | tee -a $LOG_FILE
@@ -23,11 +30,11 @@ LOG_CHANNEL=${LOG_CHANNEL:-stack}
 LOG_LEVEL=${LOG_LEVEL:-debug}
 
 DB_CONNECTION=${DB_CONNECTION:-pgsql}
-DB_HOST=${DB_HOST:-${PGHOST:-postgres.railway.internal}}
-DB_PORT=${DB_PORT:-${PGPORT:-5432}}
-DB_DATABASE=${DB_DATABASE:-${PGDATABASE:-railway}}
-DB_USERNAME=${DB_USERNAME:-${PGUSER:-postgres}}
-DB_PASSWORD=${DB_PASSWORD:-${PGPASSWORD:-}}
+DB_HOST=${DB_HOST_VALUE}
+DB_PORT=${DB_PORT_VALUE}
+DB_DATABASE=${DB_DATABASE_VALUE}
+DB_USERNAME=${DB_USERNAME_VALUE}
+DB_PASSWORD=${DB_PASSWORD_VALUE}
 
 SESSION_DRIVER=${SESSION_DRIVER:-database}
 CACHE_STORE=${CACHE_STORE:-database}
@@ -74,10 +81,23 @@ echo "[$(date)] Caching routes..." | tee -a $LOG_FILE
 php artisan route:cache 2>&1 | tee -a $LOG_FILE || echo "[$(date)] ❌ Route cache failed" | tee -a $LOG_FILE
 echo "[$(date)] ✓ Routes cached" | tee -a $LOG_FILE
 
-# Migrations
-echo "[$(date)] Running migrations..." | tee -a $LOG_FILE
-php artisan migrate --force 2>&1 | tee -a $LOG_FILE || echo "[$(date)] Migrations skipped" | tee -a $LOG_FILE
-echo "[$(date)] ✓ Migrations complete" | tee -a $LOG_FILE
+# Migrations (opt-in with retry to tolerate slow DB start)
+if [ "${RUN_MIGRATIONS:-true}" != "false" ]; then
+    echo "[$(date)] Running migrations (retries=${MIGRATE_RETRIES:-5})..." | tee -a $LOG_FILE
+    attempts=0
+    until php artisan migrate --force 2>&1 | tee -a $LOG_FILE; do
+        attempts=$((attempts + 1))
+        if [ "$attempts" -ge "${MIGRATE_RETRIES:-5}" ]; then
+            echo "[$(date)] ❌ Migrations failed after $attempts attempts" | tee -a $LOG_FILE
+            break
+        fi
+        echo "[$(date)] Migrations failed; retrying in ${MIGRATE_BACKOFF:-3}s (attempt $attempts)" | tee -a $LOG_FILE
+        sleep "${MIGRATE_BACKOFF:-3}"
+    done
+    echo "[$(date)] ✓ Migrations complete (attempts=$attempts)" | tee -a $LOG_FILE
+else
+    echo "[$(date)] Skipping migrations because RUN_MIGRATIONS=false" | tee -a $LOG_FILE
+fi
 
 # Validate Nginx (after rendering)
 echo "[$(date)] Validating Nginx (PORT=$PORT)..." | tee -a $LOG_FILE
