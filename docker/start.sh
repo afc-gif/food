@@ -35,6 +35,12 @@ fi
 echo "Running storage link..."
 php artisan storage:link 2>&1 || true
 
+echo "Clearing caches..."
+php artisan config:clear 2>&1 || true
+
+echo "Caching config..."
+php artisan config:cache 2>&1 || echo "Config cache failed, continuing..."
+
 echo "Caching routes..."
 php artisan route:cache 2>&1 || echo "Route cache failed, continuing..."
 
@@ -43,6 +49,12 @@ php-fpm -D
 
 echo "=== PHP-FPM STARTED ==="
 sleep 2
+
+echo "Validating Nginx config..."
+if ! nginx -t 2>&1; then
+    echo "❌ Nginx config is invalid!"
+    exit 1
+fi
 
 echo "=== STARTING NGINX ON PORT 80 ==="
 exec nginx -g 'daemon off;'
