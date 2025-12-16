@@ -112,14 +112,19 @@ echo "[$(date)] Starting PHP-FPM..." | tee -a $LOG_FILE
 php-fpm -D 2>&1 | tee -a $LOG_FILE || { echo "[$(date)] ❌ PHP-FPM failed!" | tee -a $LOG_FILE; exit 1; }
 echo "[$(date)] ✓ PHP-FPM started" | tee -a $LOG_FILE
 
+# Log checkpoint before sleep
+echo "[$(date)] [CHECKPOINT] Before sleep" | tee -a $LOG_FILE
+
 # Flush output
 sync
+echo "[$(date)] [CHECKPOINT] After sync, sleeping for 1 second..." | tee -a $LOG_FILE
 sleep 1
+echo "[$(date)] [CHECKPOINT] After sleep, about to start Nginx" | tee -a $LOG_FILE
 
 # NGINX START - skip verification, just start
 {
     echo ""
-    echo "[$(date)] ===== STARTING NGINX ON PORT 0.0.0.0:${PORT} ====="
+    echo "[$(date)] ===== STARTING NGINX ON PORT 0.0.0.0:${PORT:-80} ====="
     echo "[$(date)] ===== APP READY FOR REQUESTS ====="
     echo ""
 } | tee -a $LOG_FILE
@@ -129,5 +134,5 @@ touch storage/logs/nginx-error.log storage/logs/nginx-access.log 2>/dev/null || 
 chmod 666 storage/logs/nginx-*.log 2>/dev/null || true
 
 # Start Nginx in foreground - replace this process
-echo "[$(date)] Executing: nginx -g 'daemon off;'" | tee -a $LOG_FILE
+echo "[$(date)] [CHECKPOINT] Executing: nginx -g 'daemon off;'" | tee -a $LOG_FILE
 exec nginx -g 'daemon off;'
