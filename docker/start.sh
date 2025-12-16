@@ -50,6 +50,14 @@ php-fpm -D
 echo "=== PHP-FPM STARTED ==="
 sleep 2
 
+# Verify PHP-FPM is listening
+echo "Checking PHP-FPM socket connectivity..."
+if php -r "var_dump(fsockopen('127.0.0.1', 9000, \$errno, \$errstr, 2));" 2>&1 | grep -q "resource"; then
+    echo "✓ PHP-FPM socket is responding"
+else
+    echo "✗ WARNING: PHP-FPM socket may not be responding"
+fi
+
 echo "Validating Nginx config..."
 if ! nginx -t 2>&1; then
     echo "❌ Nginx config is invalid!"
