@@ -37,50 +37,6 @@
     rel="stylesheet"
   />
   <link rel="stylesheet" href="{{ asset('styles.css') }}?v=7" />
-  
-  <!-- JSON-LD Structured Data for Restaurant -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org/",
-    "@type": "Restaurant",
-    "name": "Acie Fraiche Cafe",
-    "image": "{{ asset('assets/logo2.png') }}",
-    "description": "Freshly Crafted, Simply Delicious",
-    "url": "https://www.afc.com.ng/",
-    "telephone": "+234XXX-XXX-XXXX",
-    "servesCuisine": ["International", "Cafe"],
-    "address": {
-      "@type": "PostalAddress",
-      "streetAddress": "Your Street Address",
-      "addressLocality": "Lagos",
-      "addressRegion": "Lagos",
-      "postalCode": "XXXXX",
-      "addressCountry": "NG"
-    },
-    "sameAs": [
-      "https://www.facebook.com/",
-      "https://www.instagram.com/",
-      "https://www.twitter.com/"
-    ]
-  }
-  </script>
-  
-  <!-- JSON-LD Structured Data for Organization -->
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    "name": "Acie Fraiche Cafe",
-    "url": "https://www.afc.com.ng/",
-    "logo": "{{ asset('assets/logo2.png') }}",
-    "description": "Freshly Crafted, Simply Delicious Food",
-    "contactPoint": {
-      "@type": "ContactPoint",
-      "contactType": "Customer Service",
-      "telephone": "+234XXX-XXX-XXXX"
-    }
-  }
-  </script>
 </head>
 <body>
   <header class="af-header">
