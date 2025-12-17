@@ -46,7 +46,7 @@ Route::get('/sitemap.xml', function () {
     // Home page - highest priority
     $xml .= '  <url>' . "\n";
     $xml .= '    <loc>https://www.afc.com.ng/</loc>' . "\n";
-    $xml .= '    <lastmod>' . now()->toAtomString() . '</lastmod>' . "\n";
+    $xml .= '    <lastmod>' . date('Y-m-d\TH:i:sP') . '</lastmod>' . "\n";
     $xml .= '    <changefreq>daily</changefreq>' . "\n";
     $xml .= '    <priority>1.0</priority>' . "\n";
     $xml .= '  </url>' . "\n";
