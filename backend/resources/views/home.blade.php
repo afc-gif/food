@@ -37,6 +37,17 @@
     rel="stylesheet"
   />
   <link rel="stylesheet" href="{{ asset('styles.css') }}?v=7" />
+  
+  <!-- JSON-LD Structured Data for Organization -->
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "name": "Acie Fraiche Cafe",
+  "url": "https://www.afc.com.ng/",
+  "logo": "{{ asset('assets/logo2.png') }}"
+}
+  </script>
 </head>
 <body>
   <header class="af-header">
