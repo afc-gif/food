@@ -170,7 +170,7 @@ if (ordersEl) {
         }
 
         emptyEl.style.display = 'none';
-        
+
         // Save current input values before re-render
         const savedInputs = {};
         document.querySelectorAll('[data-custom-eta]').forEach(input => {
@@ -179,7 +179,7 @@ if (ordersEl) {
                 savedInputs[orderId] = input.value;
             }
         });
-        
+
         ordersEl.innerHTML = visible
             .map((order) => {
                 const items = order.items
@@ -195,7 +195,7 @@ if (ordersEl) {
                 const channelPill = `<span class="pill tone-neutral">${escapeHtml(order.channel ?? 'pos')}</span>`;
                 const isReady = order.kitchen_status === 'ready';
                 const isPrepping = order.kitchen_status === 'prepping';
-                
+
                 // Restore saved input value if it exists
                 const savedValue = savedInputs[order.id] ? ` value="${escapeHtml(savedInputs[order.id])}"` : '';
 

@@ -10,24 +10,24 @@
   <meta name="keywords" content="cafe, fresh food, restaurant, online ordering, menu, food delivery, Acie Fraiche" />
   <meta name="author" content="Acie Fraiche Cafe" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  
+
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://www.afc.com.ng/" />
   <meta property="og:title" content="Acie Fraiche Cafe – Freshly Crafted, Simply Delicious" />
   <meta property="og:description" content="Discover Acie Fraiche Cafe - freshly crafted, simply delicious food. Browse our menu and place orders online." />
   <meta property="og:image" content="{{ asset('assets/logo2.png') }}" />
-  
+
   <!-- Twitter -->
   <meta property="twitter:card" content="summary_large_image" />
   <meta property="twitter:url" content="https://www.afc.com.ng/" />
   <meta property="twitter:title" content="Acie Fraiche Cafe – Freshly Crafted, Simply Delicious" />
   <meta property="twitter:description" content="Discover Acie Fraiche Cafe - freshly crafted, simply delicious food. Browse our menu and place orders online." />
   <meta property="twitter:image" content="{{ asset('assets/logo2.png') }}" />
-  
+
   <!-- Canonical URL -->
   <link rel="canonical" href="https://www.afc.com.ng/" />
-  
+
   <!-- Favicon -->
   <link rel="icon" href="{{ asset('assets/logo2.png') }}" type="image/png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
