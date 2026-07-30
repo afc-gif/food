@@ -6,15 +6,19 @@ use App\Http\Controllers\Controller;
 use App\Events\MenuItemUpdated;
 use App\Models\MenuItem;
 use App\Models\PriceHistory;
+use App\Services\CloudinaryUploader;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class MenuItemController extends Controller
 {
+    public function __construct(private readonly CloudinaryUploader $uploader)
+    {
+    }
+
     public function index(Request $request)
     {
         try {
@@ -169,9 +173,7 @@ class MenuItemController extends Controller
 
     private function storeImage(Request $request): string
     {
-        $path = $request->file('image')->store('menu', 'public');
-
-        return Storage::disk('public')->url($path);
+        return $this->uploader->upload($request->file('image'));
     }
 
     private function broadcastMenuItem(MenuItem $item): void

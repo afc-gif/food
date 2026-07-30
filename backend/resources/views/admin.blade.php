@@ -230,6 +230,8 @@
                             <input name="name" placeholder="e.g. Mains" required />
                             <label>Description</label>
                             <input name="description" placeholder="Optional" />
+                            <label>Image</label>
+                            <input name="image" type="file" accept="image/*" />
                             <button class="btn-primary" type="submit">Add Category</button>
                         </form>
                     </div>
@@ -696,6 +698,7 @@
             categoryList.innerHTML = categories.map(cat => `
                 <div class="item">
                     <div>
+                        ${cat.image_url ? `<img class="thumb" src="${cat.image_url}" alt="${cat.name}">` : ''}
                         <h4>${cat.name}</h4>
                         <small class="muted">${cat.description || ''}</small>
                     </div>
@@ -1183,17 +1186,13 @@
         categoryForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const form = new FormData(categoryForm);
+            if (form.get('image') && form.get('image').size === 0) {
+                form.delete('image');
+            }
+            form.set('is_active', '1');
             const submitBtn = categoryForm.querySelector('button[type="submit"]');
             await runAction(submitBtn, async () => {
-                const res = await safeRequest('/api/categories', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: form.get('name'),
-                        description: form.get('description') || null,
-                        is_active: true,
-                    }),
-                });
+                const res = await safeRequest('/api/categories', { method: 'POST', body: form });
                 if (res.ok) toast('Category added');
                 categoryForm.reset();
                 await loadCategories();
