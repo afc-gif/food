@@ -305,7 +305,7 @@
           <div class="af-contact-grid">
             <div>
               <strong>Phone</strong>
-              <p>+234 701 586 2018</p>
+              <p>08143190700</p>
             </div>
             <div>
               <strong>Email</strong>
@@ -313,7 +313,10 @@
             </div>
             <div>
               <strong>Address</strong>
-              <p>No 1 Artsci Lane opp International Market Park, Celestine Omehia road (Sars road)</p>
+              <p>
+                <strong>SARS ROAD</strong><br>
+                Immediately after the SARS Police Station you will see a Smart Home Office.
+              </p>
             </div>
             <div>
               <strong>Hours</strong>

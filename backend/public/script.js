@@ -751,7 +751,7 @@ document.addEventListener("DOMContentLoaded", () => {
     message += `%0ATotal: ${formatMoney(getCartTotal())}%0A`;
     message += `%0AOrder Source: Website`;
 
-    const whatsappNumber = "2347015862018";
+    const whatsappNumber = "2348143190700";
     const url = `https://wa.me/${whatsappNumber}?text=${message}`;
     createBackendOrder({ name, phone, note, service, time }).catch((e) => {
       console.warn("Could not create backend order", e);
