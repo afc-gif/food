@@ -15,8 +15,12 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
-    public function create(): View
+    public function create(Request $request): View|RedirectResponse
     {
+        if ($request->user()) {
+            return $this->redirectToDashboard($request->user());
+        }
+
         return view('auth.login');
     }
 
@@ -40,24 +44,7 @@ class AuthenticatedSessionController extends Controller
             ]);
         }
 
-        $role = $user->role ?? '';
-        if ($user->hasRole('admin') || $role === 'admin') {
-            return redirect()->route('admin');
-        }
-        if ($user->hasRole('pos') || $role === 'pos') {
-            return redirect()->route('pos');
-        }
-        if ($user->hasRole('kitchen') || $role === 'kitchen') {
-            return redirect()->route('kitchen');
-        }
-        if ($user->hasRole('staff') || $role === 'staff') {
-            return redirect()->route('staff');
-        }
-        if ($user->hasRole('desk') || $role === 'desk') {
-            return redirect()->route('staff');
-        }
-        // Default to staff dashboard instead of public site
-        return redirect()->route('staff');
+        return $this->redirectToDashboard($user);
     }
 
     /**
@@ -72,5 +59,28 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/');
+    }
+
+    private function redirectToDashboard($user): RedirectResponse
+    {
+        $role = $user->role ?? '';
+
+        if ($user->hasRole('admin') || $role === 'admin') {
+            return redirect('/admin');
+        }
+
+        if ($user->hasRole('pos') || $role === 'pos') {
+            return redirect('/pos');
+        }
+
+        if ($user->hasRole('kitchen') || $role === 'kitchen') {
+            return redirect('/kitchen');
+        }
+
+        if ($user->hasRole('staff') || $user->hasRole('desk') || in_array($role, ['staff', 'desk'], true)) {
+            return redirect('/staff');
+        }
+
+        return redirect('/staff');
     }
 }

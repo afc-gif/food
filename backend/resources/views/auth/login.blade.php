@@ -10,7 +10,7 @@
     <!-- Session Status -->
     <x-auth-session-status class="mb-4" :status="session('status')" />
 
-    <form method="POST" action="{{ route('login') }}" style="display:grid; gap:12px;">
+    <form method="POST" action="/login" style="display:grid; gap:12px;">
         @csrf
 
         <div>
