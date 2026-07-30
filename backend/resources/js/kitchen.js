@@ -49,6 +49,19 @@ if (ordersEl) {
         });
     };
 
+    const isTypingEta = () => document.activeElement?.matches('[data-custom-eta]');
+
+    const ordersSignature = (items) => JSON.stringify(items.map((order) => ({
+        id: order.id,
+        status: order.status,
+        kitchen_status: order.kitchen_status,
+        kitchen_eta_minutes: order.kitchen_eta_minutes,
+        kitchen_eta_at: order.kitchen_eta_at,
+        kitchen_note: order.kitchen_note,
+        updated_at: order.updated_at ?? null,
+        item_count: order.items.length,
+    })));
+
     const updateKitchen = async (orderId, payload) => {
         const res = await apiFetch(`/api/orders/${orderId}/kitchen-status`, {
             method: 'POST',
@@ -77,9 +90,14 @@ if (ordersEl) {
             }
         });
 
-        orders = nextOrders;
-        renderOrders();
-        updateStats();
+        if (isTypingEta()) {
+            pendingOrders = nextOrders;
+            updateStats(nextOrders);
+            setConnection('Live - editing ETA', true, 'polling');
+            return;
+        }
+
+        applyOrders(nextOrders);
         setConnection('Live via polling', true, 'polling');
     };
 
@@ -92,12 +110,30 @@ if (ordersEl) {
 
     let orders = (window.initialOrders ?? [])
         .map(normalizeOrder);
+    let currentSignature = ordersSignature(orders);
+    let pendingOrders = null;
     orders.forEach(o => seenOrders.add(o.id));
 
     renderOrders();
     updateStats();
     setConnection('Starting polling…', true, 'polling');
     ordersPoller.start();
+
+    ordersEl.addEventListener('focusout', (event) => {
+        if (!event.target.matches('[data-custom-eta]')) {
+            return;
+        }
+
+        window.setTimeout(() => {
+            if (isTypingEta() || !pendingOrders) {
+                return;
+            }
+
+            applyOrders(pendingOrders, true);
+            pendingOrders = null;
+            setConnection('Live via polling', true, 'polling');
+        }, 120);
+    });
 
     if (soundBtn) {
         const setSoundLabel = () => soundBtn.textContent = `Sound: ${soundEnabled ? 'On' : 'Off'}`;
@@ -147,6 +183,7 @@ if (ordersEl) {
         // Remove orders not on the board (pending or already served)
         if (order.kitchen_status === 'pending' || order.kitchen_status === 'served') {
             orders = orders.filter((existing) => existing.id !== order.id);
+            currentSignature = ordersSignature(orders);
             renderOrders();
             updateStats();
             return;
@@ -156,6 +193,19 @@ if (ordersEl) {
             ...orders.filter((existing) => existing.id !== order.id),
         ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
+        currentSignature = ordersSignature(orders);
+        renderOrders();
+        updateStats();
+    }
+
+    function applyOrders(nextOrders, force = false) {
+        const nextSignature = ordersSignature(nextOrders);
+        if (!force && nextSignature === currentSignature) {
+            return;
+        }
+
+        orders = nextOrders;
+        currentSignature = nextSignature;
         renderOrders();
         updateStats();
     }
@@ -246,10 +296,10 @@ if (ordersEl) {
         updateStats();
     }
 
-    function updateStats() {
-        const total = orders.length;
-        const pending = orders.filter(o => o.kitchen_status === 'prepping' || o.kitchen_status === 'queued').length;
-        const etas = orders
+    function updateStats(sourceOrders = orders) {
+        const total = sourceOrders.length;
+        const pending = sourceOrders.filter(o => o.kitchen_status === 'prepping' || o.kitchen_status === 'queued').length;
+        const etas = sourceOrders
             .filter(o => o.kitchen_eta_minutes)
             .map(o => o.kitchen_eta_minutes)
             .sort((a, b) => a - b);
@@ -258,7 +308,9 @@ if (ordersEl) {
         statCountEl.textContent = total;
         document.getElementById('kitchenStatPending').textContent = pending;
         document.getElementById('kitchenStatETA').textContent = avgEta === '—' ? '—' : `${avgEta}m`;
-    }    function renderStatus(status) {
+    }
+
+    function renderStatus(status) {
         const meta = kitchenStatuses[status] ?? { label: status || 'Pending', tone: 'neutral' };
         return `<span class="pill tone-${meta.tone}">${meta.label}</span>`;
     }
