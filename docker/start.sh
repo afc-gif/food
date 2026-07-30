@@ -44,6 +44,9 @@ php artisan config:cache 2>&1 || echo "Config cache failed, continuing..."
 echo "Caching routes..."
 php artisan route:cache 2>&1 || echo "Route cache failed, continuing..."
 
+echo "Running migrations..."
+php artisan migrate --force 2>&1 || echo "Migration failed, continuing..."
+
 echo "Starting PHP-FPM..."
 php-fpm -D
 

@@ -58,7 +58,15 @@ class MenuItemController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $data['image_url'] = $this->storeImage($request);
+            try {
+                $data['image_url'] = $this->storeImage($request);
+            } catch (Throwable $e) {
+                report($e);
+
+                return response()->json([
+                    'message' => 'Image upload failed. Check Cloudinary settings and try again.',
+                ], 422);
+            }
         }
 
         $data['slug'] = Str::slug($data['name'] . '-' . Str::random(6));
@@ -102,7 +110,15 @@ class MenuItemController extends Controller
         $priceChanged = array_key_exists('price', $data) && $data['price'] !== null && $data['price'] != $menuItem->price;
 
         if ($request->hasFile('image')) {
-            $data['image_url'] = $this->storeImage($request);
+            try {
+                $data['image_url'] = $this->storeImage($request);
+            } catch (Throwable $e) {
+                report($e);
+
+                return response()->json([
+                    'message' => 'Image upload failed. Check Cloudinary settings and try again.',
+                ], 422);
+            }
         }
 
         $menuItem->update($data);

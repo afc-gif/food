@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Services\CloudinaryUploader;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
+use Throwable;
 
 class CategoryController extends Controller
 {
@@ -42,7 +43,15 @@ class CategoryController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $data['image_url'] = $this->uploader->upload($request->file('image'));
+            try {
+                $data['image_url'] = $this->uploader->upload($request->file('image'));
+            } catch (Throwable $e) {
+                report($e);
+
+                return response()->json([
+                    'message' => 'Image upload failed. Check Cloudinary settings and try again.',
+                ], 422);
+            }
         }
         unset($data['image']);
 
@@ -63,7 +72,15 @@ class CategoryController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
-            $data['image_url'] = $this->uploader->upload($request->file('image'));
+            try {
+                $data['image_url'] = $this->uploader->upload($request->file('image'));
+            } catch (Throwable $e) {
+                report($e);
+
+                return response()->json([
+                    'message' => 'Image upload failed. Check Cloudinary settings and try again.',
+                ], 422);
+            }
         }
         unset($data['image']);
 
