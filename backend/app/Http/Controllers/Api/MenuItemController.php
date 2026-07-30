@@ -64,7 +64,7 @@ class MenuItemController extends Controller
                 report($e);
 
                 return response()->json([
-                    'message' => 'Image upload failed. Check Cloudinary settings and try again.',
+                    'message' => 'Image upload failed: ' . $e->getMessage(),
                 ], 422);
             }
         }
@@ -116,7 +116,7 @@ class MenuItemController extends Controller
                 report($e);
 
                 return response()->json([
-                    'message' => 'Image upload failed. Check Cloudinary settings and try again.',
+                    'message' => 'Image upload failed: ' . $e->getMessage(),
                 ], 422);
             }
         }
