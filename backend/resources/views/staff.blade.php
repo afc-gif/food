@@ -68,6 +68,7 @@
         }
         button:active { transform: translateY(1px); }
         button.primary { background:var(--accent); color:#fff; }
+        button.danger { background:#fff1f2; border-color:#fecdd3; color:#b91c1c; }
         .muted { color:rgba(0,0,0,0.6); }
         .grid { display:grid; gap:14px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
         .stat { border:1px dashed var(--line); border-radius:14px; padding:12px; background:#fff; box-shadow:0 8px 20px rgba(0,0,0,0.04); }
@@ -258,6 +259,7 @@
                         <td>
                             <div class="actions">
                                 <button class="primary" onclick="approveOrder(${order.id}, this)">Approve &amp; send</button>
+                                <button class="danger" onclick="deletePendingOrder(${order.id}, this)">Delete</button>
                                 <button onclick="shareOrderWhatsapp(${order.id})">WhatsApp</button>
                             </div>
                         </td>
@@ -339,6 +341,27 @@
                 alert(e.message || 'Could not approve this order.');
             } finally {
                 if (btn) { btn.disabled = false; btn.textContent = text || 'Approve'; }
+            }
+        };
+
+        window.deletePendingOrder = async (id, btn) => {
+            const order = ordersCache.find(o => o.id === id);
+            const label = order?.code ? `order ${order.code}` : 'this pending order';
+            if (!confirm(`Delete ${label}? This can only be done before approval and cannot be undone.`)) {
+                return;
+            }
+
+            const text = btn?.textContent;
+            if (btn) { btn.disabled = true; btn.textContent = 'Deleting...'; }
+            try {
+                await safeRequest(`/api/orders/${id}`, { method: 'DELETE' });
+                ordersCache = ordersCache.filter(o => o.id !== id);
+                summarize();
+                showToast(`${order?.code || 'Order'} deleted.`);
+            } catch (e) {
+                alert(e.message || 'Could not delete this order.');
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = text || 'Delete'; }
             }
         };
 

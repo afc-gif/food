@@ -233,6 +233,19 @@ class OrderController extends Controller
         return $order->fresh(['items', 'payments', 'creator']);
     }
 
+    public function destroy(Order $order)
+    {
+        if ($order->status !== 'pending') {
+            return response()->json([
+                'message' => 'Only pending orders can be deleted before approval.',
+            ], 409);
+        }
+
+        $order->delete();
+
+        return response()->json(['message' => 'Order deleted.']);
+    }
+
     public function summary()
     {
         $today = Carbon::today();

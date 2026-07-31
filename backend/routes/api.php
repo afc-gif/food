@@ -41,3 +41,7 @@ Route::middleware(['web', 'auth', 'active', 'role:admin|pos|kitchen|staff'])->gr
     Route::post('/orders/{order}/kitchen-status', [OrderController::class, 'updateKitchenStatus']);
     Route::post('/orders/{order}/approve', [OrderController::class, 'approve']);
 });
+
+Route::middleware(['web', 'auth', 'active', 'role:admin|staff'])->group(function () {
+    Route::delete('/orders/{order}', [OrderController::class, 'destroy']);
+});
