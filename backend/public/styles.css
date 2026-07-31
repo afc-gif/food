@@ -92,7 +92,7 @@ a {
 }
 
 .af-grid-3 {
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
 }
 
 .af-two-col {
@@ -435,21 +435,32 @@ a {
 
 .af-card-img {
   width: 100%;
-  height: 200px;
+  aspect-ratio: 4 / 3;
+  height: auto;
   object-fit: cover;
   display: block;
+  background: #f6f2ea;
 }
 
 .af-card-body {
-  padding: 1.1rem 1.1rem 0.4rem;
+  padding: 1.1rem;
   flex: 1;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.7rem;
 }
 
 .af-card-top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.5rem;
+}
+
+.af-card-top h3,
+.af-menu-head h3 {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .af-tag {
@@ -462,14 +473,18 @@ a {
 }
 
 .af-card-body p {
-  margin: 0.45rem 0 0.4rem;
+  margin: 0;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .af-card-footer {
-  padding: 0.85rem 1.1rem 1.1rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .af-price {
@@ -489,13 +504,18 @@ a {
 
 .af-menu-filters {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 0.5rem;
-  justify-content: center;
+  justify-content: flex-start;
   margin: 0.5rem 0 1.4rem;
+  overflow-x: auto;
+  padding: 0.1rem 0 0.35rem;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
 }
 
 .af-chip {
+  flex: 0 0 auto;
   border-radius: 999px;
   border: 1px solid var(--af-line);
   padding: 0.38rem 1rem;
@@ -515,10 +535,40 @@ a {
 .af-menu-item {
   background: var(--af-white);
   border-radius: var(--af-radius-md);
-  padding: 1.15rem 1.2rem;
+  padding: 0;
   border: 1px solid var(--af-line);
   box-shadow: 0 12px 20px rgba(0, 0, 0, 0.05);
-  transition: opacity 0.3s ease, filter 0.3s ease;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr;
+  min-width: 0;
+  transition: opacity 0.3s ease, filter 0.3s ease, box-shadow 0.18s ease;
+}
+
+.af-menu-item:hover {
+  box-shadow: 0 16px 28px rgba(0, 0, 0, 0.08);
+}
+
+.af-menu-thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: #f6f2ea;
+}
+
+.af-menu-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.af-menu-body {
+  padding: 1.05rem 1.1rem 1.1rem;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 0.7rem;
+  min-width: 0;
 }
 
 /* Sold-out styling */
@@ -540,19 +590,36 @@ a {
 
 .af-menu-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.65rem;
 }
 
 .af-menu-item p {
-  margin: 0.35rem 0 0.55rem;
+  margin: 0;
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .af-menu-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.af-menu-footer .af-btn,
+.af-card-footer .af-btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.af-menu-footer .af-price,
+.af-card-footer .af-price {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 /* Order / Cart */
@@ -1226,6 +1293,69 @@ body.af-modal-open {
     grid-template-columns: 1fr;
   }
 
+  .af-menu-panel {
+    border-radius: 16px;
+    padding: 0.85rem;
+  }
+
+  .af-menu-filters {
+    margin-bottom: 1rem;
+  }
+
+  .af-menu-item {
+    grid-template-columns: minmax(96px, 34%) minmax(0, 1fr);
+    grid-template-rows: 1fr;
+  }
+
+  .af-menu-item > .af-menu-body:first-child {
+    grid-column: 1 / -1;
+  }
+
+  .af-menu-thumb {
+    aspect-ratio: auto;
+    height: 100%;
+    min-height: 132px;
+  }
+
+  .af-menu-body {
+    padding: 0.85rem;
+    gap: 0.45rem;
+  }
+
+  .af-menu-head {
+    display: grid;
+    gap: 0.35rem;
+  }
+
+  .af-menu-head h3 {
+    font-size: 1.05rem;
+    line-height: 1.2;
+  }
+
+  .af-menu-item p {
+    font-size: 0.9rem;
+    line-height: 1.45;
+    -webkit-line-clamp: 2;
+  }
+
+  .af-menu-footer {
+    align-items: flex-end;
+    gap: 0.45rem;
+  }
+
+  .af-menu-footer .af-btn {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.78rem;
+  }
+
+  .af-card-body {
+    padding: 1rem;
+  }
+
+  .af-card-footer {
+    align-items: flex-end;
+  }
+
   .af-section {
     padding: 3rem 0;
   }
@@ -1269,6 +1399,6 @@ body.af-modal-open {
   }
 
   .af-card-img {
-    height: 180px;
+    height: auto;
   }
 }

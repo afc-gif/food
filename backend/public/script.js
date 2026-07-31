@@ -436,7 +436,7 @@ document.addEventListener("DOMContentLoaded", () => {
             data-sold-out="${item.is_sold_out ? "1" : "0"}"
             data-category="${item.categorySlug}"
           >
-            ${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}" class="af-card-img" />` : ""}
+            ${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}" class="af-card-img" loading="lazy" decoding="async" />` : ""}
             <div class="af-card-body">
               <div class="af-card-top">
                 <h3>${item.name}</h3>
@@ -482,7 +482,7 @@ document.addEventListener("DOMContentLoaded", () => {
     card.setAttribute("data-sold-out", soldOut);
     card.setAttribute("data-category", item.categorySlug);
     card.innerHTML = `
-      ${item.imageUrl ? `<div class="af-menu-thumb"><img src="${item.imageUrl}" alt="${item.name}"></div>` : ""}
+      ${item.imageUrl ? `<div class="af-menu-thumb"><img src="${item.imageUrl}" alt="${item.name}" loading="lazy" decoding="async"></div>` : ""}
       <div class="af-menu-body">
       <div class="af-menu-head">
         <h3>${item.name}</h3>
@@ -543,7 +543,7 @@ document.addEventListener("DOMContentLoaded", () => {
           data-sold-out="${item.is_sold_out ? "1" : "0"}"
           data-category="${item.categorySlug}"
         >
-          ${item.imageUrl ? `<div class="af-menu-thumb"><img src="${item.imageUrl}" alt="${item.name}"></div>` : ""}
+          ${item.imageUrl ? `<div class="af-menu-thumb"><img src="${item.imageUrl}" alt="${item.name}" loading="lazy" decoding="async"></div>` : ""}
           <div class="af-menu-body">
             <div class="af-menu-head">
               <h3>${item.name}</h3>

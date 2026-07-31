@@ -36,7 +36,7 @@
     href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap"
     rel="stylesheet"
   />
-  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=7" />
+  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=8" />
 </head>
 <body>
   <header class="af-header">
@@ -125,7 +125,13 @@
               data-category="{{ Str::slug(optional($item->category)->name ?? 'menu') }}"
             >
               @if($item->image_url)
-                <img src="{{ $item->image_url }}" alt="{{ $item->name }}" class="af-card-img" />
+                <img
+                  src="{{ $item->image_url }}"
+                  alt="{{ $item->name }}"
+                  class="af-card-img"
+                  loading="lazy"
+                  decoding="async"
+                />
               @endif
               <div class="af-card-body">
                 <div class="af-card-top">
@@ -188,28 +194,30 @@
               >
                 @if($item->image_url)
                   <div class="af-menu-thumb">
-                    <img src="{{ $item->image_url }}" alt="{{ $item->name }}">
+                    <img src="{{ $item->image_url }}" alt="{{ $item->name }}" loading="lazy" decoding="async">
                   </div>
                 @endif
-                <div class="af-menu-head">
-                  <h3>{{ $item->name }}</h3>
-                  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                    <span class="af-pill">{{ optional($item->category)->name ?? 'Menu' }}</span>
+                <div class="af-menu-body">
+                  <div class="af-menu-head">
+                    <h3>{{ $item->name }}</h3>
+                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                      <span class="af-pill">{{ optional($item->category)->name ?? 'Menu' }}</span>
+                    </div>
                   </div>
-                </div>
-                <p>{{ $item->description ?? 'Freshly prepared from our kitchen.' }}</p>
-                <div class="af-menu-footer">
-                  <span class="af-price">₦{{ number_format($item->price, 0) }}</span>
-                  <button
-                    class="af-btn af-btn-sm af-btn-outline"
-                    data-item="{{ $item->name }}"
-                    data-item-id="{{ $item->id }}"
-                    data-item-price="{{ $item->price }}"
-                    data-sold-out="{{ $isSoldOut ? '1' : '0' }}"
-                    @if($isSoldOut) disabled @endif
-                  >
-                    {{ $isSoldOut ? 'Sold Out' : 'Add to Cart' }}
-                  </button>
+                  <p>{{ $item->description ?? 'Freshly prepared from our kitchen.' }}</p>
+                  <div class="af-menu-footer">
+                    <span class="af-price">₦{{ number_format($item->price, 0) }}</span>
+                    <button
+                      class="af-btn af-btn-sm af-btn-outline"
+                      data-item="{{ $item->name }}"
+                      data-item-id="{{ $item->id }}"
+                      data-item-price="{{ $item->price }}"
+                      data-sold-out="{{ $isSoldOut ? '1' : '0' }}"
+                      @if($isSoldOut) disabled @endif
+                    >
+                      {{ $isSoldOut ? 'Sold Out' : 'Add to Cart' }}
+                    </button>
+                  </div>
                 </div>
               </article>
             @empty
