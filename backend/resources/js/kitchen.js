@@ -15,7 +15,49 @@ const seenOrders = new Set();
 
 let soundEnabled = localStorage.getItem('kitchenSound') === '1';
 let notifyEnabled = localStorage.getItem('kitchenNotify') === '1';
-const chime = new Audio('data:audio/wav;base64,UklGRjQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=');
+let audioContext = null;
+
+const getAudioContext = () => {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return null;
+    audioContext = audioContext || new AudioContextClass();
+    return audioContext;
+};
+
+const playKitchenAlarm = async (repeat = 4) => {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    if (ctx.state === 'suspended') {
+        await ctx.resume();
+    }
+
+    const master = ctx.createGain();
+    master.gain.setValueAtTime(0.9, ctx.currentTime);
+    master.connect(ctx.destination);
+
+    const now = ctx.currentTime + 0.04;
+    for (let i = 0; i < repeat; i += 1) {
+        const start = now + i * 0.62;
+        [
+            { frequency: 880, offset: 0 },
+            { frequency: 1175, offset: 0.18 },
+            { frequency: 880, offset: 0.36 },
+        ].forEach(({ frequency, offset }) => {
+            const toneStart = start + offset;
+            const oscillator = ctx.createOscillator();
+            const gain = ctx.createGain();
+            oscillator.type = 'square';
+            oscillator.frequency.setValueAtTime(frequency, toneStart);
+            gain.gain.setValueAtTime(0.0001, toneStart);
+            gain.gain.exponentialRampToValueAtTime(0.35, toneStart + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, toneStart + 0.14);
+            oscillator.connect(gain);
+            gain.connect(master);
+            oscillator.start(toneStart);
+            oscillator.stop(toneStart + 0.16);
+        });
+    }
+};
 
 if (ordersEl) {
     const escapeHtml = (value = '') =>
@@ -136,12 +178,16 @@ if (ordersEl) {
     });
 
     if (soundBtn) {
-        const setSoundLabel = () => soundBtn.textContent = `Sound: ${soundEnabled ? 'On' : 'Off'}`;
+        const setSoundLabel = () => soundBtn.textContent = `Sound: ${soundEnabled ? 'On (loud)' : 'Off'}`;
         setSoundLabel();
-        soundBtn.addEventListener('click', () => {
+        soundBtn.addEventListener('click', async () => {
             soundEnabled = !soundEnabled;
             localStorage.setItem('kitchenSound', soundEnabled ? '1' : '0');
             setSoundLabel();
+            if (soundEnabled) {
+                await playKitchenAlarm(1).catch(() => {});
+                showToast('Kitchen sound enabled. New orders will ring loudly.');
+            }
         });
     }
 
@@ -432,9 +478,10 @@ if (ordersEl) {
     }
 
     function notifyNewOrder(event) {
-        if (soundEnabled && chime?.play) {
-            chime.currentTime = 0;
-            chime.play().catch(() => {});
+        if (soundEnabled) {
+            playKitchenAlarm(5).catch(() => {
+                showToast('Tap Sound to enable kitchen audio.');
+            });
         }
         if (notifyEnabled && Notification?.permission === 'granted') {
             const title = event.code ? `New order ${event.code}` : 'New order received';

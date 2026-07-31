@@ -176,7 +176,7 @@
                 </div>
             </div>
             <div class="soft-card" style="margin-top:10px;">
-                <div class="small">All updates sync instantly. Set ETA, update status, kitchen board refreshes in real-time.</div>
+                <div class="small">Turn Sound On once on this device. New kitchen orders will ring loudly when tickets arrive.</div>
             </div>
         </div>
 
