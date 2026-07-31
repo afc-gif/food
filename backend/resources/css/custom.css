@@ -880,6 +880,10 @@ a {
   background: var(--af-white);
   cursor: pointer;
   font-size: 1.1rem;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .af-cart-overlay-head h3 {
@@ -1541,9 +1545,10 @@ body.af-modal-open {
   .af-cart-overlay-card {
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     max-height: none;
     border-radius: 0;
-    padding: 1.1rem;
+    padding: calc(env(safe-area-inset-top, 0px) + 4.25rem) 1.1rem calc(env(safe-area-inset-bottom, 0px) + 1.1rem);
   }
 
   .af-cart-overlay-head {
@@ -1560,8 +1565,11 @@ body.af-modal-open {
   }
 
   .af-cart-overlay-close {
-    top: 10px;
-    right: 10px;
+    position: fixed;
+    top: max(14px, calc(env(safe-area-inset-top, 0px) + 12px));
+    right: max(14px, calc(env(safe-area-inset-right, 0px) + 12px));
+    width: 42px;
+    height: 42px;
   }
 }
 
