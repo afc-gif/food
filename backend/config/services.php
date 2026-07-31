@@ -43,7 +43,7 @@ return [
         'folder' => env('CLOUDINARY_FOLDER', 'afc'),
         'hero_background_url' => env(
             'CLOUDINARY_HERO_BACKGROUND_URL',
-            'https://res.cloudinary.com/demo/image/fetch/f_auto,q_auto,w_2000,c_fill,g_auto/https://images.unsplash.com/photo-1414235077428-338989a2e8c0'
+            'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=2000&q=80'
         ),
     ],
 
