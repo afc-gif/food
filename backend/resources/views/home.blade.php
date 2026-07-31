@@ -30,13 +30,7 @@
 
   <!-- Favicon -->
   <link rel="icon" href="{{ asset('assets/logo2.png') }}" type="image/png" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap"
-    rel="stylesheet"
-  />
-  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=8" />
+  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=9" />
 </head>
 <body>
   <header class="af-header">
@@ -230,10 +224,11 @@
 
     <section class="af-section" id="order">
       <div class="af-container af-order-placeholder">
-        <div>
+        <div class="af-order-prompt">
           <p class="af-kicker">Checkout</p>
           <h2>Open the cart to review and pay</h2>
           <p>Tap the cart button to see your order summary and complete checkout in the overlay.</p>
+          <button class="af-btn af-btn-primary" type="button" id="orderPromptBtn">Open Cart</button>
         </div>
       </div>
     </section>
@@ -274,7 +269,6 @@
         </div>
         <div class="af-about-panel">
           <div class="af-about-card">
-            <div class="af-about-orb"></div>
             <div class="af-about-card-head">
               <span class="af-about-pill">Our Promise</span>
               <p>Every plate is crafted with intention, priced for everyday joy.</p>
@@ -313,11 +307,11 @@
           <div class="af-contact-grid">
             <div>
               <strong>Phone</strong>
-              <p>08143190700</p>
+              <p><a href="tel:08143190700">08143190700</a></p>
             </div>
             <div>
               <strong>Email</strong>
-              <p>support@afc.com.ng</p>
+              <p><a href="mailto:support@afc.com.ng">support@afc.com.ng</a></p>
             </div>
             <div>
               <strong>Address</strong>
@@ -347,7 +341,7 @@
   </main>
 
   <button class="af-cart-fab" id="cartFab" type="button" aria-label="View cart and checkout">
-    <span class="af-cart-fab-icon">Cart</span>
+    <span class="af-cart-fab-icon">Order</span>
     <span class="af-cart-fab-count" id="cartCount">0</span>
   </button>
 
@@ -425,6 +419,6 @@
     </div>
   </footer>
 
-  <script src="{{ asset('script.js') }}?v=29" defer></script>
+  <script src="{{ asset('script.js') }}?v=31" defer></script>
 </body>
 </html>

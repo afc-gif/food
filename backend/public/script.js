@@ -104,6 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cartOverlay: document.getElementById("cartOverlay"),
     cartOverlayClose: document.getElementById("cartOverlayClose"),
     cartOverlayBackdrop: document.getElementById("cartOverlayBackdrop"),
+    orderPromptBtn: document.getElementById("orderPromptBtn"),
     featuredGrid: document.getElementById("featuredGrid"),
     menuGrid: document.getElementById("menuGrid"),
     menuFilters: document.getElementById("menuFilters")
@@ -145,6 +146,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const initCartOverlay = () => {
     if (dom.cartFab) dom.cartFab.addEventListener("click", openCartOverlay);
+    if (dom.orderPromptBtn) dom.orderPromptBtn.addEventListener("click", openCartOverlay);
     if (dom.cartOverlayClose) dom.cartOverlayClose.addEventListener("click", closeCartOverlay);
     if (dom.cartOverlayBackdrop) dom.cartOverlayBackdrop.addEventListener("click", closeCartOverlay);
   };
