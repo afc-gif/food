@@ -1,5 +1,6 @@
 @php
     use Illuminate\Support\Str;
+    $heroBackgroundUrl = config('services.cloudinary.hero_background_url');
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -30,7 +31,7 @@
 
   <!-- Favicon -->
   <link rel="icon" href="{{ asset('assets/logo2.png') }}" type="image/png" />
-  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=9" />
+  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=10" />
 </head>
 <body>
   <header class="af-header">
@@ -59,7 +60,7 @@
   </header>
 
   <main>
-    <section id="home" class="af-hero">
+    <section id="home" class="af-hero" style="--af-hero-bg: url('{{ e($heroBackgroundUrl) }}');">
       <div class="af-hero-gradient"></div>
       <div class="af-container af-hero-inner">
         <div class="af-hero-content">
