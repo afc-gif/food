@@ -113,9 +113,76 @@ document.addEventListener("DOMContentLoaded", () => {
   const state = {
     cart: [],
     activeFilter: "all",
+    orderAvailability: {
+      is_open: true,
+      message: "",
+      mode: "auto"
+    },
     hasSSRMenuItems: !!(dom.menuGrid && dom.menuGrid.querySelector("[data-menu-item]")),
     hasSSRFeatured: !!(dom.featuredGrid && dom.featuredGrid.querySelector("[data-menu-item]")),
     hasSSRFilters: !!(dom.menuFilters && dom.menuFilters.querySelectorAll(".af-chip").length > 1)
+  };
+
+  const ensureClosedNotice = () => {
+    let notice = document.getElementById("afClosedNotice");
+    if (!notice) {
+      notice = document.createElement("div");
+      notice.id = "afClosedNotice";
+      notice.className = "af-closed-notice";
+      notice.setAttribute("role", "status");
+      notice.setAttribute("aria-live", "polite");
+      notice.hidden = true;
+      notice.innerHTML = `
+        <div class="af-closed-track">
+          <span data-closed-message></span>
+          <span data-closed-message aria-hidden="true"></span>
+        </div>
+      `;
+      const header = document.querySelector(".af-header");
+      if (header) {
+        header.insertAdjacentElement("afterend", notice);
+      } else {
+        document.body.prepend(notice);
+      }
+    }
+    return notice;
+  };
+
+  const setClosedNotice = (availability) => {
+    const notice = ensureClosedNotice();
+    const closed = availability && availability.is_open === false;
+    notice.hidden = !closed;
+    notice.classList.toggle("af-closed-notice-visible", closed);
+    notice.querySelectorAll("[data-closed-message]").forEach((el) => {
+      el.textContent = availability?.message || "We are currently closed and not accepting orders.";
+    });
+  };
+
+  const applyOrderAvailability = () => {
+    const closed = state.orderAvailability.is_open === false;
+    setClosedNotice(state.orderAvailability);
+
+    document.querySelectorAll("[data-item]").forEach((btn) => {
+      const soldOut = btn.getAttribute("data-sold-out") === "1";
+      btn.disabled = closed || soldOut;
+      btn.textContent = closed ? "Closed" : soldOut ? "Sold Out" : "Add to Cart";
+    });
+
+    document.querySelectorAll("[data-whatsapp-btn]").forEach((btn) => {
+      btn.disabled = closed;
+      btn.textContent = closed ? "Ordering Closed" : "Complete Order via WhatsApp";
+    });
+  };
+
+  const syncOrderAvailability = async () => {
+    try {
+      const res = await fetch("/api/order-availability", { cache: "no-store" });
+      if (!res.ok) return;
+      state.orderAvailability = await res.json();
+      applyOrderAvailability();
+    } catch (error) {
+      console.warn("Order availability check failed", error);
+    }
   };
 
   const setYear = () => {
@@ -216,6 +283,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
     });
+
+    applyOrderAvailability();
   };
 
   const renderCart = () => {
@@ -254,6 +323,10 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const addToCart = (item) => {
+    if (state.orderAvailability.is_open === false) {
+      alert(state.orderAvailability.message || "We are currently closed and not accepting orders.");
+      return;
+    }
     if (!item?.id) {
       alert("Missing menu item ID; please refresh and try again.");
       return;
@@ -275,6 +348,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const name = btn.getAttribute("data-item");
         const id = parseInt(btn.getAttribute("data-item-id"), 10);
         const soldOut = btn.getAttribute("data-sold-out") === "1";
+        if (state.orderAvailability.is_open === false) {
+          alert(state.orderAvailability.message || "We are currently closed and not accepting orders.");
+          return;
+        }
         if (soldOut) {
           alert("Sorry, this item is sold out.");
           return;
@@ -472,6 +549,7 @@ document.addEventListener("DOMContentLoaded", () => {
       .join("");
 
     bindAddToCartButtons();
+    applyOrderAvailability();
   };
 
   const createMenuCard = (rawItem) => {
@@ -616,6 +694,7 @@ document.addEventListener("DOMContentLoaded", () => {
       dom.menuGrid.appendChild(card);
       ensureCategoryChip(item.categoryName);
       bindAddToCartButtons();
+      applyOrderAvailability();
       applyFilter();
     }
     setSoldOutState(item.id, !!item.is_sold_out);
@@ -677,11 +756,14 @@ document.addEventListener("DOMContentLoaded", () => {
         renderFeatured(safeItems);
       }
 
+      applyOrderAvailability();
+
       // Re-apply current filter
       applyFilter();
 
       // Rebind add to cart buttons
       bindAddToCartButtons();
+      applyOrderAvailability();
 
       hideErrorBanner();
     } catch (err) {
@@ -715,19 +797,40 @@ document.addEventListener("DOMContentLoaded", () => {
       cache: "no-store"
     });
     if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      throw new Error(text || `Order save failed (${res.status})`);
+      let message = `Order save failed (${res.status})`;
+      try {
+        const data = await res.clone().json();
+        if (data?.errors) {
+          message = Object.values(data.errors).flat().filter(Boolean).join(" ");
+        } else if (data?.message) {
+          message = data.message;
+        }
+      } catch (error) {
+        const text = await res.text().catch(() => "");
+        if (text) message = text;
+      }
+      throw new Error(message);
     }
     return res.json();
   };
 
-  const handleWhatsApp = (form) => {
+  const handleWhatsApp = async (form) => {
+    await syncOrderAvailability();
+    if (state.orderAvailability.is_open === false) {
+      alert(state.orderAvailability.message || "We are currently closed and not accepting orders.");
+      openCartOverlay();
+      return;
+    }
     if (!state.cart.length) {
       alert("Your cart is empty.");
       return;
     }
     if (!form) {
       alert("Please fill your details first.");
+      return;
+    }
+    if (!form.checkValidity()) {
+      form.reportValidity();
       return;
     }
 
@@ -755,10 +858,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const whatsappNumber = "2348143190700";
     const url = `https://wa.me/${whatsappNumber}?text=${message}`;
-    createBackendOrder({ name, phone, note, service, time }).catch((e) => {
+    try {
+      await createBackendOrder({ name, phone, note, service, time });
+    } catch (e) {
       console.warn("Could not create backend order", e);
-      alert("We could not save your order for staff. Please confirm your items in WhatsApp.");
-    });
+      alert(e?.message || "We could not save your order for staff. Please try again.");
+      await syncOrderAvailability();
+      return;
+    }
     window.open(url, "_blank");
   };
 
@@ -799,6 +906,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     bindFilterButtons();
     bindAddToCartButtons(); // in case items are server-rendered
+    syncOrderAvailability();
     applyFilter();
     renderCart();
     bindWhatsAppButtons();
@@ -812,6 +920,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // Using loadMenuData which safely re-renders the menu from API
     const menuPoller = createPoller(loadMenuData, 10000);
     menuPoller.start();
+
+    const availabilityPoller = createPoller(syncOrderAvailability, 60000);
+    availabilityPoller.start();
   };
 
   init();

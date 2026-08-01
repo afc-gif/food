@@ -31,7 +31,7 @@
 
   <!-- Favicon -->
   <link rel="icon" href="{{ asset('assets/logo2.png') }}" type="image/png" />
-  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=13" />
+  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=14" />
 </head>
 <body>
   <header class="af-header">
@@ -94,8 +94,8 @@
           <img src="{{ asset('assets/logo2.png') }}" alt="Acie Fraiche Cafe Emblem" class="af-hero-logo" />
           <div class="af-floating-note">
             <span>Opening hours</span>
-            <strong>Mon–Sat 6am – 9pm</strong>
-            <small>Sun 11am – 9pm · Dine-in · Takeout · Pickup</small>
+            <strong>Mon–Sat 8am - 10pm</strong>
+            <small>Sun 12noon - 10pm · Dine-in · Takeout · Pickup</small>
           </div>
         </div>
       </div>
@@ -323,7 +323,7 @@
             </div>
             <div>
               <strong>Hours</strong>
-              <p>Mon. – Sat.: 6am – 9pm<br />Sun.: 11am – 9pm</p>
+              <p>Mon. – Sat.: 8am - 10pm<br />Sun.: 12noon - 10pm</p>
             </div>
           </div>
         </div>
@@ -429,6 +429,6 @@
     </div>
   </footer>
 
-  <script src="{{ asset('script.js') }}?v=31" defer></script>
+  <script src="{{ asset('script.js') }}?v=32" defer></script>
 </body>
 </html>

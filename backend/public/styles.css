@@ -182,6 +182,56 @@ a {
   color: var(--af-brown);
 }
 
+.af-closed-notice {
+  position: sticky;
+  top: 84px;
+  z-index: 49;
+  overflow: hidden;
+  background: #b91c1c;
+  color: #ffffff;
+  border-bottom: 1px solid rgba(127, 29, 29, 0.42);
+  box-shadow: 0 10px 24px rgba(127, 29, 29, 0.18);
+}
+
+.af-closed-notice[hidden] {
+  display: none;
+}
+
+.af-closed-track {
+  display: flex;
+  width: max-content;
+  min-width: 100%;
+  gap: 3rem;
+  padding: 0.62rem 0;
+  white-space: nowrap;
+  animation: afClosedNoticeMove 24s linear infinite;
+}
+
+.af-closed-track span {
+  display: inline-flex;
+  align-items: center;
+  padding-left: max(1rem, 5vw);
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  color: #ffffff;
+}
+
+@keyframes afClosedNoticeMove {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .af-closed-track {
+    animation: none;
+  }
+}
+
 /* Buttons */
 
 .af-btn {
@@ -214,6 +264,14 @@ a {
 .af-btn-primary:hover {
   transform: translateY(-1px);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.16);
+}
+
+.af-btn:disabled,
+.af-btn[disabled] {
+  cursor: not-allowed;
+  opacity: 0.68;
+  transform: none;
+  box-shadow: none;
 }
 
 .af-btn-outline {
@@ -1463,6 +1521,10 @@ body.af-modal-open {
 }
 
 @media (max-width: 780px) {
+  .af-closed-notice {
+    top: 70px;
+  }
+
   .af-nav {
     position: absolute;
     inset: 58px 0 auto 0;

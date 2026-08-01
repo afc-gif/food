@@ -10,6 +10,7 @@ use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
+use App\Services\BusinessHours;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -43,7 +44,7 @@ class OrderController extends Controller
         return $order->load(['items', 'payments']);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, BusinessHours $businessHours)
     {
         $data = $request->validate([
             'channel' => 'nullable|string|max:50',
@@ -64,6 +65,16 @@ class OrderController extends Controller
             'service' => 'nullable|string|max:100',
             'time' => 'nullable|string|max:100',
         ]);
+
+        if (($data['channel'] ?? 'pos') === 'web') {
+            $availability = $businessHours->availability();
+            if (! $availability['is_open']) {
+                return response()->json([
+                    'message' => $availability['message'],
+                    'availability' => $availability,
+                ], 409);
+            }
+        }
 
         return DB::transaction(function () use ($data, $request) {
             $itemsData = [];

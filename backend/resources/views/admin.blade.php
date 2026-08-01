@@ -216,6 +216,21 @@
                         <button class="btn-ghost" onclick="switchTab('orders')">View Orders</button>
                         <button class="btn-ghost" onclick="switchTab('pos')">Open POS</button>
                     </div>
+                    <div style="margin-top:14px; border:1px solid var(--af-line); border-radius:12px; padding:12px; background:#fff;">
+                        <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap;">
+                            <div>
+                                <h3 style="margin:0 0 4px;">Website ordering</h3>
+                                <p class="muted" id="orderAvailabilityDetail" style="margin:0;">Checking order availability...</p>
+                            </div>
+                            <span class="pill" id="orderAvailabilityBadge">Checking</span>
+                        </div>
+                        <div class="row" style="gap:8px; flex-wrap:wrap; margin-top:10px;">
+                            <button class="btn-primary" data-order-mode="auto">Automatic schedule</button>
+                            <button class="btn-ghost" data-order-mode="force_open">Force open</button>
+                            <button class="btn-ghost" data-order-mode="force_closed">Force closed</button>
+                        </div>
+                        <small class="muted" style="display:block; margin-top:8px;">Automatic uses Mon-Sat 8am - 10pm and Sunday 12noon - 10pm.</small>
+                    </div>
                 </div>
             </section>
 
@@ -1633,18 +1648,68 @@
             });
         };
 
+        function renderOrderAvailability(availability) {
+            const detail = document.getElementById('orderAvailabilityDetail');
+            const badge = document.getElementById('orderAvailabilityBadge');
+            const modeButtons = document.querySelectorAll('[data-order-mode]');
+            if (!detail || !badge) return;
+
+            const modeLabel = {
+                auto: 'Automatic',
+                force_open: 'Forced open',
+                force_closed: 'Forced closed',
+            }[availability.mode] || 'Automatic';
+
+            detail.textContent = `${availability.message || 'Ordering status unavailable'} Mode: ${modeLabel}.`;
+            badge.textContent = availability.is_open ? 'Open' : 'Closed';
+            badge.style.borderColor = availability.is_open ? '#bbf7d0' : '#fca5a5';
+            badge.style.color = availability.is_open ? '#166534' : '#b91c1c';
+            badge.style.background = availability.is_open ? '#f0fdf4' : '#fef2f2';
+
+            modeButtons.forEach((btn) => {
+                const active = btn.getAttribute('data-order-mode') === availability.mode;
+                btn.className = active ? 'btn-primary' : 'btn-ghost';
+            });
+        }
+
+        async function loadOrderAvailability() {
+            try {
+                const res = await safeRequest('/api/order-availability');
+                renderOrderAvailability(await res.json());
+            } catch (e) {
+                const detail = document.getElementById('orderAvailabilityDetail');
+                if (detail) detail.textContent = 'Could not load order availability.';
+                console.error(e);
+            }
+        }
+
+        document.querySelectorAll('[data-order-mode]').forEach((btn) => {
+            btn.addEventListener('click', async () => {
+                const mode = btn.getAttribute('data-order-mode');
+                await runAction(btn, async () => {
+                    const res = await safeRequest('/api/order-availability', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ mode }),
+                    });
+                    renderOrderAvailability(await res.json());
+                    toast('Website ordering updated');
+                });
+            });
+        });
+
         async function init() {
             await checkHealth();
             renderPosCart();
             if (posBarcodeInput) posBarcodeInput.focus();
-            await Promise.all([loadCategories(), loadMenu(), loadOrders(), loadOrderSummary(), loadUsers()]);
+            await Promise.all([loadCategories(), loadMenu(), loadOrders(), loadOrderSummary(), loadUsers(), loadOrderAvailability()]);
             renderSavedCustomers();
             renderParkedTickets();
 
             // Live refresh
             const refresh = async () => {
                 if (isInteracting) return;
-                await Promise.all([loadCategories(), loadMenu(), loadOrders(), loadOrderSummary(), loadUsers()]);
+                await Promise.all([loadCategories(), loadMenu(), loadOrders(), loadOrderSummary(), loadUsers(), loadOrderAvailability()]);
             };
             const refreshPoller = createPoller(refresh, 5000, {
                 onError: (err) => console.warn('Admin refresh failed', err),

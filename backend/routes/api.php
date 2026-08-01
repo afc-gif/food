@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\CategoryController;
+use App\Http\Controllers\Api\BusinessHoursController;
 use App\Http\Controllers\Api\MenuItemController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\UserAdminController;
@@ -12,6 +13,7 @@ Route::get('/health', fn () => ['status' => 'ok']);
 Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/menu-items', [MenuItemController::class, 'index']);
 Route::get('/menu-items/lookup', [MenuItemController::class, 'lookup']);
+Route::get('/order-availability', [BusinessHoursController::class, 'show']);
 Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:15,1');
 
 Route::middleware(['web', 'auth', 'active', 'role:admin'])->group(function () {
@@ -28,6 +30,7 @@ Route::middleware(['web', 'auth', 'active', 'role:admin'])->group(function () {
     Route::get('/orders/summary', [OrderController::class, 'summary']);
     Route::get('/orders/export', [OrderController::class, 'export']);
     Route::post('/orders/purge', [OrderController::class, 'purge']);
+    Route::put('/order-availability', [BusinessHoursController::class, 'update']);
 
     Route::get('/users', [UserAdminController::class, 'index']);
     Route::put('/users/{user}', [UserAdminController::class, 'update']);
