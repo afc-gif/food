@@ -94,8 +94,8 @@
           <img src="{{ asset('assets/logo2.png') }}" alt="Acie Fraiche Cafe Emblem" class="af-hero-logo" />
           <div class="af-floating-note">
             <span>Opening hours</span>
-            <strong>Mon–Sat 8am - 10pm</strong>
-            <small>Sun 12noon - 10pm · Dine-in · Takeout · Pickup</small>
+            <strong data-business-hours-summary>Mon–Sat 8am - 10pm</strong>
+            <small><span data-business-hours-sunday>Sun 12noon - 10pm</span> · Dine-in · Takeout · Pickup</small>
           </div>
         </div>
       </div>
@@ -323,7 +323,7 @@
             </div>
             <div>
               <strong>Hours</strong>
-              <p>Mon. – Sat.: 8am - 10pm<br />Sun.: 12noon - 10pm</p>
+              <p><span data-business-hours-weekday>Mon. – Sat.: 8am - 10pm</span><br /><span data-business-hours-sunday>Sun.: 12noon - 10pm</span></p>
             </div>
           </div>
         </div>

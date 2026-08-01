@@ -229,7 +229,30 @@
                             <button class="btn-ghost" data-order-mode="force_open">Force open</button>
                             <button class="btn-ghost" data-order-mode="force_closed">Force closed</button>
                         </div>
-                        <small class="muted" style="display:block; margin-top:8px;">Automatic uses Mon-Sat 8am - 10pm and Sunday 12noon - 10pm.</small>
+                        <form id="orderScheduleForm" style="display:grid; gap:10px; margin-top:12px;">
+                            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:10px;">
+                                <label style="display:grid; gap:5px;">
+                                    <span class="muted" style="font-size:12px;">Mon-Sat opens</span>
+                                    <input id="weekdayOpen" type="time" required style="padding:9px 10px; border-radius:10px; border:1px solid var(--af-line);" />
+                                </label>
+                                <label style="display:grid; gap:5px;">
+                                    <span class="muted" style="font-size:12px;">Mon-Sat closes</span>
+                                    <input id="weekdayClose" type="time" required style="padding:9px 10px; border-radius:10px; border:1px solid var(--af-line);" />
+                                </label>
+                                <label style="display:grid; gap:5px;">
+                                    <span class="muted" style="font-size:12px;">Sunday opens</span>
+                                    <input id="sundayOpen" type="time" required style="padding:9px 10px; border-radius:10px; border:1px solid var(--af-line);" />
+                                </label>
+                                <label style="display:grid; gap:5px;">
+                                    <span class="muted" style="font-size:12px;">Sunday closes</span>
+                                    <input id="sundayClose" type="time" required style="padding:9px 10px; border-radius:10px; border:1px solid var(--af-line);" />
+                                </label>
+                            </div>
+                            <div class="row" style="gap:8px; flex-wrap:wrap;">
+                                <button class="btn-primary" type="submit">Save schedule</button>
+                                <small class="muted">Defaults are Mon-Sat 8am - 10pm and Sunday 12noon - 10pm.</small>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </section>
@@ -1652,6 +1675,10 @@
             const detail = document.getElementById('orderAvailabilityDetail');
             const badge = document.getElementById('orderAvailabilityBadge');
             const modeButtons = document.querySelectorAll('[data-order-mode]');
+            const weekdayOpen = document.getElementById('weekdayOpen');
+            const weekdayClose = document.getElementById('weekdayClose');
+            const sundayOpen = document.getElementById('sundayOpen');
+            const sundayClose = document.getElementById('sundayClose');
             if (!detail || !badge) return;
 
             const modeLabel = {
@@ -1670,6 +1697,13 @@
                 const active = btn.getAttribute('data-order-mode') === availability.mode;
                 btn.className = active ? 'btn-primary' : 'btn-ghost';
             });
+
+            if (availability.schedule) {
+                if (weekdayOpen) weekdayOpen.value = availability.schedule.weekday?.open || '08:00';
+                if (weekdayClose) weekdayClose.value = availability.schedule.weekday?.close || '22:00';
+                if (sundayOpen) sundayOpen.value = availability.schedule.sunday?.open || '12:00';
+                if (sundayClose) sundayClose.value = availability.schedule.sunday?.close || '22:00';
+            }
         }
 
         async function loadOrderAvailability() {
@@ -1697,6 +1731,34 @@
                 });
             });
         });
+
+        const orderScheduleForm = document.getElementById('orderScheduleForm');
+        if (orderScheduleForm) {
+            orderScheduleForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const submitBtn = orderScheduleForm.querySelector('button[type="submit"]');
+                const schedule = {
+                    weekday: {
+                        open: document.getElementById('weekdayOpen')?.value || '08:00',
+                        close: document.getElementById('weekdayClose')?.value || '22:00',
+                    },
+                    sunday: {
+                        open: document.getElementById('sundayOpen')?.value || '12:00',
+                        close: document.getElementById('sundayClose')?.value || '22:00',
+                    },
+                };
+
+                await runAction(submitBtn, async () => {
+                    const res = await safeRequest('/api/order-availability', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ schedule }),
+                    });
+                    renderOrderAvailability(await res.json());
+                    toast('Automatic schedule saved');
+                });
+            });
+        }
 
         async function init() {
             await checkHealth();

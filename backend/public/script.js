@@ -158,9 +158,37 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  const formatScheduleTime = (value) => {
+    if (!value || !/^\d{2}:\d{2}$/.test(value)) return "";
+    const [hourRaw, minuteRaw] = value.split(":").map((part) => parseInt(part, 10));
+    const suffix = hourRaw >= 12 ? "pm" : "am";
+    const hour = hourRaw % 12 || 12;
+    if (hourRaw === 12 && minuteRaw === 0) return "12noon";
+    return `${hour}${minuteRaw ? `:${String(minuteRaw).padStart(2, "0")}` : ""}${suffix}`;
+  };
+
+  const updateBusinessHoursText = (schedule) => {
+    if (!schedule?.weekday || !schedule?.sunday) return;
+    const weekdayText = `Mon-Sat ${formatScheduleTime(schedule.weekday.open)} - ${formatScheduleTime(schedule.weekday.close)}`;
+    const weekdayContactText = `Mon. - Sat.: ${formatScheduleTime(schedule.weekday.open)} - ${formatScheduleTime(schedule.weekday.close)}`;
+    const sundayText = `Sun ${formatScheduleTime(schedule.sunday.open)} - ${formatScheduleTime(schedule.sunday.close)}`;
+    const sundayContactText = `Sun.: ${formatScheduleTime(schedule.sunday.open)} - ${formatScheduleTime(schedule.sunday.close)}`;
+
+    document.querySelectorAll("[data-business-hours-summary]").forEach((el) => {
+      el.textContent = weekdayText;
+    });
+    document.querySelectorAll("[data-business-hours-weekday]").forEach((el) => {
+      el.textContent = weekdayContactText;
+    });
+    document.querySelectorAll("[data-business-hours-sunday]").forEach((el) => {
+      el.textContent = el.textContent.includes("Sun.:") ? sundayContactText : sundayText;
+    });
+  };
+
   const applyOrderAvailability = () => {
     const closed = state.orderAvailability.is_open === false;
     setClosedNotice(state.orderAvailability);
+    updateBusinessHoursText(state.orderAvailability.schedule);
 
     document.querySelectorAll("[data-item]").forEach((btn) => {
       const soldOut = btn.getAttribute("data-sold-out") === "1";

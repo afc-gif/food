@@ -10,9 +10,14 @@ class BusinessHours
 {
     private const TIMEZONE = 'Africa/Lagos';
     private const OVERRIDE_KEY = 'order_availability_mode';
+    private const SCHEDULE_KEY = 'order_schedule';
     private const MODE_AUTO = 'auto';
     private const MODE_FORCE_OPEN = 'force_open';
     private const MODE_FORCE_CLOSED = 'force_closed';
+    private const DEFAULT_SCHEDULE = [
+        'weekday' => ['open' => '08:00', 'close' => '22:00'],
+        'sunday' => ['open' => '12:00', 'close' => '22:00'],
+    ];
 
     public function availability(?Carbon $now = null): array
     {
@@ -34,6 +39,7 @@ class BusinessHours
             'is_open' => $isOpen,
             'mode' => $mode,
             'timezone' => self::TIMEZONE,
+            'schedule' => $this->schedule(),
             'opens_at' => $schedule['opens_at']->toIso8601String(),
             'closes_at' => $schedule['closes_at']->toIso8601String(),
             'next_open_at' => $nextOpenAt?->toIso8601String(),
@@ -55,6 +61,27 @@ class BusinessHours
         return $this->availability();
     }
 
+    public function setSchedule(array $schedule): array
+    {
+        $normalized = [
+            'weekday' => [
+                'open' => $this->normalizeTime($schedule['weekday']['open'] ?? null, self::DEFAULT_SCHEDULE['weekday']['open']),
+                'close' => $this->normalizeTime($schedule['weekday']['close'] ?? null, self::DEFAULT_SCHEDULE['weekday']['close']),
+            ],
+            'sunday' => [
+                'open' => $this->normalizeTime($schedule['sunday']['open'] ?? null, self::DEFAULT_SCHEDULE['sunday']['open']),
+                'close' => $this->normalizeTime($schedule['sunday']['close'] ?? null, self::DEFAULT_SCHEDULE['sunday']['close']),
+            ],
+        ];
+
+        DB::table('business_settings')->updateOrInsert(
+            ['key' => self::SCHEDULE_KEY],
+            ['value' => json_encode($normalized), 'updated_at' => now(), 'created_at' => now()]
+        );
+
+        return $this->availability();
+    }
+
     private function overrideMode(): string
     {
         try {
@@ -70,10 +97,49 @@ class BusinessHours
 
     private function scheduleFor(Carbon $date): array
     {
-        $opensAt = $date->copy()->startOfDay()->setTime($date->isSunday() ? 12 : 8, 0);
-        $closesAt = $date->copy()->startOfDay()->setTime(22, 0);
+        $hours = $this->schedule()[$date->isSunday() ? 'sunday' : 'weekday'];
+        [$openHour, $openMinute] = array_map('intval', explode(':', $hours['open']));
+        [$closeHour, $closeMinute] = array_map('intval', explode(':', $hours['close']));
+
+        $opensAt = $date->copy()->startOfDay()->setTime($openHour, $openMinute);
+        $closesAt = $date->copy()->startOfDay()->setTime($closeHour, $closeMinute);
 
         return ['opens_at' => $opensAt, 'closes_at' => $closesAt];
+    }
+
+    private function schedule(): array
+    {
+        try {
+            $raw = DB::table('business_settings')->where('key', self::SCHEDULE_KEY)->value('value');
+            $saved = $raw ? json_decode($raw, true) : [];
+        } catch (Throwable) {
+            $saved = [];
+        }
+
+        return [
+            'weekday' => [
+                'open' => $this->normalizeTime($saved['weekday']['open'] ?? null, self::DEFAULT_SCHEDULE['weekday']['open']),
+                'close' => $this->normalizeTime($saved['weekday']['close'] ?? null, self::DEFAULT_SCHEDULE['weekday']['close']),
+            ],
+            'sunday' => [
+                'open' => $this->normalizeTime($saved['sunday']['open'] ?? null, self::DEFAULT_SCHEDULE['sunday']['open']),
+                'close' => $this->normalizeTime($saved['sunday']['close'] ?? null, self::DEFAULT_SCHEDULE['sunday']['close']),
+            ],
+        ];
+    }
+
+    private function normalizeTime(?string $value, string $fallback): string
+    {
+        if (! is_string($value) || ! preg_match('/^\d{2}:\d{2}$/', $value)) {
+            return $fallback;
+        }
+
+        [$hour, $minute] = array_map('intval', explode(':', $value));
+        if ($hour < 0 || $hour > 23 || $minute < 0 || $minute > 59) {
+            return $fallback;
+        }
+
+        return sprintf('%02d:%02d', $hour, $minute);
     }
 
     private function nextOpenAt(Carbon $now): Carbon
