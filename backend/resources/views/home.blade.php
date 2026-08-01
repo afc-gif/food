@@ -31,7 +31,7 @@
 
   <!-- Favicon -->
   <link rel="icon" href="{{ asset('assets/logo2.png') }}" type="image/png" />
-  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=12" />
+  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=13" />
 </head>
 <body>
   <header class="af-header">
@@ -414,16 +414,15 @@
       <span>© <span id="year"></span> Acie Fraiche Cafe. Freshly Crafted, Simply Delicious.</span>
       <div class="af-socials" aria-label="Social media links">
         <a class="af-social-link" href="https://www.instagram.com/afc.ng?igsh=MTQxMGV4bzhmM2I2dg%3D%3D&utm_source=qr" target="_blank" rel="noopener noreferrer" aria-label="Follow Acie Fraiche Cafe on Instagram">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
             <rect x="3" y="3" width="18" height="18" rx="5"></rect>
             <circle cx="12" cy="12" r="4"></circle>
-            <circle cx="17.5" cy="6.5" r="1"></circle>
+            <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"></circle>
           </svg>
         </a>
         <a class="af-social-link" href="https://www.tiktok.com/@acie_fraiche_cafe?_r=1&_t=ZS-98WFafKvipp" target="_blank" rel="noopener noreferrer" aria-label="Follow Acie Fraiche Cafe on TikTok">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M14 3v11.2a4.2 4.2 0 1 1-4.2-4.2"></path>
-            <path d="M14 6.2c1.1 1.9 2.8 3 5 3.2"></path>
+          <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <path d="M16.75 3c.34 2.16 1.58 3.54 3.75 3.75v3.21a7.12 7.12 0 0 1-3.75-1.1v5.95c0 3.15-2.12 5.19-5.23 5.19-2.88 0-5.02-2.02-5.02-4.72 0-2.83 2.22-4.81 5.32-4.81.29 0 .56.02.82.06v3.31a3.2 3.2 0 0 0-.82-.11c-1.17 0-1.93.6-1.93 1.55 0 .9.7 1.52 1.68 1.52 1.1 0 1.82-.67 1.82-2.01V3h3.36Z"></path>
           </svg>
         </a>
       </div>
