@@ -1155,18 +1155,11 @@ body.af-modal-open {
   text-align: center;
 }
 
-.af-footer-inner {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.9rem;
-  flex-wrap: wrap;
-}
-
 .af-socials {
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
+  margin: 0.15rem 0 0.35rem;
 }
 
 .af-social-link {
