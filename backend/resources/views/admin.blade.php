@@ -287,6 +287,7 @@
                     <div class="grid-2">
                         <div class="list" id="menuList"></div>
                         <form id="menuForm">
+                            <input type="hidden" name="menu_item_id" id="menuEditId" />
                             <label>Name</label>
                             <input name="name" placeholder="Item name" required />
                             <label>Description</label>
@@ -299,7 +300,10 @@
                             </select>
                             <label>Image</label>
                             <input name="image" type="file" accept="image/*" />
-                            <button class="btn-primary" type="submit">Add Menu Item</button>
+                            <div class="row">
+                                <button class="btn-primary" type="submit" id="menuSubmitBtn">Add Menu Item</button>
+                                <button class="btn-ghost" type="button" id="menuCancelEditBtn" style="display:none;">Cancel</button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -502,6 +506,9 @@
         const categoryCancelEditBtn = document.getElementById('categoryCancelEditBtn');
         const menuList = document.getElementById('menuList');
         const menuForm = document.getElementById('menuForm');
+        const menuEditId = document.getElementById('menuEditId');
+        const menuSubmitBtn = document.getElementById('menuSubmitBtn');
+        const menuCancelEditBtn = document.getElementById('menuCancelEditBtn');
         const menuCategorySelect = document.getElementById('menuCategorySelect');
         const usersList = document.getElementById('usersList');
         const ordersTableBody = document.querySelector('#ordersTable tbody');
@@ -551,6 +558,7 @@
         let scanDebounce = null;
         let ordersCache = [];
         let categoriesCache = [];
+        let menuItemsCache = [];
 
         const createPoller = (task, intervalMs, options = {}) => {
             const { immediate = true, runWhileHidden = false, onError = null } = options;
@@ -788,6 +796,7 @@
         };
 
         function renderMenu(items) {
+            menuItemsCache = items;
             const cards = items.map(item => {
                 const safeBarcode = escapeAttr(item.barcode || '');
                 const safeName = escapeAttr(item.name || '');
@@ -798,27 +807,27 @@
                     <div class="menu-card">
                         <div class="menu-card-head">
                             <div style="display:flex; gap:10px; align-items:center;">
-                                ${item.image_url ? `<img class="thumb" src="${item.image_url}" alt="${item.name}">` : ''}
+                                ${item.image_url ? `<img class="thumb" src="${escapeAttr(item.image_url)}" alt="${safeName}">` : ''}
                                 <div>
-                                    <p class="menu-card-title">${item.name}</p>
+                                    <p class="menu-card-title">${safeName}</p>
                                     <div class="menu-tags">
                                         <span class="menu-pill">₦${Number(item.price).toLocaleString()}</span>
-                                    <span class="menu-pill">${item.category && item.category.name ? item.category.name : 'Uncategorized'}</span>
+                                    <span class="menu-pill">${item.category && item.category.name ? escapeAttr(item.category.name) : 'Uncategorized'}</span>
                                         <span class="menu-pill ${item.is_sold_out ? 'sold' : 'active'}">${item.is_sold_out ? 'Sold Out' : 'Available'}</span>
                                     </div>
                                 </div>
                             </div>
                             <div class="menu-tags">
-                                <span class="menu-pill">Barcode: ${item.barcode || 'Not set'}</span>
+                                <span class="menu-pill">Barcode: ${safeBarcode || 'Not set'}</span>
                                 <button class="btn-ghost" ${item.barcode ? '' : 'disabled'} data-action="copy" data-barcode="${safeBarcode}">Copy</button>
                                 <button class="btn-ghost" ${item.barcode ? '' : 'disabled'} data-action="download" data-barcode="${safeBarcode}" data-name="${safeName}">Download</button>
                                 <button class="btn-ghost" onclick="regenBarcode(${item.id}, this)">Regenerate</button>
                             </div>
                         </div>
-                        <p class="menu-meta">${item.description || 'No description yet.'}</p>
+                        <p class="menu-meta">${escapeAttr(item.description || 'No description yet.')}</p>
                         <div class="menu-actions">
                             <button class="btn-ghost" onclick="toggleSoldOut(${item.id}, this)">${item.is_sold_out ? 'Mark Available' : 'Mark Sold Out'}</button>
-                            <button class="btn-ghost" onclick="editMenuItem(${item.id}, ${JSON.stringify(item).replace(/"/g, '&quot;')}, this)">Edit</button>
+                            <button class="btn-ghost" onclick="editMenuItem(${item.id})">Edit</button>
                             <button class="btn-ghost" onclick="deleteMenuItem(${item.id}, this)">Delete</button>
                         </div>
                     </div>
@@ -827,6 +836,32 @@
             menuList.innerHTML = cards.join('');
             statItems.textContent = items.length;
         }
+
+        function resetMenuForm() {
+            menuForm.reset();
+            menuEditId.value = '';
+            menuSubmitBtn.textContent = 'Add Menu Item';
+            menuCancelEditBtn.style.display = 'none';
+        }
+
+        window.editMenuItem = (id) => {
+            const item = menuItemsCache.find(menuItem => Number(menuItem.id) === Number(id));
+            if (!item) {
+                toast('Menu item not found. Refresh and try again.', 'error');
+                return;
+            }
+
+            menuEditId.value = item.id;
+            menuForm.elements.name.value = item.name || '';
+            menuForm.elements.description.value = item.description || '';
+            menuForm.elements.price.value = item.price ?? '';
+            menuForm.elements.category_id.value = item.category_id || '';
+            menuForm.elements.image.value = '';
+            menuSubmitBtn.textContent = 'Save Menu Item';
+            menuCancelEditBtn.style.display = '';
+            menuForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            menuForm.elements.name.focus();
+        };
 
         function renderKitchenStatus(status) {
             const meta = kitchenStatusMeta[status] ?? { label: status || 'pending', color: '#523700', bg: 'rgba(82,55,0,0.12)' };
@@ -1282,17 +1317,24 @@
         menuForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const form = new FormData(menuForm);
+            const editingId = menuEditId.value;
+            form.delete('menu_item_id');
             if (form.get('image') && form.get('image').size === 0) {
                 form.delete('image');
             }
-            const submitBtn = menuForm.querySelector('button[type="submit"]');
-            await runAction(submitBtn, async () => {
-                const res = await safeRequest('/api/menu-items', { method: 'POST', body: form });
-                if (res.ok) toast('Menu item added');
-                menuForm.reset();
+            let saved = false;
+            await runAction(menuSubmitBtn, async () => {
+                const url = editingId ? `/api/menu-items/${editingId}` : '/api/menu-items';
+                if (editingId) form.set('_method', 'PUT');
+                const res = await safeRequest(url, { method: 'POST', body: form });
+                if (res.ok) toast(editingId ? 'Menu item updated' : 'Menu item added');
+                saved = true;
                 await Promise.all([loadMenu(), loadCategories()]);
             });
+            if (saved) resetMenuForm();
         });
+
+        menuCancelEditBtn.addEventListener('click', resetMenuForm);
 
         if (posLookupResult) posLookupResult.addEventListener('click', (e) => {
             const btn = e.target.closest('[data-add-pos-item]');
@@ -1652,33 +1694,6 @@
             if (!confirm('Regenerate barcode? Printed labels with the old code will stop working.')) return;
             await runAction(btn, async () => {
                 await safeRequest(`/api/menu-items/${id}/regenerate-barcode`, { method: 'POST' });
-                await loadMenu();
-            });
-        };
-
-        window.editMenuItem = async (id, item, btn) => {
-            const name = prompt('Name', item.name);
-            if (name === null || name.trim() === '') return;
-            const priceInput = prompt('Price (NGN)', item.price);
-            const price = Number(priceInput);
-            if (Number.isNaN(price)) {
-                alert('Invalid price');
-                return;
-            }
-            const descriptionPrompt = prompt('Description', item.description || '');
-            const description = descriptionPrompt === null ? '' : descriptionPrompt;
-            const category_id = prompt('Category ID (leave blank to unset)', item.category_id || '') || null;
-            await runAction(btn, async () => {
-                await safeRequest(`/api/menu-items/${id}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name,
-                        price,
-                        description: description || null,
-                        category_id: category_id || null,
-                    }),
-                });
                 await loadMenu();
             });
         };
