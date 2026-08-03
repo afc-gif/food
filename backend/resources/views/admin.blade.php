@@ -264,13 +264,17 @@
                     <div class="grid-2">
                         <div class="list" id="categoryList"></div>
                         <form id="categoryForm">
+                            <input type="hidden" name="category_id" id="categoryEditId" />
                             <label>Name</label>
                             <input name="name" placeholder="e.g. Mains" required />
                             <label>Description</label>
                             <input name="description" placeholder="Optional" />
                             <label>Image</label>
                             <input name="image" type="file" accept="image/*" />
-                            <button class="btn-primary" type="submit">Add Category</button>
+                            <div class="row">
+                                <button class="btn-primary" type="submit" id="categorySubmitBtn">Add Category</button>
+                                <button class="btn-ghost" type="button" id="categoryCancelEditBtn" style="display:none;">Cancel</button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -493,6 +497,9 @@
 
         const categoryList = document.getElementById('categoryList');
         const categoryForm = document.getElementById('categoryForm');
+        const categoryEditId = document.getElementById('categoryEditId');
+        const categorySubmitBtn = document.getElementById('categorySubmitBtn');
+        const categoryCancelEditBtn = document.getElementById('categoryCancelEditBtn');
         const menuList = document.getElementById('menuList');
         const menuForm = document.getElementById('menuForm');
         const menuCategorySelect = document.getElementById('menuCategorySelect');
@@ -543,6 +550,7 @@
         let posLookupInFlight = false;
         let scanDebounce = null;
         let ordersCache = [];
+        let categoriesCache = [];
 
         const createPoller = (task, intervalMs, options = {}) => {
             const { immediate = true, runWhileHidden = false, onError = null } = options;
@@ -733,25 +741,51 @@
         }
 
         function renderCategories(categories) {
+            categoriesCache = categories;
             categoryList.innerHTML = categories.map(cat => `
                 <div class="item">
                     <div>
-                        ${cat.image_url ? `<img class="thumb" src="${cat.image_url}" alt="${cat.name}">` : ''}
-                        <h4>${cat.name}</h4>
-                        <small class="muted">${cat.description || ''}</small>
+                        ${cat.image_url ? `<img class="thumb" src="${escapeAttr(cat.image_url)}" alt="${escapeAttr(cat.name)}">` : ''}
+                        <h4>${escapeAttr(cat.name)}</h4>
+                        <small class="muted">${escapeAttr(cat.description || '')}</small>
                     </div>
                     <span class="pill" style="border-color:${cat.is_active ? '#bbf7d0' : '#fca5a5'};color:${cat.is_active ? '#166534' : '#b91c1c'}">
                         ${cat.is_active ? 'Active' : 'Inactive'}
                     </span>
                     <div class="row" style="gap:6px;">
+                        <button class="btn-ghost" onclick="editCategory(${cat.id})">Edit</button>
                         <button class="btn-ghost" onclick="deleteCategory(${cat.id}, this)">Delete</button>
                     </div>
                 </div>
             `).join('');
 
-            menuCategorySelect.innerHTML = `<option value="">No category</option>` + categories.map(cat => `<option value="${cat.id}">${cat.name}</option>`).join('');
+            menuCategorySelect.innerHTML = `<option value="">No category</option>` + categories.map(cat => `<option value="${cat.id}">${escapeAttr(cat.name)}</option>`).join('');
             statCategories.textContent = categories.length;
         }
+
+        function resetCategoryForm() {
+            categoryForm.reset();
+            categoryEditId.value = '';
+            categorySubmitBtn.textContent = 'Add Category';
+            categoryCancelEditBtn.style.display = 'none';
+        }
+
+        window.editCategory = (id) => {
+            const category = categoriesCache.find(cat => Number(cat.id) === Number(id));
+            if (!category) {
+                toast('Category not found. Refresh and try again.', 'error');
+                return;
+            }
+
+            categoryEditId.value = category.id;
+            categoryForm.elements.name.value = category.name || '';
+            categoryForm.elements.description.value = category.description || '';
+            categoryForm.elements.image.value = '';
+            categorySubmitBtn.textContent = 'Save Category';
+            categoryCancelEditBtn.style.display = '';
+            categoryForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            categoryForm.elements.name.focus();
+        };
 
         function renderMenu(items) {
             const cards = items.map(item => {
@@ -1224,18 +1258,26 @@
         categoryForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const form = new FormData(categoryForm);
+            const editingId = categoryEditId.value;
+            form.delete('category_id');
             if (form.get('image') && form.get('image').size === 0) {
                 form.delete('image');
             }
-            form.set('is_active', '1');
-            const submitBtn = categoryForm.querySelector('button[type="submit"]');
-            await runAction(submitBtn, async () => {
-                const res = await safeRequest('/api/categories', { method: 'POST', body: form });
-                if (res.ok) toast('Category added');
-                categoryForm.reset();
-                await loadCategories();
+            const editingCategory = categoriesCache.find(cat => Number(cat.id) === Number(editingId));
+            form.set('is_active', editingId ? (editingCategory && !editingCategory.is_active ? '0' : '1') : '1');
+            let saved = false;
+            await runAction(categorySubmitBtn, async () => {
+                const url = editingId ? `/api/categories/${editingId}` : '/api/categories';
+                if (editingId) form.set('_method', 'PUT');
+                const res = await safeRequest(url, { method: 'POST', body: form });
+                if (res.ok) toast(editingId ? 'Category updated' : 'Category added');
+                saved = true;
+                await Promise.all([loadCategories(), loadMenu()]);
             });
+            if (saved) resetCategoryForm();
         });
+
+        categoryCancelEditBtn.addEventListener('click', resetCategoryForm);
 
         menuForm.addEventListener('submit', async (e) => {
             e.preventDefault();
