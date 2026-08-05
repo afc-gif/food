@@ -911,6 +911,7 @@
                                 <button class="btn-ghost" onclick="setKitchenEta(${o.id}, 15, this)">ETA 15m</button>
                                 <button class="btn-ghost" onclick="setKitchenStatus(${o.id}, 'ready', this)">Ready</button>
                                 <button class="btn-ghost" onclick="shareOrderWhatsapp(${o.id})">WhatsApp</button>
+                                ${o.status === 'pending' ? `<button class="btn-ghost" onclick="deletePendingOrder(${o.id}, this)">Delete</button>` : ''}
                             </div>
                         </td>
                         <td>${new Date(o.created_at).toLocaleString()}</td>
@@ -970,6 +971,25 @@
                 const updated = await res.json();
                 upsertOrderCache(updated);
             });
+        };
+
+        window.deletePendingOrder = async (id, btn) => {
+            const order = ordersCache.find(o => o.id === id);
+            const label = order?.code ? `order ${order.code}` : 'this pending order';
+            if (!confirm(`Delete ${label}? This can only be done before approval and cannot be undone.`)) {
+                return;
+            }
+
+            const originalText = btn?.textContent;
+            if (btn) btn.textContent = 'Deleting...';
+            await runAction(btn, async () => {
+                await safeRequest(`/api/orders/${id}`, { method: 'DELETE' });
+                ordersCache = ordersCache.filter(o => o.id !== id);
+                renderOrders(ordersCache);
+                await loadOrderSummary();
+                toast(`${order?.code || 'Order'} deleted.`);
+            });
+            if (btn && originalText) btn.textContent = originalText;
         };
 
         window.shareOrderWhatsapp = (id) => {
