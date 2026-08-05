@@ -199,6 +199,7 @@
         let lastLookup = null;
         let scanDebounce = null;
         let lookupInFlight = false;
+        let isPosCheckoutSubmitting = false;
         let menuPoller = null;
         let ordersPoller = null;
         let posOrders = [];
@@ -613,6 +614,11 @@
                 alert('Cart is empty. Scan an item first.');
                 return;
             }
+            if (isPosCheckoutSubmitting) {
+                return;
+            }
+
+            isPosCheckoutSubmitting = true;
             const payload = {
                 channel: 'pos',
                 customer_name: posCustomerName ? posCustomerName.value : null,
@@ -661,6 +667,7 @@
             } catch (e) {
                 alert(e.message || 'Could not save sale.');
             } finally {
+                isPosCheckoutSubmitting = false;
                 resetBtn();
             }
         });
