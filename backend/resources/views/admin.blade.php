@@ -374,19 +374,19 @@
                         </div>
                     </div>
 
-                    <div style="display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top:12px;">
-                        <div style="border:1px solid var(--af-line); border-radius:12px; padding:12px; background:#fff;">
-                            <div class="muted" style="font-size:12px; margin-bottom:8px;">Daily totals</div>
-                            <div id="ordersDailyBreakdown" style="display:grid; gap:6px;"></div>
+                    <div style="border:1px solid var(--af-line); border-radius:12px; padding:12px; background:#fff; margin-top:12px;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                            <div>
+                                <strong>Order breakdown</strong>
+                                <div class="muted" id="ordersBreakdownHint" style="font-size:12px;">Showing active daily totals.</div>
+                            </div>
+                            <div class="row" style="gap:6px; flex-wrap:wrap;">
+                                <button class="btn-ghost" type="button" data-order-breakdown="daily">Daily</button>
+                                <button class="btn-ghost" type="button" data-order-breakdown="weekly">Weekly</button>
+                                <button class="btn-ghost" type="button" data-order-breakdown="monthly">Monthly</button>
+                            </div>
                         </div>
-                        <div style="border:1px solid var(--af-line); border-radius:12px; padding:12px; background:#fff;">
-                            <div class="muted" style="font-size:12px; margin-bottom:8px;">Weekly totals</div>
-                            <div id="ordersWeeklyBreakdown" style="display:grid; gap:6px;"></div>
-                        </div>
-                        <div style="border:1px solid var(--af-line); border-radius:12px; padding:12px; background:#fff;">
-                            <div class="muted" style="font-size:12px; margin-bottom:8px;">Monthly totals</div>
-                            <div id="ordersMonthlyBreakdown" style="display:grid; gap:6px;"></div>
-                        </div>
+                        <div id="ordersBreakdownList" style="display:grid; gap:0; margin-top:10px; max-height:260px; overflow:auto;"></div>
                     </div>
 
                     <div class="frame-wrap" style="margin-top:12px; border-color:var(--af-line); box-shadow:none;">
@@ -556,9 +556,9 @@
         const ordersRevenueMonth = document.getElementById('ordersRevenueMonth');
         const ordersTotalAllTime = document.getElementById('ordersTotalAllTime');
         const ordersRevenueAllTime = document.getElementById('ordersRevenueAllTime');
-        const ordersDailyBreakdown = document.getElementById('ordersDailyBreakdown');
-        const ordersWeeklyBreakdown = document.getElementById('ordersWeeklyBreakdown');
-        const ordersMonthlyBreakdown = document.getElementById('ordersMonthlyBreakdown');
+        const ordersBreakdownList = document.getElementById('ordersBreakdownList');
+        const ordersBreakdownHint = document.getElementById('ordersBreakdownHint');
+        const ordersBreakdownButtons = document.querySelectorAll('[data-order-breakdown]');
         const purgeOrdersBtn = document.getElementById('purgeOrdersBtn');
         const ordersExportBtn = document.getElementById('ordersExportBtn');
         const ordersExportRange = document.getElementById('ordersExportRange');
@@ -602,6 +602,7 @@
         let posLookupInFlight = false;
         let scanDebounce = null;
         let ordersCache = [];
+        let activeOrderBreakdown = 'daily';
         let categoriesCache = [];
         let menuItemsCache = [];
 
@@ -1076,27 +1077,54 @@
                 if (ordersTotalAllTime) ordersTotalAllTime.textContent = Number(summary.total_orders || 0).toLocaleString();
                 if (ordersRevenueAllTime) ordersRevenueAllTime.textContent = currency(summary.total_revenue);
                 renderChart(summary.series || []);
-                renderOrderBreakdown(ordersDailyBreakdown, summary.series || [], 'label');
-                renderOrderBreakdown(ordersWeeklyBreakdown, summary.weekly || [], 'label');
-                renderOrderBreakdown(ordersMonthlyBreakdown, summary.monthly || [], 'label');
+                renderActiveOrderBreakdown();
             }
         }
 
-        function renderOrderBreakdown(container, rows, labelKey) {
-            if (!container) return;
-            if (!Array.isArray(rows) || !rows.length) {
-                container.innerHTML = '<div class="muted">No order data yet.</div>';
+        function renderActiveOrderBreakdown() {
+            if (!ordersBreakdownList || !lastSummary) return;
+
+            const configs = {
+                daily: {
+                    label: 'daily',
+                    rows: lastSummary.series || [],
+                    hint: 'Showing days with orders from the last 7 days.'
+                },
+                weekly: {
+                    label: 'weekly',
+                    rows: lastSummary.weekly || [],
+                    hint: 'Showing weeks with orders from the last 8 weeks.'
+                },
+                monthly: {
+                    label: 'monthly',
+                    rows: lastSummary.monthly || [],
+                    hint: 'Showing months with orders from the last 12 months.'
+                },
+            };
+            const config = configs[activeOrderBreakdown] || configs.daily;
+            const rows = (config.rows || []).filter(row => Number(row.orders || 0) > 0 || Number(row.revenue || 0) > 0);
+
+            ordersBreakdownButtons.forEach((btn) => {
+                const active = btn.dataset.orderBreakdown === activeOrderBreakdown;
+                btn.className = active ? 'btn-primary' : 'btn-ghost';
+            });
+            if (ordersBreakdownHint) ordersBreakdownHint.textContent = config.hint;
+
+            if (!rows.length) {
+                ordersBreakdownList.innerHTML = `<div class="muted" style="padding:8px 0;">No ${config.label} orders yet.</div>`;
                 return;
             }
 
-            container.innerHTML = rows.map(row => {
-                const label = row[labelKey] || row.day || row.week || row.month || '—';
+            ordersBreakdownList.innerHTML = rows.map(row => {
+                const label = row.label || row.day || row.week || row.month || '—';
                 const orders = Number(row.orders || 0).toLocaleString();
                 return `
-                    <div style="display:grid; grid-template-columns: minmax(90px, 1fr) auto auto; gap:10px; align-items:center; font-size:13px; padding:6px 0; border-bottom:1px solid var(--af-line);">
-                        <strong>${label}</strong>
-                        <span class="muted">${orders} orders</span>
-                        <span>${currency(row.revenue)}</span>
+                    <div style="display:grid; grid-template-columns: minmax(0, 1fr) auto; gap:10px; align-items:center; font-size:13px; padding:8px 0; border-bottom:1px solid var(--af-line);">
+                        <div>
+                            <strong>${label}</strong>
+                            <div class="muted">${orders} orders</div>
+                        </div>
+                        <strong>${currency(row.revenue)}</strong>
                     </div>
                 `;
             }).join('');
@@ -1617,6 +1645,13 @@
             await runAction(purgeOrdersBtn, async () => {
                 await safeRequest('/api/orders/purge', { method: 'POST' });
                 await Promise.all([loadOrders(), loadOrderSummary()]);
+            });
+        });
+
+        ordersBreakdownButtons.forEach((btn) => {
+            btn.addEventListener('click', () => {
+                activeOrderBreakdown = btn.dataset.orderBreakdown || 'daily';
+                renderActiveOrderBreakdown();
             });
         });
 
