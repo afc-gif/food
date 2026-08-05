@@ -113,6 +113,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const state = {
     cart: [],
     activeFilter: "all",
+    checkout: {
+      inProgress: false,
+      inFlightSignature: null,
+      inFlightPromise: null
+    },
     orderAvailability: {
       is_open: true,
       message: "",
@@ -197,8 +202,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     document.querySelectorAll("[data-whatsapp-btn]").forEach((btn) => {
-      btn.disabled = closed;
-      btn.textContent = closed ? "Ordering Closed" : "Complete Order via WhatsApp";
+      btn.disabled = closed || state.checkout.inProgress;
+      btn.textContent = closed
+        ? "Ordering Closed"
+        : state.checkout.inProgress
+          ? "Opening WhatsApp..."
+          : "Complete Order via WhatsApp";
     });
   };
 
@@ -800,8 +809,54 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  const createBackendOrder = async ({ name, phone, note, service, time }) => {
+  const CHECKOUT_CACHE_KEY = "af_last_whatsapp_checkout";
+  const CHECKOUT_CACHE_TTL_MS = 30 * 60 * 1000;
+
+  const buildCheckoutSignature = ({ name, phone, note, service, time }) => JSON.stringify({
+    name: String(name || "").trim().toLowerCase(),
+    phone: String(phone || "").trim(),
+    service: String(service || "").trim().toLowerCase(),
+    time: String(time || "").trim().toLowerCase(),
+    note: String(note || "").trim().toLowerCase(),
+    items: state.cart.map((item) => ({
+      id: item.id,
+      qty: item.qty,
+      price: item.price
+    }))
+  });
+
+  const getCachedCheckoutOrder = (signature) => {
+    try {
+      const cached = JSON.parse(localStorage.getItem(CHECKOUT_CACHE_KEY) || "null");
+      if (!cached || cached.signature !== signature || !cached.order) return null;
+      if (Date.now() - Number(cached.savedAt || 0) > CHECKOUT_CACHE_TTL_MS) return null;
+      return cached.order;
+    } catch {
+      return null;
+    }
+  };
+
+  const cacheCheckoutOrder = (signature, order) => {
+    try {
+      localStorage.setItem(CHECKOUT_CACHE_KEY, JSON.stringify({
+        signature,
+        order,
+        savedAt: Date.now()
+      }));
+    } catch {
+      // Checkout should still continue if storage is unavailable.
+    }
+  };
+
+  const createBackendOrder = async ({ name, phone, note, service, time, signature }) => {
     if (!state.cart.length) return;
+    const cachedOrder = getCachedCheckoutOrder(signature);
+    if (cachedOrder) return cachedOrder;
+
+    if (state.checkout.inFlightSignature === signature && state.checkout.inFlightPromise) {
+      return state.checkout.inFlightPromise;
+    }
+
     const payload = {
       channel: "web",
       customer_name: name || null,
@@ -818,37 +873,67 @@ document.addEventListener("DOMContentLoaded", () => {
       service: service || null,
       time: time || null
     };
-    const res = await fetch("/api/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Accept: "application/json" },
-      body: JSON.stringify(payload),
-      cache: "no-store"
-    });
-    if (!res.ok) {
-      let message = `Order save failed (${res.status})`;
-      try {
-        const data = await res.clone().json();
-        if (data?.errors) {
-          message = Object.values(data.errors).flat().filter(Boolean).join(" ");
-        } else if (data?.message) {
-          message = data.message;
+
+    state.checkout.inFlightSignature = signature;
+    state.checkout.inFlightPromise = (async () => {
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(payload),
+        cache: "no-store"
+      });
+      if (!res.ok) {
+        let message = `Order save failed (${res.status})`;
+        try {
+          const data = await res.clone().json();
+          if (data?.errors) {
+            message = Object.values(data.errors).flat().filter(Boolean).join(" ");
+          } else if (data?.message) {
+            message = data.message;
+          }
+        } catch (error) {
+          const text = await res.text().catch(() => "");
+          if (text) message = text;
         }
-      } catch (error) {
-        const text = await res.text().catch(() => "");
-        if (text) message = text;
+        throw new Error(message);
       }
-      throw new Error(message);
+      const order = await res.json();
+      cacheCheckoutOrder(signature, order);
+      return order;
+    })();
+
+    try {
+      return await state.checkout.inFlightPromise;
+    } finally {
+      state.checkout.inFlightSignature = null;
+      state.checkout.inFlightPromise = null;
     }
-    return res.json();
+  };
+
+  const buildWhatsAppUrl = ({ name, phone, note, service, time, order }) => {
+    const lines = [
+      "New Order - Acie Fraiche Cafe",
+      "",
+      order?.code ? `Order Code: ${order.code}` : "",
+      `Name: ${name}`,
+      `Phone: ${phone}`,
+      `Service: ${service}`,
+      `Time: ${time}`,
+      note ? `Note: ${note}` : "",
+      "",
+      "Items:",
+      ...state.cart.map((item) => `- ${item.name} (${formatMoney(item.price)} x ${item.qty})`),
+      "",
+      `Total: ${formatMoney(getCartTotal())}`,
+      "",
+      "Order Source: Website"
+    ].filter((line) => line !== "").join("\n");
+
+    const whatsappNumber = "2348143190700";
+    return `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(lines)}`;
   };
 
   const handleWhatsApp = async (form) => {
-    await syncOrderAvailability();
-    if (state.orderAvailability.is_open === false) {
-      alert(state.orderAvailability.message || "We are currently closed and not accepting orders.");
-      openCartOverlay();
-      return;
-    }
     if (!state.cart.length) {
       alert("Your cart is empty.");
       return;
@@ -868,33 +953,36 @@ document.addEventListener("DOMContentLoaded", () => {
     const service = formData.get("service");
     const time = formData.get("time");
     const note = formData.get("note");
+    const signature = buildCheckoutSignature({ name, phone, note, service, time });
+    const whatsappWindow = window.open("", "_blank");
 
-    let message = `New Order - Acie Fraiche Cafe%0A%0A`;
-    message += `Name: ${name}%0A`;
-    message += `Phone: ${phone}%0A`;
-    message += `Service: ${service}%0A`;
-    message += `Time: ${time}%0A`;
-    if (note) message += `Note: ${note}%0A`;
-    message += `%0AItems:%0A`;
-
-    state.cart.forEach((item) => {
-      message += `- ${item.name} (${formatMoney(item.price)} × ${item.qty})%0A`;
-    });
-
-    message += `%0ATotal: ${formatMoney(getCartTotal())}%0A`;
-    message += `%0AOrder Source: Website`;
-
-    const whatsappNumber = "2348143190700";
-    const url = `https://wa.me/${whatsappNumber}?text=${message}`;
+    state.checkout.inProgress = true;
+    applyOrderAvailability();
     try {
-      await createBackendOrder({ name, phone, note, service, time });
+      await syncOrderAvailability();
+      if (state.orderAvailability.is_open === false) {
+        if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
+        alert(state.orderAvailability.message || "We are currently closed and not accepting orders.");
+        openCartOverlay();
+        return;
+      }
+
+      const order = await createBackendOrder({ name, phone, note, service, time, signature });
+      const url = buildWhatsAppUrl({ name, phone, note, service, time, order });
+      if (whatsappWindow && !whatsappWindow.closed) {
+        whatsappWindow.location.href = url;
+      } else {
+        window.location.href = url;
+      }
     } catch (e) {
       console.warn("Could not create backend order", e);
+      if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
       alert(e?.message || "We could not save your order for staff. Please try again.");
       await syncOrderAvailability();
-      return;
+    } finally {
+      state.checkout.inProgress = false;
+      applyOrderAvailability();
     }
-    window.open(url, "_blank");
   };
 
   const bindWhatsAppButtons = () => {
