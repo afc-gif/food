@@ -260,9 +260,17 @@ class OrderController extends Controller
     public function summary()
     {
         $today = Carbon::today();
+        $weekStart = Carbon::today()->startOfWeek();
+        $monthStart = Carbon::today()->startOfMonth();
 
         $todayOrders = Order::whereDate('created_at', $today)->count();
         $todayRevenue = Order::whereDate('created_at', $today)->sum('total');
+        $weekOrders = Order::where('created_at', '>=', $weekStart)->count();
+        $weekRevenue = Order::where('created_at', '>=', $weekStart)->sum('total');
+        $monthOrders = Order::where('created_at', '>=', $monthStart)->count();
+        $monthRevenue = Order::where('created_at', '>=', $monthStart)->sum('total');
+        $totalOrders = Order::count();
+        $totalRevenue = Order::sum('total');
 
         $since = Carbon::today()->subDays(6);
         $seriesRaw = Order::selectRaw('DATE(created_at) as day, COUNT(*) as orders, SUM(total) as revenue')
@@ -277,15 +285,58 @@ class OrderController extends Controller
             $found = $seriesRaw->firstWhere('day', $day);
             $series[] = [
                 'day' => $day,
+                'label' => $since->copy()->addDays($i)->format('M j'),
                 'orders' => (int) ($found->orders ?? 0),
                 'revenue' => (float) ($found->revenue ?? 0),
+            ];
+        }
+
+        $weeklyRaw = Order::query()
+            ->where('created_at', '>=', Carbon::today()->subWeeks(7)->startOfWeek())
+            ->get(['created_at', 'total'])
+            ->groupBy(fn (Order $order) => $order->created_at->copy()->startOfWeek()->format('Y-m-d'));
+        $weekly = [];
+        for ($i = 7; $i >= 0; $i--) {
+            $week = Carbon::today()->subWeeks($i)->startOfWeek();
+            $key = $week->format('Y-m-d');
+            $orders = $weeklyRaw->get($key, collect());
+            $weekly[] = [
+                'week' => $key,
+                'label' => $week->format('M j') . ' - ' . $week->copy()->endOfWeek()->format('M j'),
+                'orders' => $orders->count(),
+                'revenue' => (float) $orders->sum('total'),
+            ];
+        }
+
+        $monthlyRaw = Order::query()
+            ->where('created_at', '>=', Carbon::today()->subMonths(11)->startOfMonth())
+            ->get(['created_at', 'total'])
+            ->groupBy(fn (Order $order) => $order->created_at->format('Y-m'));
+        $monthly = [];
+        for ($i = 11; $i >= 0; $i--) {
+            $month = Carbon::today()->subMonths($i)->startOfMonth();
+            $key = $month->format('Y-m');
+            $orders = $monthlyRaw->get($key, collect());
+            $monthly[] = [
+                'month' => $key,
+                'label' => $month->format('M Y'),
+                'orders' => $orders->count(),
+                'revenue' => (float) $orders->sum('total'),
             ];
         }
 
         return [
             'today_orders' => $todayOrders,
             'today_revenue' => (float) $todayRevenue,
+            'week_orders' => $weekOrders,
+            'week_revenue' => (float) $weekRevenue,
+            'month_orders' => $monthOrders,
+            'month_revenue' => (float) $monthRevenue,
+            'total_orders' => $totalOrders,
+            'total_revenue' => (float) $totalRevenue,
             'series' => $series,
+            'weekly' => $weekly,
+            'monthly' => $monthly,
         ];
     }
 

@@ -334,6 +334,25 @@
                         </div>
                     </div>
 
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px; margin-top:12px;">
+                        <div class="stat" style="margin:0; box-shadow:none; border-color:var(--af-line);">
+                            <h3 id="ordersTotalToday">0</h3><span>Today</span>
+                            <div class="muted" id="ordersRevenueToday">₦0</div>
+                        </div>
+                        <div class="stat" style="margin:0; box-shadow:none; border-color:var(--af-line);">
+                            <h3 id="ordersTotalWeek">0</h3><span>This week</span>
+                            <div class="muted" id="ordersRevenueWeek">₦0</div>
+                        </div>
+                        <div class="stat" style="margin:0; box-shadow:none; border-color:var(--af-line);">
+                            <h3 id="ordersTotalMonth">0</h3><span>This month</span>
+                            <div class="muted" id="ordersRevenueMonth">₦0</div>
+                        </div>
+                        <div class="stat" style="margin:0; box-shadow:none; border-color:var(--af-line);">
+                            <h3 id="ordersTotalAllTime">0</h3><span>All time</span>
+                            <div class="muted" id="ordersRevenueAllTime">₦0</div>
+                        </div>
+                    </div>
+
                     <div style="display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top:12px;">
                         <div style="border:1px solid var(--af-line); border-radius:12px; padding:12px; background:#fff;">
                             <div class="muted" style="font-size:12px; margin-bottom:6px;">Revenue (last 7 days)</div>
@@ -352,6 +371,21 @@
                                     <h3 id="statRevenue">₦0</h3><span>Revenue today</span>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    <div style="display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); margin-top:12px;">
+                        <div style="border:1px solid var(--af-line); border-radius:12px; padding:12px; background:#fff;">
+                            <div class="muted" style="font-size:12px; margin-bottom:8px;">Daily totals</div>
+                            <div id="ordersDailyBreakdown" style="display:grid; gap:6px;"></div>
+                        </div>
+                        <div style="border:1px solid var(--af-line); border-radius:12px; padding:12px; background:#fff;">
+                            <div class="muted" style="font-size:12px; margin-bottom:8px;">Weekly totals</div>
+                            <div id="ordersWeeklyBreakdown" style="display:grid; gap:6px;"></div>
+                        </div>
+                        <div style="border:1px solid var(--af-line); border-radius:12px; padding:12px; background:#fff;">
+                            <div class="muted" style="font-size:12px; margin-bottom:8px;">Monthly totals</div>
+                            <div id="ordersMonthlyBreakdown" style="display:grid; gap:6px;"></div>
                         </div>
                     </div>
 
@@ -514,6 +548,17 @@
         const ordersTableBody = document.querySelector('#ordersTable tbody');
         const ordersChartBars = document.getElementById('ordersChartBars');
         const ordersChartLabels = document.getElementById('ordersChartLabels');
+        const ordersTotalToday = document.getElementById('ordersTotalToday');
+        const ordersRevenueToday = document.getElementById('ordersRevenueToday');
+        const ordersTotalWeek = document.getElementById('ordersTotalWeek');
+        const ordersRevenueWeek = document.getElementById('ordersRevenueWeek');
+        const ordersTotalMonth = document.getElementById('ordersTotalMonth');
+        const ordersRevenueMonth = document.getElementById('ordersRevenueMonth');
+        const ordersTotalAllTime = document.getElementById('ordersTotalAllTime');
+        const ordersRevenueAllTime = document.getElementById('ordersRevenueAllTime');
+        const ordersDailyBreakdown = document.getElementById('ordersDailyBreakdown');
+        const ordersWeeklyBreakdown = document.getElementById('ordersWeeklyBreakdown');
+        const ordersMonthlyBreakdown = document.getElementById('ordersMonthlyBreakdown');
         const purgeOrdersBtn = document.getElementById('purgeOrdersBtn');
         const ordersExportBtn = document.getElementById('ordersExportBtn');
         const ordersExportRange = document.getElementById('ordersExportRange');
@@ -634,6 +679,8 @@
         const persistParkedTickets = (list) => {
             localStorage.setItem('pos_parked_tickets', JSON.stringify(list));
         };
+
+        const currency = (value) => '₦' + Number(value || 0).toLocaleString();
 
         const csrfMeta = document.querySelector('meta[name="csrf-token"]');
         const csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : null;
@@ -1019,9 +1066,40 @@
             if (summary) {
                 lastSummary = summary;
                 statOrders.textContent = summary.today_orders ?? 0;
-                statRevenue.textContent = '₦' + Number(summary.today_revenue || 0).toLocaleString();
+                statRevenue.textContent = currency(summary.today_revenue);
+                if (ordersTotalToday) ordersTotalToday.textContent = Number(summary.today_orders || 0).toLocaleString();
+                if (ordersRevenueToday) ordersRevenueToday.textContent = currency(summary.today_revenue);
+                if (ordersTotalWeek) ordersTotalWeek.textContent = Number(summary.week_orders || 0).toLocaleString();
+                if (ordersRevenueWeek) ordersRevenueWeek.textContent = currency(summary.week_revenue);
+                if (ordersTotalMonth) ordersTotalMonth.textContent = Number(summary.month_orders || 0).toLocaleString();
+                if (ordersRevenueMonth) ordersRevenueMonth.textContent = currency(summary.month_revenue);
+                if (ordersTotalAllTime) ordersTotalAllTime.textContent = Number(summary.total_orders || 0).toLocaleString();
+                if (ordersRevenueAllTime) ordersRevenueAllTime.textContent = currency(summary.total_revenue);
                 renderChart(summary.series || []);
+                renderOrderBreakdown(ordersDailyBreakdown, summary.series || [], 'label');
+                renderOrderBreakdown(ordersWeeklyBreakdown, summary.weekly || [], 'label');
+                renderOrderBreakdown(ordersMonthlyBreakdown, summary.monthly || [], 'label');
             }
+        }
+
+        function renderOrderBreakdown(container, rows, labelKey) {
+            if (!container) return;
+            if (!Array.isArray(rows) || !rows.length) {
+                container.innerHTML = '<div class="muted">No order data yet.</div>';
+                return;
+            }
+
+            container.innerHTML = rows.map(row => {
+                const label = row[labelKey] || row.day || row.week || row.month || '—';
+                const orders = Number(row.orders || 0).toLocaleString();
+                return `
+                    <div style="display:grid; grid-template-columns: minmax(90px, 1fr) auto auto; gap:10px; align-items:center; font-size:13px; padding:6px 0; border-bottom:1px solid var(--af-line);">
+                        <strong>${label}</strong>
+                        <span class="muted">${orders} orders</span>
+                        <span>${currency(row.revenue)}</span>
+                    </div>
+                `;
+            }).join('');
         }
 
         function renderChart(series) {
@@ -1034,7 +1112,7 @@
             const maxRevenue = Math.max(...series.map(s => Number(s.revenue || 0)), 1);
             ordersChartBars.innerHTML = series.map(s => {
                 const height = Math.max(4, (Number(s.revenue || 0) / maxRevenue) * 100);
-                return `<div title="₦${Number(s.revenue || 0).toLocaleString()}" style="flex:1; min-width:10px; background:var(--af-brown); height:${height}%; border-radius:6px 6px 2px 2px;"></div>`;
+                return `<div title="${currency(s.revenue)} · ${Number(s.orders || 0).toLocaleString()} orders" style="flex:1; min-width:10px; background:var(--af-brown); height:${height}%; border-radius:6px 6px 2px 2px;"></div>`;
             }).join('');
             ordersChartLabels.innerHTML = series.map(s => {
                 const label = s.day ? s.day.slice(5) : '';
@@ -1081,11 +1159,11 @@
                 if (!lastSummary) {
                     const fallbackRev = data.reduce((sum, o) => sum + Number(o.total || 0), 0);
                     statOrders.textContent = data.length;
-                    statRevenue.textContent = '₦' + fallbackRev.toLocaleString();
+                    statRevenue.textContent = currency(fallbackRev);
                 }
             } catch (e) {
                 console.error(e);
-                ordersTableBody.innerHTML = '<tr><td colspan="6">Could not load orders.</td></tr>';
+                ordersTableBody.innerHTML = '<tr><td colspan="9">Could not load orders.</td></tr>';
             }
         }
 
