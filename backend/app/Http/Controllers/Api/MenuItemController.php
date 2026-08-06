@@ -51,6 +51,7 @@ class MenuItemController extends Controller
             'price' => 'required|numeric|min:0',
             'is_sold_out' => 'boolean',
             'stock' => 'nullable|integer|min:0',
+            'stock_unit' => 'nullable|string|max:50',
             'image_url' => 'nullable|url',
             'image' => 'nullable|image|max:4096',
             'is_active' => 'boolean',
@@ -71,6 +72,9 @@ class MenuItemController extends Controller
 
         $data['slug'] = Str::slug($data['name'] . '-' . Str::random(6));
         $data['barcode'] = $data['barcode'] ?? MenuItem::generateBarcode();
+        if (array_key_exists('stock', $data) && $data['stock'] !== null && (int) $data['stock'] === 0) {
+            $data['is_sold_out'] = true;
+        }
 
         $item = MenuItem::create($data);
 
@@ -96,6 +100,7 @@ class MenuItemController extends Controller
             'price' => 'nullable|numeric|min:0',
             'is_sold_out' => 'boolean',
             'stock' => 'nullable|integer|min:0',
+            'stock_unit' => 'nullable|string|max:50',
             'image_url' => 'nullable|url',
             'image' => 'nullable|image|max:4096',
             'is_active' => 'boolean',
@@ -118,6 +123,14 @@ class MenuItemController extends Controller
                 return response()->json([
                     'message' => 'Image upload failed: ' . $e->getMessage(),
                 ], 422);
+            }
+        }
+
+        if (array_key_exists('stock', $data) && $data['stock'] !== null) {
+            if ((int) $data['stock'] === 0) {
+                $data['is_sold_out'] = true;
+            } elseif ((int) $menuItem->stock === 0 && ! array_key_exists('is_sold_out', $data)) {
+                $data['is_sold_out'] = false;
             }
         }
 
@@ -163,7 +176,7 @@ class MenuItemController extends Controller
             return response()->json(['message' => 'Item not found'], 404);
         }
 
-        if ($item->is_sold_out) {
+        if ($item->is_sold_out || $item->stock === 0) {
             return response()->json(['message' => 'Item is sold out'], 409);
         }
 

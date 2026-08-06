@@ -55,6 +55,16 @@ const slugify = (text) =>
     .replace(/^-+|-+$/g, "") || "menu";
 
 const formatMoney = (value) => `₦${Number(value || 0).toLocaleString()}`;
+const formatStockUnit = (quantity, unit) => {
+  const cleanUnit = String(unit || "").trim();
+  if (!cleanUnit) return "left";
+  if (Number(quantity) === 1) return cleanUnit.replace(/s+$/i, "");
+  return /s$/i.test(cleanUnit) ? cleanUnit : `${cleanUnit}s`;
+};
+const formatStockLabel = (stock, unit) => {
+  if (stock === null || stock === undefined || stock === "") return "";
+  return `${Number(stock).toLocaleString()} ${formatStockUnit(stock, unit)} left`;
+};
 
 const ensureErrorBanner = () => {
   let bar = document.getElementById("afErrorBanner");
@@ -328,16 +338,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  const setSoldOutState = (itemId, isSoldOut) => {
+  const updateStockPill = (card, stock, stockUnit) => {
+    if (!card) return;
+    const label = formatStockLabel(stock, stockUnit);
+    let pill = card.querySelector("[data-stock-pill]");
+    if (!label) {
+      if (pill) pill.remove();
+      return;
+    }
+    if (!pill) {
+      pill = document.createElement("span");
+      pill.className = "af-stock-pill";
+      pill.setAttribute("data-stock-pill", "");
+      const tagsWrap = card.querySelector(".af-card-top div[style], .af-menu-head div[style]");
+      if (tagsWrap) tagsWrap.appendChild(pill);
+    }
+    pill.textContent = label;
+  };
+
+  const setSoldOutState = (itemId, isSoldOut, stock = null, stockUnit = "") => {
     const soldOut = isSoldOut ? "1" : "0";
     document.querySelectorAll(`[data-item-id="${itemId}"]`).forEach((btn) => {
       btn.setAttribute("data-sold-out", soldOut);
+      btn.setAttribute("data-stock", stock ?? "");
+      btn.setAttribute("data-stock-unit", stockUnit || "");
       btn.disabled = isSoldOut;
       btn.textContent = isSoldOut ? "Sold Out" : "Add to Cart";
     });
 
     document.querySelectorAll(`[data-menu-item][data-item-id="${itemId}"]`).forEach((card) => {
       card.setAttribute("data-sold-out", soldOut);
+      card.setAttribute("data-stock", stock ?? "");
+      card.setAttribute("data-stock-unit", stockUnit || "");
+      updateStockPill(card, stock, stockUnit);
       const pill = card.querySelector("[data-soldout-pill]");
       if (pill) {
         pill.style.display = isSoldOut ? "inline-flex" : "none";
@@ -397,10 +430,22 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
     const existing = state.cart.find((i) => i.id === item.id);
+    const nextQty = existing ? existing.qty + 1 : 1;
+    if (item.stock !== null && item.stock !== undefined && nextQty > Number(item.stock)) {
+      alert(`Only ${formatStockLabel(item.stock, item.stockUnit || item.stock_unit || "").replace(/ left$/, "")} available.`);
+      return;
+    }
     if (existing) {
       existing.qty += 1;
     } else {
-      state.cart.push({ id: item.id, name: item.name, price: item.price || 0, qty: 1 });
+      state.cart.push({
+        id: item.id,
+        name: item.name,
+        price: item.price || 0,
+        qty: 1,
+        stock: item.stock,
+        stockUnit: item.stockUnit || item.stock_unit || ""
+      });
     }
     renderCart();
   };
@@ -429,7 +474,9 @@ document.addEventListener("DOMContentLoaded", () => {
             ? parseInt(priceEl.textContent.replace(/[^\d]/g, ""), 10)
             : 0;
         const price = Number.isFinite(parsedPrice) ? parsedPrice : 0;
-        addToCart({ id, name, price });
+        const stockAttr = btn.getAttribute("data-stock");
+        const stock = stockAttr === "" || stockAttr === null ? null : Number(stockAttr);
+        addToCart({ id, name, price, stock, stockUnit: btn.getAttribute("data-stock-unit") || "" });
         flyToCart(btn);
       });
     });
@@ -447,7 +494,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const item = state.cart[index];
         if (!item) return;
 
-        if (action === "inc") item.qty += 1;
+        if (action === "inc") {
+          if (item.stock !== null && item.stock !== undefined && item.qty + 1 > Number(item.stock)) {
+            alert(`Only ${formatStockLabel(item.stock, item.stockUnit || "").replace(/ left$/, "")} available.`);
+            return;
+          }
+          item.qty += 1;
+        }
         if (action === "dec") item.qty = Math.max(1, item.qty - 1);
         if (action === "remove") state.cart.splice(index, 1);
         renderCart();
@@ -541,6 +594,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const categoryName = item?.category?.name ?? item?.category_name ?? "Menu";
     const description = item?.description ?? "";
     const imageUrl = resolveImageUrl(item);
+    const stock = item?.stock === null || item?.stock === undefined || item?.stock === "" ? null : Number(item.stock);
+    const stockUnit = item?.stock_unit || "";
     const isValid = !!id && !!name && price !== null;
     return {
       ...item,
@@ -550,7 +605,10 @@ document.addEventListener("DOMContentLoaded", () => {
       price,
       categoryName,
       categorySlug: slugify(categoryName),
-      is_sold_out: !!item?.is_sold_out,
+      stock,
+      stock_unit: stockUnit,
+      stockLabel: formatStockLabel(stock, stockUnit),
+      is_sold_out: !!item?.is_sold_out || stock === 0,
       imageUrl,
       valid: isValid
     };
@@ -578,6 +636,8 @@ document.addEventListener("DOMContentLoaded", () => {
             data-menu-item
             data-item-id="${item.id}"
             data-sold-out="${item.is_sold_out ? "1" : "0"}"
+            data-stock="${item.stock ?? ""}"
+            data-stock-unit="${item.stock_unit || ""}"
             data-category="${item.categorySlug}"
           >
             ${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}" class="af-card-img" loading="lazy" decoding="async" />` : ""}
@@ -586,6 +646,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <h3>${item.name}</h3>
                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                   <span class="af-tag">${item.categoryName}</span>
+                  ${item.stockLabel ? `<span class="af-stock-pill" data-stock-pill>${item.stockLabel}</span>` : ""}
                   <span
                     class="af-pill"
                     data-soldout-pill
@@ -602,6 +663,8 @@ document.addEventListener("DOMContentLoaded", () => {
                   data-item-id="${item.id}"
                   data-item-price="${item.price}"
                   data-sold-out="${item.is_sold_out ? "1" : "0"}"
+                  data-stock="${item.stock ?? ""}"
+                  data-stock-unit="${item.stock_unit || ""}"
                   ${item.is_sold_out ? "disabled" : ""}
                 >
                   ${item.is_sold_out ? "Sold Out" : "Add to Cart"}
@@ -625,6 +688,8 @@ document.addEventListener("DOMContentLoaded", () => {
     card.setAttribute("data-menu-item", "");
     card.setAttribute("data-item-id", item.id);
     card.setAttribute("data-sold-out", soldOut);
+    card.setAttribute("data-stock", item.stock ?? "");
+    card.setAttribute("data-stock-unit", item.stock_unit || "");
     card.setAttribute("data-category", item.categorySlug);
     card.innerHTML = `
       ${item.imageUrl ? `<div class="af-menu-thumb"><img src="${item.imageUrl}" alt="${item.name}" loading="lazy" decoding="async"></div>` : ""}
@@ -633,6 +698,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <h3>${item.name}</h3>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
           <span class="af-pill">${item.categoryName}</span>
+          ${item.stockLabel ? `<span class="af-stock-pill" data-stock-pill>${item.stockLabel}</span>` : ""}
           <span
             class="af-pill"
             data-soldout-pill
@@ -649,6 +715,8 @@ document.addEventListener("DOMContentLoaded", () => {
           data-item-id="${item.id}"
           data-item-price="${item.price}"
           data-sold-out="${soldOut}"
+          data-stock="${item.stock ?? ""}"
+          data-stock-unit="${item.stock_unit || ""}"
           ${item.is_sold_out ? "disabled" : ""}
         >
           ${item.is_sold_out ? "Sold Out" : "Add to Cart"}
@@ -686,6 +754,8 @@ document.addEventListener("DOMContentLoaded", () => {
           data-menu-item
           data-item-id="${item.id}"
           data-sold-out="${item.is_sold_out ? "1" : "0"}"
+          data-stock="${item.stock ?? ""}"
+          data-stock-unit="${item.stock_unit || ""}"
           data-category="${item.categorySlug}"
         >
           ${item.imageUrl ? `<div class="af-menu-thumb"><img src="${item.imageUrl}" alt="${item.name}" loading="lazy" decoding="async"></div>` : ""}
@@ -694,6 +764,7 @@ document.addEventListener("DOMContentLoaded", () => {
               <h3>${item.name}</h3>
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                 <span class="af-pill">${item.categoryName}</span>
+                ${item.stockLabel ? `<span class="af-stock-pill" data-stock-pill>${item.stockLabel}</span>` : ""}
                 <span
                   class="af-pill"
                   data-soldout-pill
@@ -710,6 +781,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 data-item-id="${item.id}"
                 data-item-price="${item.price}"
                 data-sold-out="${item.is_sold_out ? "1" : "0"}"
+                data-stock="${item.stock ?? ""}"
+                data-stock-unit="${item.stock_unit || ""}"
                 ${item.is_sold_out ? "disabled" : ""}
               >
                 ${item.is_sold_out ? "Sold Out" : "Add to Cart"}
@@ -745,11 +818,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const priceEl = existing.querySelector(".af-price");
       if (priceEl) priceEl.textContent = formatMoney(item.price);
       existing.setAttribute("data-sold-out", item.is_sold_out ? "1" : "0");
+      existing.setAttribute("data-stock", item.stock ?? "");
+      existing.setAttribute("data-stock-unit", item.stock_unit || "");
+      updateStockPill(existing, item.stock, item.stock_unit);
       const pill = existing.querySelector("[data-soldout-pill]");
       if (pill) pill.style.display = item.is_sold_out ? "inline-flex" : "none";
       const btn = existing.querySelector("[data-item]");
       if (btn) {
         btn.setAttribute("data-sold-out", item.is_sold_out ? "1" : "0");
+        btn.setAttribute("data-stock", item.stock ?? "");
+        btn.setAttribute("data-stock-unit", item.stock_unit || "");
         btn.disabled = !!item.is_sold_out;
         btn.textContent = item.is_sold_out ? "Sold Out" : "Add to Cart";
         btn.setAttribute("data-item-price", item.price ?? 0);
@@ -762,7 +840,7 @@ document.addEventListener("DOMContentLoaded", () => {
       applyOrderAvailability();
       applyFilter();
     }
-    setSoldOutState(item.id, !!item.is_sold_out);
+    setSoldOutState(item.id, !!item.is_sold_out, item.stock, item.stock_unit);
   };
 
   const syncMenuAvailability = async () => {

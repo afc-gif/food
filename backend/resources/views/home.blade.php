@@ -111,12 +111,22 @@
 
         <div class="af-grid af-grid-3 af-cards" id="featuredGrid">
           @forelse ($featured as $item)
-            @php $isSoldOut = $item->is_sold_out; @endphp
+            @php
+              $isSoldOut = $item->is_sold_out || $item->stock === 0;
+              $stockUnit = trim((string) $item->stock_unit);
+              $stockLabel = $item->stock === null
+                ? null
+                : ($stockUnit !== ''
+                  ? $item->stock.' '.($item->stock == 1 ? rtrim($stockUnit, 's') : (Str::endsWith($stockUnit, 's') ? $stockUnit : $stockUnit.'s')).' left'
+                  : $item->stock.' left');
+            @endphp
             <article
               class="af-card"
               data-menu-item
               data-item-id="{{ $item->id }}"
               data-sold-out="{{ $isSoldOut ? '1' : '0' }}"
+              data-stock="{{ $item->stock ?? '' }}"
+              data-stock-unit="{{ $item->stock_unit ?? '' }}"
               data-category="{{ Str::slug(optional($item->category)->name ?? 'menu') }}"
             >
               @if($item->image_url)
@@ -133,6 +143,9 @@
                   <h3>{{ $item->name }}</h3>
                   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                     <span class="af-tag">{{ optional($item->category)->name ?? 'Signature' }}</span>
+                    @if($stockLabel)
+                      <span class="af-stock-pill" data-stock-pill>{{ $stockLabel }}</span>
+                    @endif
                   </div>
                 </div>
                 <p>{{ $item->description ?? 'Fresh from our kitchen.' }}</p>
@@ -144,6 +157,8 @@
                     data-item-id="{{ $item->id }}"
                     data-item-price="{{ $item->price }}"
                     data-sold-out="{{ $isSoldOut ? '1' : '0' }}"
+                    data-stock="{{ $item->stock ?? '' }}"
+                    data-stock-unit="{{ $item->stock_unit ?? '' }}"
                     @if($isSoldOut) disabled @endif
                   >
                     {{ $isSoldOut ? 'Sold Out' : 'Add to Cart' }}
@@ -178,13 +193,21 @@
             @forelse ($menuItems as $item)
               @php
                   $catSlug = Str::slug(optional($item->category)->name ?? 'menu');
-                  $isSoldOut = $item->is_sold_out;
+                  $isSoldOut = $item->is_sold_out || $item->stock === 0;
+                  $stockUnit = trim((string) $item->stock_unit);
+                  $stockLabel = $item->stock === null
+                    ? null
+                    : ($stockUnit !== ''
+                      ? $item->stock.' '.($item->stock == 1 ? rtrim($stockUnit, 's') : (Str::endsWith($stockUnit, 's') ? $stockUnit : $stockUnit.'s')).' left'
+                      : $item->stock.' left');
               @endphp
               <article
                 class="af-menu-item"
                 data-menu-item
                 data-item-id="{{ $item->id }}"
                 data-sold-out="{{ $isSoldOut ? '1' : '0' }}"
+                data-stock="{{ $item->stock ?? '' }}"
+                data-stock-unit="{{ $item->stock_unit ?? '' }}"
                 data-category="{{ $catSlug }}"
               >
                 @if($item->image_url)
@@ -197,6 +220,9 @@
                     <h3>{{ $item->name }}</h3>
                     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                       <span class="af-pill">{{ optional($item->category)->name ?? 'Menu' }}</span>
+                      @if($stockLabel)
+                        <span class="af-stock-pill" data-stock-pill>{{ $stockLabel }}</span>
+                      @endif
                     </div>
                   </div>
                   <p>{{ $item->description ?? 'Freshly prepared from our kitchen.' }}</p>
@@ -208,6 +234,8 @@
                       data-item-id="{{ $item->id }}"
                       data-item-price="{{ $item->price }}"
                       data-sold-out="{{ $isSoldOut ? '1' : '0' }}"
+                      data-stock="{{ $item->stock ?? '' }}"
+                      data-stock-unit="{{ $item->stock_unit ?? '' }}"
                       @if($isSoldOut) disabled @endif
                     >
                       {{ $isSoldOut ? 'Sold Out' : 'Add to Cart' }}

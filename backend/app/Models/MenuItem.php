@@ -19,6 +19,7 @@ class MenuItem extends Model
         'price',
         'is_sold_out',
         'stock',
+        'stock_unit',
         'image_url',
         'is_active',
         'sort_order',
@@ -28,6 +29,7 @@ class MenuItem extends Model
         'is_sold_out' => 'boolean',
         'is_active' => 'boolean',
         'price' => 'decimal:2',
+        'stock' => 'integer',
     ];
 
     protected static function booted(): void

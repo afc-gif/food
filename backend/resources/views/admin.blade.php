@@ -294,6 +294,10 @@
                             <textarea name="description" rows="2" placeholder="Optional"></textarea>
                             <label>Price (NGN)</label>
                             <input name="price" type="number" step="0.01" min="0" required />
+                            <label>Stock Count</label>
+                            <input name="stock" type="number" step="1" min="0" placeholder="Leave empty if not tracked" />
+                            <label>Stock Unit</label>
+                            <input name="stock_unit" maxlength="50" placeholder="e.g. portions, bottles, packs" />
                             <label>Category</label>
                             <select name="category_id" id="menuCategorySelect">
                                 <option value="">No category</option>
@@ -693,6 +697,13 @@
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
 
+        const formatStockUnit = (quantity, unit) => {
+            const cleanUnit = String(unit || '').trim();
+            if (!cleanUnit) return 'left';
+            if (Number(quantity) === 1) return cleanUnit.replace(/s+$/i, '');
+            return /s$/i.test(cleanUnit) ? cleanUnit : `${cleanUnit}s`;
+        };
+
         const apiFetch = (url, options = {}) => {
             const headers = {
                 Accept: 'application/json',
@@ -860,7 +871,8 @@
                                     <p class="menu-card-title">${safeName}</p>
                                     <div class="menu-tags">
                                         <span class="menu-pill">₦${Number(item.price).toLocaleString()}</span>
-                                    <span class="menu-pill">${item.category && item.category.name ? escapeAttr(item.category.name) : 'Uncategorized'}</span>
+                                        <span class="menu-pill">${item.category && item.category.name ? escapeAttr(item.category.name) : 'Uncategorized'}</span>
+                                        <span class="menu-pill">${item.stock === null || item.stock === undefined ? 'Stock not tracked' : `${Number(item.stock).toLocaleString()} ${formatStockUnit(item.stock, item.stock_unit)} left`}</span>
                                         <span class="menu-pill ${item.is_sold_out ? 'sold' : 'active'}">${item.is_sold_out ? 'Sold Out' : 'Available'}</span>
                                     </div>
                                 </div>
@@ -903,6 +915,8 @@
             menuForm.elements.name.value = item.name || '';
             menuForm.elements.description.value = item.description || '';
             menuForm.elements.price.value = item.price ?? '';
+            menuForm.elements.stock.value = item.stock ?? '';
+            menuForm.elements.stock_unit.value = item.stock_unit || '';
             menuForm.elements.category_id.value = item.category_id || '';
             menuForm.elements.image.value = '';
             menuSubmitBtn.textContent = 'Save Menu Item';

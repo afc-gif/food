@@ -10,6 +10,7 @@ use App\Models\MenuItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Payment;
+use App\Models\InventoryAdjustment;
 use App\Services\BusinessHours;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -79,9 +80,28 @@ class OrderController extends Controller
         return DB::transaction(function () use ($data, $request) {
             $itemsData = [];
             $subtotal = 0;
+            $changedMenuItems = collect();
+            $requestedItems = collect($data['items'])
+                ->groupBy('menu_item_id')
+                ->map(fn ($items, $menuItemId) => [
+                    'menu_item_id' => (int) $menuItemId,
+                    'quantity' => $items->sum('quantity'),
+                ])
+                ->values();
 
-            foreach ($data['items'] as $itemInput) {
-                $menuItem = MenuItem::findOrFail($itemInput['menu_item_id']);
+            $menuItems = MenuItem::whereIn('id', $requestedItems->pluck('menu_item_id'))
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('id');
+
+            foreach ($requestedItems as $itemInput) {
+                $menuItem = $menuItems->get($itemInput['menu_item_id']);
+                if (! $menuItem) {
+                    throw ValidationException::withMessages([
+                        'items' => ['One or more menu items could not be found.'],
+                    ]);
+                }
+
                 if (! $menuItem->is_active) {
                     throw ValidationException::withMessages([
                         'items' => ["{$menuItem->name} is inactive."],
@@ -89,18 +109,44 @@ class OrderController extends Controller
                 }
                 // Always trust server-side price to prevent client tampering
                 $price = $menuItem->price;
-                $lineTotal = $price * $itemInput['quantity'];
+                $quantity = (int) $itemInput['quantity'];
+                $lineTotal = $price * $quantity;
 
-                if ($menuItem->is_sold_out) {
+                if ($menuItem->is_sold_out || $menuItem->stock === 0) {
                     throw ValidationException::withMessages([
                         'items' => ["{$menuItem->name} is sold out."],
                     ]);
                 }
 
+                if ($menuItem->stock !== null && $menuItem->stock < $quantity) {
+                    $unit = $this->formatStockUnit($menuItem->stock, $menuItem->stock_unit);
+                    throw ValidationException::withMessages([
+                        'items' => ["Only {$menuItem->stock} {$unit} of {$menuItem->name} left."],
+                    ]);
+                }
+
+                if ($menuItem->stock !== null) {
+                    $menuItem->stock -= $quantity;
+                    if ($menuItem->stock <= 0) {
+                        $menuItem->stock = 0;
+                        $menuItem->is_sold_out = true;
+                    }
+                    $menuItem->save();
+
+                    InventoryAdjustment::create([
+                        'menu_item_id' => $menuItem->id,
+                        'quantity_change' => -$quantity,
+                        'reason' => 'order',
+                        'changed_by' => $request->user()->email ?? 'website',
+                    ]);
+
+                    $changedMenuItems->push($menuItem->fresh('category'));
+                }
+
                 $itemsData[] = [
                     'menu_item_id' => $menuItem->id,
                     'name' => $menuItem->name,
-                    'quantity' => $itemInput['quantity'],
+                    'quantity' => $quantity,
                     'unit_price' => $price,
                     'total' => $lineTotal,
                 ];
@@ -158,8 +204,9 @@ class OrderController extends Controller
                 ]);
             }
 
-            DB::afterCommit(function () use ($order) {
+            DB::afterCommit(function () use ($order, $changedMenuItems) {
                 $this->broadcastOrderChange($order, true);
+                $changedMenuItems->each(fn (MenuItem $item) => $this->broadcastMenuItemChange($item));
             });
 
             return $order->load(['items', 'payments']);
@@ -255,6 +302,32 @@ class OrderController extends Controller
         $order->delete();
 
         return response()->json(['message' => 'Order deleted.']);
+    }
+
+    private function formatStockUnit(int $quantity, ?string $unit): string
+    {
+        $unit = trim((string) $unit);
+        if ($unit === '') {
+            return 'left';
+        }
+
+        if ($quantity === 1) {
+            return rtrim($unit, 's');
+        }
+
+        return str_ends_with($unit, 's') ? $unit : $unit . 's';
+    }
+
+    private function broadcastMenuItemChange(MenuItem $item): void
+    {
+        try {
+            broadcast(new \App\Events\MenuItemUpdated($item));
+        } catch (\Throwable $e) {
+            Log::warning('Menu item broadcast failed after order stock update', [
+                'item_id' => $item->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function summary()
