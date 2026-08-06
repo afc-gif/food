@@ -429,6 +429,6 @@
     </div>
   </footer>
 
-  <script src="{{ asset('script.js') }}?v=33" defer></script>
+  <script src="{{ asset('script.js') }}?v=34" defer></script>
 </body>
 </html>

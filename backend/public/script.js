@@ -236,16 +236,36 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
-  const openCartOverlay = () => {
+  const setCartOverlayVisible = (visible) => {
     if (!dom.cartOverlay) return;
-    dom.cartOverlay.classList.add("af-open");
-    document.body.classList.add("af-modal-open");
+    dom.cartOverlay.classList.toggle("af-open", visible);
+    dom.cartOverlay.setAttribute("aria-hidden", visible ? "false" : "true");
+    document.body.classList.toggle("af-modal-open", visible);
   };
 
-  const closeCartOverlay = () => {
-    if (!dom.cartOverlay) return;
-    dom.cartOverlay.classList.remove("af-open");
-    document.body.classList.remove("af-modal-open");
+  const isCartOverlayOpen = () => !!dom.cartOverlay?.classList.contains("af-open");
+
+  const openCartOverlay = (options = {}) => {
+    if (!dom.cartOverlay || isCartOverlayOpen()) return;
+    const { updateHistory = true } = options;
+    setCartOverlayVisible(true);
+
+    if (updateHistory && window.history?.pushState) {
+      const currentState = window.history.state || {};
+      if (!currentState.afCartOverlayOpen) {
+        window.history.pushState({ ...currentState, afCartOverlayOpen: true }, "", window.location.href);
+      }
+    }
+  };
+
+  const closeCartOverlay = (options = {}) => {
+    if (!dom.cartOverlay || !isCartOverlayOpen()) return;
+    const { updateHistory = true } = options;
+    setCartOverlayVisible(false);
+
+    if (updateHistory && window.history?.back && window.history.state?.afCartOverlayOpen) {
+      window.history.back();
+    }
   };
 
   const initCartOverlay = () => {
@@ -253,6 +273,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (dom.orderPromptBtn) dom.orderPromptBtn.addEventListener("click", openCartOverlay);
     if (dom.cartOverlayClose) dom.cartOverlayClose.addEventListener("click", closeCartOverlay);
     if (dom.cartOverlayBackdrop) dom.cartOverlayBackdrop.addEventListener("click", closeCartOverlay);
+
+    window.addEventListener("popstate", (event) => {
+      if (event.state?.afCartOverlayOpen) {
+        openCartOverlay({ updateHistory: false });
+      } else {
+        closeCartOverlay({ updateHistory: false });
+      }
+    });
   };
 
   const bumpCartFab = () => {
