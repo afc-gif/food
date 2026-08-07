@@ -133,6 +133,10 @@ document.addEventListener("DOMContentLoaded", () => {
       message: "",
       mode: "auto"
     },
+    menuSignature: "",
+    featuredSignature: "",
+    filtersSignature: "",
+    filtersBound: false,
     hasSSRMenuItems: !!(dom.menuGrid && dom.menuGrid.querySelector("[data-menu-item]")),
     hasSSRFeatured: !!(dom.featuredGrid && dom.featuredGrid.querySelector("[data-menu-item]")),
     hasSSRFilters: !!(dom.menuFilters && dom.menuFilters.querySelectorAll(".af-chip").length > 1)
@@ -518,6 +522,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const bindFilterButtons = () => {
     if (!dom.menuFilters) return;
+    if (state.filtersBound) return;
+    state.filtersBound = true;
     dom.menuFilters.addEventListener("click", (e) => {
       const chipBtn = e.target.closest(".af-chip");
       if (!chipBtn) return;
@@ -526,8 +532,10 @@ document.addEventListener("DOMContentLoaded", () => {
       chipBtn.classList.add("af-chip-active");
       applyFilter();
     });
+  };
 
-    // Initialize active filter from the DOM (for SSR pages)
+  const syncActiveFilterFromDom = () => {
+    if (!dom.menuFilters) return;
     const initial = dom.menuFilters.querySelector(".af-chip-active") || dom.menuFilters.querySelector(".af-chip");
     if (initial) {
       state.activeFilter = slugify(initial.getAttribute("data-filter") || "all");
@@ -549,14 +557,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const renderFilters = (categories) => {
     if (!dom.menuFilters) return;
+    const existingActive = state.activeFilter || "all";
     const chips = [
-      { slug: "all", name: "All", active: true },
+      { slug: "all", name: "All", active: existingActive === "all" },
       ...categories.map((c) => ({
         slug: slugify(c.name),
         name: c.name,
-        active: false
+        active: slugify(c.name) === existingActive
       }))
     ];
+    if (!chips.some((chip) => chip.active)) {
+      chips[0].active = true;
+      state.activeFilter = "all";
+    }
 
     dom.menuFilters.innerHTML = chips
       .map(
@@ -570,6 +583,44 @@ document.addEventListener("DOMContentLoaded", () => {
 
     bindFilterButtons();
   };
+
+  const buildMenuSignature = (items) =>
+    items
+      .map(normalizeItem)
+      .filter((item) => item.valid)
+      .map((item) => [
+        item.id,
+        item.name,
+        item.description,
+        item.price,
+        item.categoryName,
+        item.imageUrl,
+        item.stock ?? "",
+        item.stock_unit || "",
+        item.is_sold_out ? "1" : "0"
+      ].join("|"))
+      .join("||");
+
+  const buildFeaturedSignature = (items) =>
+    items
+      .map(normalizeItem)
+      .filter((item) => item.valid)
+      .slice(0, 3)
+      .map((item) => [
+        item.id,
+        item.name,
+        item.description,
+        item.price,
+        item.categoryName,
+        item.imageUrl,
+        item.stock ?? "",
+        item.stock_unit || "",
+        item.is_sold_out ? "1" : "0"
+      ].join("|"))
+      .join("||");
+
+  const buildFiltersSignature = (categories) =>
+    categories.map((category) => `${slugify(category?.name || "")}|${category?.name || ""}`).join("||");
 
   const resolveImageUrl = (item) => {
     const raw =
@@ -879,6 +930,9 @@ document.addEventListener("DOMContentLoaded", () => {
       const categories = categoriesRes.ok ? await categoriesRes.json() : [];
       const safeItems = Array.isArray(items) ? items : [];
       const safeCategories = Array.isArray(categories) ? categories : [];
+      const nextMenuSignature = buildMenuSignature(safeItems);
+      const nextFeaturedSignature = buildFeaturedSignature(safeItems);
+      const nextFiltersSignature = buildFiltersSignature(safeCategories);
 
       console.info("Menu data loaded", {
         items: safeItems.length,
@@ -890,13 +944,19 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
 
-      // Render the full menu from API response
-      if (safeItems.length && dom.menuGrid) {
-        renderMenu(safeItems);
+      if (safeCategories.length && dom.menuFilters && nextFiltersSignature !== state.filtersSignature) {
+        renderFilters(safeCategories);
+        state.filtersSignature = nextFiltersSignature;
       }
 
-      if (safeItems.length && dom.featuredGrid) {
+      if (safeItems.length && dom.menuGrid && nextMenuSignature !== state.menuSignature) {
+        renderMenu(safeItems);
+        state.menuSignature = nextMenuSignature;
+      }
+
+      if (safeItems.length && dom.featuredGrid && nextFeaturedSignature !== state.featuredSignature) {
         renderFeatured(safeItems);
+        state.featuredSignature = nextFeaturedSignature;
       }
 
       applyOrderAvailability();
@@ -1127,6 +1187,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     bindFilterButtons();
+    syncActiveFilterFromDom();
     bindAddToCartButtons(); // in case items are server-rendered
     syncOrderAvailability();
     applyFilter();
@@ -1138,9 +1199,8 @@ document.addEventListener("DOMContentLoaded", () => {
       loadMenuData();
     }
 
-    // Enable polling: automatically sync menu updates every 10 seconds
-    // Using loadMenuData which safely re-renders the menu from API
-    const menuPoller = createPoller(loadMenuData, 10000);
+    // Poll without an immediate second render; server-rendered pages are already populated.
+    const menuPoller = createPoller(loadMenuData, 10000, { immediate: false });
     menuPoller.start();
 
     const availabilityPoller = createPoller(syncOrderAvailability, 60000);
