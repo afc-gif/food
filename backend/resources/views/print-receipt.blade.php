@@ -292,12 +292,12 @@
             <p style="margin-top: 4px;">Generated: {{ now($receiptTimezone)->format('M d, Y H:i:s T') }}</p>
         </div>
 
-        @unless($publicReceipt ?? false)
         <div class="actions">
             <button type="button" onclick="window.print()">Print Receipt</button>
+            @unless($publicReceipt ?? false)
             <button type="button" class="secondary" onclick="window.close()">Close</button>
+            @endunless
         </div>
-        @endunless
     </div>
 
     <script>
