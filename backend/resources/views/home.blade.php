@@ -31,7 +31,7 @@
 
   <!-- Favicon -->
   <link rel="icon" href="{{ asset('assets/logo2.png') }}" type="image/png" />
-  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=16" />
+  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=17" />
 </head>
 <body>
   <header class="af-header">
@@ -181,7 +181,7 @@
           <p>Choose your craving; we will prepare it hot and have it ready in minutes.</p>
         </div>
 
-        <div class="af-menu-panel">
+        <div class="af-menu-panel af-category-mode" id="menuPanel">
           <div class="af-menu-filters" id="menuFilters" aria-label="Menu categories">
             <button class="af-chip af-chip-active" data-filter="all" aria-pressed="true">All</button>
             @foreach ($categories as $category)
@@ -191,7 +191,40 @@
 
           <div class="af-menu-shell">
             <div class="af-menu-products">
+              <div class="af-category-browser" id="categoryGrid" aria-label="Menu category previews">
+                @forelse ($categories as $category)
+                  @php
+                    $categoryItems = $menuItems->filter(fn ($menuItem) => (int) $menuItem->category_id === (int) $category->id);
+                    $previewImages = collect([$category->image_url])
+                      ->merge($categoryItems->pluck('image_url'))
+                      ->filter()
+                      ->unique()
+                      ->take(4)
+                      ->values();
+                  @endphp
+                  <article class="af-category-card" data-category-card data-filter="{{ Str::slug($category->name) }}">
+                    <button type="button" class="af-category-card-action" data-category-card-button aria-label="View {{ $category->name }} items">
+                      <span class="af-category-preview" aria-hidden="true">
+                        @forelse ($previewImages as $image)
+                          <img src="{{ $image }}" alt="" loading="lazy" decoding="async" style="--slide-index: {{ $loop->index }};">
+                        @empty
+                          <span class="af-menu-thumb-fallback"><span>AFC</span></span>
+                        @endforelse
+                      </span>
+                      <span class="af-category-card-body">
+                        <strong>{{ $category->name }}</strong>
+                        <span>{{ $category->description ?: 'Browse freshly prepared favorites in this category.' }}</span>
+                        <span class="af-category-card-meta">{{ $categoryItems->count() }} {{ $categoryItems->count() === 1 ? 'item' : 'items' }} · View items</span>
+                      </span>
+                    </button>
+                  </article>
+                @empty
+                  <p class="af-menu-empty">Menu categories are coming soon. Please check back.</p>
+                @endforelse
+              </div>
+
               <div class="af-menu-count">
+                <button class="af-menu-back" type="button" data-category-back>Categories</button>
                 <span>Products</span>
                 <strong>{{ $menuItems->count() }}</strong>
               </div>
@@ -490,6 +523,6 @@
     </div>
   </footer>
 
-  <script src="{{ asset('script.js') }}?v=36" defer></script>
+  <script src="{{ asset('script.js') }}?v=37" defer></script>
 </body>
 </html>

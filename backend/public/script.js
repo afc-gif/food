@@ -126,7 +126,9 @@ document.addEventListener("DOMContentLoaded", () => {
     orderPromptBtn: document.getElementById("orderPromptBtn"),
     featuredGrid: document.getElementById("featuredGrid"),
     menuGrid: document.getElementById("menuGrid"),
-    menuFilters: document.getElementById("menuFilters")
+    menuFilters: document.getElementById("menuFilters"),
+    menuPanel: document.getElementById("menuPanel"),
+    categoryGrid: document.getElementById("categoryGrid")
   };
 
   const state = {
@@ -146,6 +148,8 @@ document.addEventListener("DOMContentLoaded", () => {
     featuredSignature: "",
     filtersSignature: "",
     filtersBound: false,
+    categoryCardsBound: false,
+    categoryMode: !!document.getElementById("categoryGrid"),
     hasSSRMenuItems: !!(dom.menuGrid && dom.menuGrid.querySelector("[data-menu-item]")),
     hasSSRFeatured: !!(dom.featuredGrid && dom.featuredGrid.querySelector("[data-menu-item]")),
     hasSSRFilters: !!(dom.menuFilters && dom.menuFilters.querySelectorAll(".af-chip").length > 1)
@@ -561,6 +565,37 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  const setMenuMode = (mode) => {
+    state.categoryMode = mode === "categories";
+    if (!dom.menuPanel) return;
+    dom.menuPanel.classList.toggle("af-category-mode", state.categoryMode);
+    dom.menuPanel.classList.toggle("af-products-mode", !state.categoryMode);
+  };
+
+  const setActiveFilter = (filter) => {
+    state.activeFilter = slugify(filter || "all");
+    if (dom.menuFilters) {
+      dom.menuFilters.querySelectorAll(".af-chip").forEach((chip) => {
+        const active = slugify(chip.getAttribute("data-filter") || "all") === state.activeFilter;
+        chip.classList.toggle("af-chip-active", active);
+        chip.setAttribute("aria-pressed", active ? "true" : "false");
+      });
+    }
+    applyFilter();
+  };
+
+  const bindCategoryCards = () => {
+    if (!dom.categoryGrid || state.categoryCardsBound) return;
+    state.categoryCardsBound = true;
+    dom.categoryGrid.addEventListener("click", (e) => {
+      const card = e.target.closest("[data-category-card]");
+      if (!card) return;
+      setMenuMode("products");
+      setActiveFilter(card.getAttribute("data-filter") || "all");
+      dom.menuGrid?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
   const bindFilterButtons = () => {
     if (!dom.menuFilters) return;
     if (state.filtersBound) return;
@@ -568,14 +603,19 @@ document.addEventListener("DOMContentLoaded", () => {
     dom.menuFilters.addEventListener("click", (e) => {
       const chipBtn = e.target.closest(".af-chip");
       if (!chipBtn) return;
-      state.activeFilter = slugify(chipBtn.getAttribute("data-filter") || "all");
-      dom.menuFilters.querySelectorAll(".af-chip").forEach((chip) => {
-        chip.classList.remove("af-chip-active");
-        chip.setAttribute("aria-pressed", "false");
+      setMenuMode("products");
+      setActiveFilter(chipBtn.getAttribute("data-filter") || "all");
+    });
+  };
+
+  const bindCategoryBack = () => {
+    document.querySelectorAll("[data-category-back]").forEach((btn) => {
+      if (btn.dataset.bound === "1") return;
+      btn.dataset.bound = "1";
+      btn.addEventListener("click", () => {
+        setMenuMode("categories");
+        document.getElementById("menu")?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
-      chipBtn.classList.add("af-chip-active");
-      chipBtn.setAttribute("aria-pressed", "true");
-      applyFilter();
     });
   };
 
@@ -628,6 +668,44 @@ document.addEventListener("DOMContentLoaded", () => {
       .join("");
 
     bindFilterButtons();
+  };
+
+  const renderCategoryCards = (categories, items) => {
+    if (!dom.categoryGrid) return;
+    if (!Array.isArray(categories) || !categories.length) {
+      dom.categoryGrid.innerHTML = '<p class="af-menu-empty">Menu categories are coming soon. Please check back.</p>';
+      return;
+    }
+
+    dom.categoryGrid.innerHTML = categories.map((category) => {
+      const categoryName = escapeHtml(category?.name || "Menu");
+      const categoryDescription = escapeHtml(category?.description || "Browse freshly prepared favorites in this category.");
+      const slug = slugify(category?.name || "menu");
+      const categoryItems = items.filter((item) => {
+        const normalized = normalizeItem(item);
+        return normalized.categorySlug === slug;
+      });
+      const images = [
+        category?.image_url,
+        ...categoryItems.map((item) => normalizeItem(item).imageUrl)
+      ].filter(Boolean).slice(0, 4);
+      const uniqueImages = [...new Set(images)];
+      const imageHtml = uniqueImages.length
+        ? uniqueImages.map((url, index) => `<img src="${escapeHtml(url)}" alt="" loading="lazy" decoding="async" style="--slide-index: ${index};">`).join("")
+        : '<span class="af-menu-thumb-fallback"><span>AFC</span></span>';
+      return `
+        <article class="af-category-card" data-category-card data-filter="${slug}">
+          <button type="button" class="af-category-card-action" data-category-card-button aria-label="View ${categoryName} items">
+            <span class="af-category-preview" aria-hidden="true">${imageHtml}</span>
+            <span class="af-category-card-body">
+              <strong>${categoryName}</strong>
+              <span>${categoryDescription}</span>
+              <span class="af-category-card-meta">${categoryItems.length} ${categoryItems.length === 1 ? "item" : "items"} · View items</span>
+            </span>
+          </button>
+        </article>
+      `;
+    }).join("");
   };
 
   const buildMenuSignature = (items) =>
@@ -1015,6 +1093,11 @@ document.addEventListener("DOMContentLoaded", () => {
         state.filtersSignature = nextFiltersSignature;
       }
 
+      if (safeCategories.length && dom.categoryGrid) {
+        renderCategoryCards(safeCategories, safeItems);
+        bindCategoryCards();
+      }
+
       if (safeItems.length && dom.menuGrid && nextMenuSignature !== state.menuSignature) {
         renderMenu(safeItems);
         state.menuSignature = nextMenuSignature;
@@ -1253,6 +1336,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     bindFilterButtons();
+    bindCategoryCards();
+    bindCategoryBack();
+    setMenuMode("categories");
     syncActiveFilterFromDom();
     bindAddToCartButtons(); // in case items are server-rendered
     syncOrderAvailability();
