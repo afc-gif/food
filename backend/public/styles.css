@@ -1782,6 +1782,12 @@ body.af-modal-open {
   z-index: 35;
 }
 
+.af-products-mode .af-menu-count {
+  position: sticky;
+  top: 132px;
+  z-index: 34;
+}
+
 .af-chip {
   background: var(--af-white);
   border: 1px solid var(--af-line);
@@ -2365,6 +2371,24 @@ body.af-modal-open {
     max-width: 72vw;
   }
 
+  .af-products-mode .af-menu-count {
+    background: var(--af-card);
+    border: 1px solid var(--af-line);
+    border-radius: 10px;
+    box-shadow: 0 8px 20px rgba(20, 14, 4, 0.08);
+    gap: 0.55rem;
+    margin: 0.7rem 0;
+    padding: 0.55rem;
+    top: 122px;
+  }
+
+  .af-products-mode .af-menu-count > span {
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
   .af-cart-overlay-list,
   .af-cart-overlay-form {
     padding: 0.9rem;
@@ -2474,6 +2498,7 @@ body.af-modal-open {
     border-radius: 10px;
     margin-bottom: 0.75rem;
     padding: 0.65rem 0.8rem;
+    top: 142px;
   }
 
   #menuGrid.af-grid-3 {
@@ -2853,6 +2878,23 @@ body.af-modal-open {
 .af-menu-back:hover,
 .af-menu-back:focus-visible {
   border-color: var(--af-gold);
+}
+
+@media (max-width: 640px) {
+  .af-menu-back {
+    background: var(--af-brown);
+    border-color: var(--af-brown);
+    color: var(--af-white);
+    min-height: 38px;
+    padding: 0.48rem 0.72rem;
+  }
+
+  .af-menu-back::before {
+    content: "‹";
+    font-size: 1rem;
+    line-height: 1;
+    margin-right: 0.25rem;
+  }
 }
 
 @media (min-width: 900px) {
