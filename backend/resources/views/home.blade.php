@@ -31,7 +31,7 @@
 
   <!-- Favicon -->
   <link rel="icon" href="{{ asset('assets/logo2.png') }}" type="image/png" />
-  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=20" />
+  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=22" />
 </head>
 <body>
   <header class="af-header">
@@ -137,11 +137,16 @@
                         @empty
                           <span class="af-menu-thumb-fallback"><span>AFC</span></span>
                         @endforelse
+                        <span class="af-category-overlay">
+                          <strong>{{ $category->name }}</strong>
+                        </span>
                       </span>
                       <span class="af-category-card-body">
-                        <strong>{{ $category->name }}</strong>
-                        <span>{{ $category->description ?: 'Browse freshly prepared favorites in this category.' }}</span>
-                        <span class="af-category-card-meta">{{ $categoryItems->count() }} {{ $categoryItems->count() === 1 ? 'item' : 'items' }} · View items</span>
+                        <span class="af-category-copy">{{ $category->description ?: 'Freshly prepared favorites from our kitchen.' }}</span>
+                        <span class="af-category-card-meta">
+                          <span>View dishes</span>
+                          <span aria-hidden="true">&rarr;</span>
+                        </span>
                       </span>
                     </button>
                   </article>
@@ -441,6 +446,6 @@
     </div>
   </footer>
 
-  <script src="{{ asset('script.js') }}?v=38" defer></script>
+  <script src="{{ asset('script.js') }}?v=41" defer></script>
 </body>
 </html>

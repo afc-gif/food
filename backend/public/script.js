@@ -361,11 +361,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  const updateStockPill = (card) => {
-    if (!card) return;
-    card.querySelectorAll("[data-stock-pill]").forEach((pill) => pill.remove());
-  };
-
   const setSoldOutState = (itemId, isSoldOut, stock = null, stockUnit = "") => {
     const soldOut = isSoldOut ? "1" : "0";
     document.querySelectorAll(`[data-item-id="${itemId}"]`).forEach((btn) => {
@@ -380,7 +375,6 @@ document.addEventListener("DOMContentLoaded", () => {
       card.setAttribute("data-sold-out", soldOut);
       card.setAttribute("data-stock", stock ?? "");
       card.setAttribute("data-stock-unit", stockUnit || "");
-      updateStockPill(card, stock, stockUnit);
       const pill = card.querySelector("[data-soldout-pill]");
       if (pill) {
         pill.style.display = isSoldOut ? "inline-flex" : "none";
@@ -666,7 +660,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     dom.categoryGrid.innerHTML = categories.map((category) => {
       const categoryName = escapeHtml(category?.name || "Menu");
-      const categoryDescription = escapeHtml(category?.description || "Browse freshly prepared favorites in this category.");
+      const categoryDescription = escapeHtml(category?.description || "Freshly prepared favorites from our kitchen.");
       const slug = slugify(category?.name || "menu");
       const categoryItems = items.filter((item) => {
         const normalized = normalizeItem(item);
@@ -683,11 +677,18 @@ document.addEventListener("DOMContentLoaded", () => {
       return `
         <article class="af-category-card" data-category-card data-filter="${slug}">
           <button type="button" class="af-category-card-action" data-category-card-button aria-label="View ${categoryName} items">
-            <span class="af-category-preview" aria-hidden="true">${imageHtml}</span>
+            <span class="af-category-preview" aria-hidden="true">
+              ${imageHtml}
+              <span class="af-category-overlay">
+                <strong>${categoryName}</strong>
+              </span>
+            </span>
             <span class="af-category-card-body">
-              <strong>${categoryName}</strong>
-              <span>${categoryDescription}</span>
-              <span class="af-category-card-meta">${categoryItems.length} ${categoryItems.length === 1 ? "item" : "items"} · View items</span>
+              <span class="af-category-copy">${categoryDescription}</span>
+              <span class="af-category-card-meta">
+                <span>View dishes</span>
+                <span aria-hidden="true">&rarr;</span>
+              </span>
             </span>
           </button>
         </article>
@@ -998,7 +999,6 @@ document.addEventListener("DOMContentLoaded", () => {
       existing.setAttribute("data-sold-out", item.is_sold_out ? "1" : "0");
       existing.setAttribute("data-stock", item.stock ?? "");
       existing.setAttribute("data-stock-unit", item.stock_unit || "");
-      updateStockPill(existing, item.stock, item.stock_unit);
       const pill = existing.querySelector("[data-soldout-pill]");
       if (pill) pill.style.display = item.is_sold_out ? "inline-flex" : "none";
       const btn = existing.querySelector("[data-item]");
@@ -1333,10 +1333,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!hasSSR) {
       loadMenuData();
     }
-
-    // Poll without an immediate second render; server-rendered pages are already populated.
-    const menuPoller = createPoller(loadMenuData, 10000, { immediate: false });
-    menuPoller.start();
 
     const availabilityPoller = createPoller(syncOrderAvailability, 60000);
     availabilityPoller.start();
