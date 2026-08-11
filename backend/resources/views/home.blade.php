@@ -264,7 +264,7 @@
             <aside class="af-menu-cart" aria-label="Your order">
               <div class="af-menu-cart-head">
                 <p class="af-kicker">Your Order</p>
-                <h3>Live cart</h3>
+                <h3>Your order</h3>
               </div>
               <ul id="cartList" class="af-cart-list"></ul>
               <div class="af-cart-summary">

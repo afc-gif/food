@@ -2404,3 +2404,217 @@ body.af-modal-open {
     font-size: 0.92rem;
   }
 }
+
+/* Desktop ordering polish */
+
+@media (min-width: 981px) {
+  #menu.af-section {
+    padding: 3.4rem 0 4rem;
+  }
+
+  #menu .af-section-head {
+    align-items: end;
+    display: grid;
+    gap: 0.5rem 1.2rem;
+    grid-template-columns: minmax(0, 1fr) auto;
+    margin-bottom: 1rem;
+    max-width: none;
+    text-align: left;
+  }
+
+  #menu .af-section-head .af-kicker {
+    grid-column: 1 / -1;
+  }
+
+  #menu .af-section-head h2 {
+    font-size: 2rem;
+    margin: 0;
+  }
+
+  #menu .af-section-head p:last-child {
+    justify-self: end;
+    margin: 0;
+    max-width: 360px;
+    text-align: right;
+  }
+
+  .af-menu-panel {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+  }
+
+  .af-menu-filters {
+    background: var(--af-white);
+    border: 1px solid var(--af-line);
+    border-radius: 10px;
+    margin-bottom: 0.85rem;
+    padding: 0.55rem;
+  }
+
+  .af-menu-shell {
+    align-items: start;
+    gap: 0.85rem;
+    grid-template-columns: minmax(0, 1fr) 252px;
+    padding-top: 0;
+  }
+
+  .af-menu-count {
+    background: var(--af-white);
+    border: 1px solid var(--af-line);
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
+    padding: 0.65rem 0.8rem;
+  }
+
+  #menuGrid.af-grid-3 {
+    gap: 0.75rem;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .af-menu-item {
+    border-color: rgba(82, 55, 0, 0.14);
+    border-radius: 9px;
+  }
+
+  .af-menu-thumb {
+    aspect-ratio: 1 / 0.78;
+  }
+
+  .af-menu-body {
+    gap: 0.55rem;
+    padding: 0.75rem;
+  }
+
+  .af-menu-head h3 {
+    font-size: 1rem;
+    line-height: 1.18;
+  }
+
+  .af-menu-meta {
+    gap: 0.3rem;
+  }
+
+  .af-menu-item p {
+    font-size: 0.86rem;
+    line-height: 1.35;
+    -webkit-line-clamp: 2;
+  }
+
+  .af-menu-footer {
+    gap: 0.5rem;
+  }
+
+  .af-menu-footer .af-btn {
+    background: var(--af-gold);
+    border-color: var(--af-gold);
+    border-radius: 7px;
+    font-size: 0.8rem;
+    min-height: 34px;
+    padding: 0.4rem 0.62rem;
+  }
+
+  .af-menu-footer .af-btn:hover {
+    background: #d8aa4b;
+    border-color: #d8aa4b;
+  }
+
+  .af-menu-cart {
+    border-radius: 9px;
+    grid-template-rows: auto minmax(80px, 1fr) auto auto;
+    max-height: calc(100vh - 108px);
+    min-height: 0;
+    padding: 0.75rem;
+    top: 92px;
+  }
+
+  .af-menu-cart-head {
+    border-bottom: 1px solid var(--af-line);
+    padding-bottom: 0.55rem;
+  }
+
+  .af-menu-cart-head .af-kicker {
+    display: none;
+  }
+
+  .af-menu-cart-head h3 {
+    font-family: var(--af-font-body);
+    font-size: 0.9rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .af-menu-cart .af-cart-list {
+    border: 0;
+    border-radius: 0;
+    margin-top: 0;
+    min-height: 82px;
+  }
+
+  .af-menu-cart .af-cart-empty {
+    padding: 0.8rem 0 0.9rem;
+  }
+
+  .af-menu-cart .af-cart-empty strong {
+    font-size: 0.98rem;
+  }
+
+  .af-menu-cart .af-cart-empty .af-btn {
+    width: 100%;
+  }
+
+  .af-menu-cart .af-cart-item {
+    gap: 0.5rem;
+    grid-template-columns: 1fr;
+    padding: 0.72rem 0;
+  }
+
+  .af-menu-cart .af-cart-item-name {
+    font-size: 0.88rem;
+  }
+
+  .af-menu-cart .af-cart-item-meta {
+    font-size: 0.76rem;
+  }
+
+  .af-menu-cart .af-cart-item-line-total {
+    font-size: 0.86rem;
+  }
+
+  .af-menu-cart .af-cart-actions {
+    grid-template-columns: 28px 28px 28px;
+    justify-self: start;
+  }
+
+  .af-menu-cart .af-qty-btn {
+    height: 28px;
+    min-width: 28px;
+  }
+
+  .af-menu-cart .af-cart-summary {
+    padding-top: 0.75rem;
+  }
+
+  .af-menu-cart .af-cart-summary strong {
+    font-size: 1.05rem;
+  }
+
+  .af-menu-checkout-btn {
+    border-radius: 7px;
+    margin-top: 0.75rem;
+    min-height: 40px;
+    padding: 0.6rem 0.75rem;
+  }
+}
+
+@media (min-width: 981px) and (max-width: 1120px) {
+  .af-menu-shell {
+    grid-template-columns: minmax(0, 1fr) 236px;
+  }
+
+  #menuGrid.af-grid-3 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
