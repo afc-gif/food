@@ -181,71 +181,100 @@
           <p>Choose your craving; we will prepare it hot and have it ready in minutes.</p>
         </div>
 
-          <div class="af-menu-panel">
-          <div class="af-menu-filters" id="menuFilters">
-            <button class="af-chip af-chip-active" data-filter="all">All</button>
+        <div class="af-menu-panel">
+          <div class="af-menu-filters" id="menuFilters" aria-label="Menu categories">
+            <button class="af-chip af-chip-active" data-filter="all" aria-pressed="true">All</button>
             @foreach ($categories as $category)
-              <button class="af-chip" data-filter="{{ Str::slug($category->name) }}">{{ $category->name }}</button>
+              <button class="af-chip" data-filter="{{ Str::slug($category->name) }}" aria-pressed="false">{{ $category->name }}</button>
             @endforeach
           </div>
 
-          <div class="af-grid af-grid-3" id="menuGrid">
-            @forelse ($menuItems as $item)
-              @php
-                  $catSlug = Str::slug(optional($item->category)->name ?? 'menu');
-                  $isSoldOut = $item->is_sold_out || $item->stock === 0;
-                  $stockUnit = trim((string) $item->stock_unit);
-                  $stockLabel = $item->stock === null
-                    ? null
-                    : ($stockUnit !== ''
-                      ? $item->stock.' '.($item->stock == 1 ? rtrim($stockUnit, 's') : (Str::endsWith($stockUnit, 's') ? $stockUnit : $stockUnit.'s')).' left'
-                      : $item->stock.' left');
-              @endphp
-              <article
-                class="af-menu-item"
-                data-menu-item
-                data-item-id="{{ $item->id }}"
-                data-sold-out="{{ $isSoldOut ? '1' : '0' }}"
-                data-stock="{{ $item->stock ?? '' }}"
-                data-stock-unit="{{ $item->stock_unit ?? '' }}"
-                data-category="{{ $catSlug }}"
-              >
-                @if($item->image_url)
-                  <div class="af-menu-thumb">
-                    <img src="{{ $item->image_url }}" alt="{{ $item->name }}" loading="lazy" decoding="async">
-                  </div>
-                @endif
-                <div class="af-menu-body">
-                  <div class="af-menu-head">
-                    <h3>{{ $item->name }}</h3>
-                    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                      <span class="af-pill">{{ optional($item->category)->name ?? 'Menu' }}</span>
-                      @if($stockLabel)
-                        <span class="af-stock-pill" data-stock-pill>{{ $stockLabel }}</span>
+          <div class="af-menu-shell">
+            <div class="af-menu-products">
+              <div class="af-menu-count">
+                <span>Products</span>
+                <strong>{{ $menuItems->count() }}</strong>
+              </div>
+
+              <div class="af-grid af-grid-3" id="menuGrid">
+                @forelse ($menuItems as $item)
+                  @php
+                      $catSlug = Str::slug(optional($item->category)->name ?? 'menu');
+                      $isSoldOut = $item->is_sold_out || $item->stock === 0;
+                      $stockUnit = trim((string) $item->stock_unit);
+                      $stockLabel = $item->stock === null
+                        ? null
+                        : ($stockUnit !== ''
+                          ? $item->stock.' '.($item->stock == 1 ? rtrim($stockUnit, 's') : (Str::endsWith($stockUnit, 's') ? $stockUnit : $stockUnit.'s')).' left'
+                          : $item->stock.' left');
+                  @endphp
+                  <article
+                    class="af-menu-item"
+                    data-menu-item
+                    data-item-id="{{ $item->id }}"
+                    data-sold-out="{{ $isSoldOut ? '1' : '0' }}"
+                    data-stock="{{ $item->stock ?? '' }}"
+                    data-stock-unit="{{ $item->stock_unit ?? '' }}"
+                    data-category="{{ $catSlug }}"
+                  >
+                    <div class="af-menu-thumb">
+                      @if($item->image_url)
+                        <img src="{{ $item->image_url }}" alt="{{ $item->name }}" loading="lazy" decoding="async">
+                      @else
+                        <div class="af-menu-thumb-fallback" aria-hidden="true">
+                          <span>AFC</span>
+                        </div>
                       @endif
                     </div>
-                  </div>
-                  <p>{{ $item->description ?? 'Freshly prepared from our kitchen.' }}</p>
-                  <div class="af-menu-footer">
-                    <span class="af-price">₦{{ number_format($item->price, 0) }}</span>
-                    <button
-                      class="af-btn af-btn-sm af-btn-outline"
-                      data-item="{{ $item->name }}"
-                      data-item-id="{{ $item->id }}"
-                      data-item-price="{{ $item->price }}"
-                      data-sold-out="{{ $isSoldOut ? '1' : '0' }}"
-                      data-stock="{{ $item->stock ?? '' }}"
-                      data-stock-unit="{{ $item->stock_unit ?? '' }}"
-                      @if($isSoldOut) disabled @endif
-                    >
-                      {{ $isSoldOut ? 'Sold Out' : 'Add to Cart' }}
-                    </button>
-                  </div>
-                </div>
-              </article>
-            @empty
-              <p style="text-align:center; width:100%;">Menu is coming soon. Please check back.</p>
-            @endforelse
+                    <div class="af-menu-body">
+                      <div class="af-menu-head">
+                        <h3>{{ $item->name }}</h3>
+                        <div class="af-menu-meta">
+                          <span class="af-pill">{{ optional($item->category)->name ?? 'Menu' }}</span>
+                          @if($stockLabel)
+                            <span class="af-stock-pill" data-stock-pill>{{ $stockLabel }}</span>
+                          @endif
+                        </div>
+                      </div>
+                      <p>{{ $item->description ?? 'Freshly prepared from our kitchen.' }}</p>
+                      <div class="af-menu-footer">
+                        <span class="af-price">₦{{ number_format($item->price, 0) }}</span>
+                        <button
+                          class="af-btn af-btn-sm af-btn-outline"
+                          data-item="{{ $item->name }}"
+                          data-item-id="{{ $item->id }}"
+                          data-item-price="{{ $item->price }}"
+                          data-sold-out="{{ $isSoldOut ? '1' : '0' }}"
+                          data-stock="{{ $item->stock ?? '' }}"
+                          data-stock-unit="{{ $item->stock_unit ?? '' }}"
+                          aria-label="{{ $isSoldOut ? 'Sold out: '.$item->name : 'Add '.$item->name.' to cart' }}"
+                          @if($isSoldOut) disabled @endif
+                        >
+                          {{ $isSoldOut ? 'Sold Out' : 'Add to Cart' }}
+                        </button>
+                      </div>
+                    </div>
+                  </article>
+                @empty
+                  <p class="af-menu-empty">Menu is coming soon. Please check back.</p>
+                @endforelse
+              </div>
+            </div>
+
+            <aside class="af-menu-cart" aria-label="Your order">
+              <div class="af-menu-cart-head">
+                <p class="af-kicker">Your Order</p>
+                <h3>Live cart</h3>
+              </div>
+              <ul id="cartList" class="af-cart-list"></ul>
+              <div class="af-cart-summary">
+                <span>Total</span>
+                <strong id="cartTotal">₦0</strong>
+              </div>
+              <button class="af-btn af-btn-primary af-menu-checkout-btn" type="button" data-cart-open>
+                Checkout
+              </button>
+            </aside>
           </div>
         </div>
       </div>
@@ -379,8 +408,12 @@
   </main>
 
   <button class="af-cart-fab" id="cartFab" type="button" aria-label="View cart and checkout">
-    <span class="af-cart-fab-icon">Order</span>
-    <span class="af-cart-fab-count" id="cartCount">0</span>
+    <span class="af-cart-fab-main">
+      <span class="af-cart-fab-icon">Cart</span>
+      <span><span id="cartCount">0</span> <span id="cartCountWord">items</span></span>
+    </span>
+    <strong id="cartBarTotal">₦0</strong>
+    <span class="af-cart-fab-action">View Cart</span>
   </button>
 
   <div class="af-cart-overlay" id="cartOverlay" aria-hidden="true">

@@ -55,6 +55,13 @@ const slugify = (text) =>
     .replace(/^-+|-+$/g, "") || "menu";
 
 const formatMoney = (value) => `₦${Number(value || 0).toLocaleString()}`;
+const escapeHtml = (value) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 const formatStockUnit = (quantity, unit) => {
   const cleanUnit = String(unit || "").trim();
   if (!cleanUnit) return "left";
@@ -110,6 +117,8 @@ document.addEventListener("DOMContentLoaded", () => {
     nav: document.querySelector(".af-nav"),
     year: document.getElementById("year"),
     cartCount: document.getElementById("cartCount"),
+    cartCountWord: document.getElementById("cartCountWord"),
+    cartBarTotal: document.getElementById("cartBarTotal"),
     cartFab: document.getElementById("cartFab"),
     cartOverlay: document.getElementById("cartOverlay"),
     cartOverlayClose: document.getElementById("cartOverlayClose"),
@@ -285,6 +294,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const initCartOverlay = () => {
     if (dom.cartFab) dom.cartFab.addEventListener("click", openCartOverlay);
     if (dom.orderPromptBtn) dom.orderPromptBtn.addEventListener("click", openCartOverlay);
+    document.querySelectorAll("[data-cart-open]").forEach((btn) => {
+      btn.addEventListener("click", openCartOverlay);
+    });
     if (dom.cartOverlayClose) dom.cartOverlayClose.addEventListener("click", closeCartOverlay);
     if (dom.cartOverlayBackdrop) dom.cartOverlayBackdrop.addEventListener("click", closeCartOverlay);
 
@@ -305,16 +317,19 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const updateCartCount = () => {
-    if (!dom.cartCount) return;
     const count = state.cart.reduce((sum, item) => sum + item.qty, 0);
-    dom.cartCount.textContent = count;
-    bumpCartFab();
+    if (dom.cartCount) dom.cartCount.textContent = count;
+    if (dom.cartBarTotal) dom.cartBarTotal.textContent = formatMoney(getCartTotal());
+    document.body.classList.toggle("af-cart-has-items", count > 0);
+    if (dom.cartCountWord) dom.cartCountWord.textContent = count === 1 ? "item" : "items";
+    if (count > 0) bumpCartFab();
   };
 
   const getCartTotal = () => state.cart.reduce((sum, item) => sum + item.price * item.qty, 0);
 
   const flyToCart = (sourceEl) => {
     if (!dom.cartFab || !sourceEl) return;
+    if (window.getComputedStyle(dom.cartFab).display === "none") return;
     const targetRect = dom.cartFab.getBoundingClientRect();
     const sourceImg = sourceEl.closest("article")?.querySelector("img") || sourceEl;
     const sourceRect = sourceImg.getBoundingClientRect();
@@ -354,7 +369,7 @@ document.addEventListener("DOMContentLoaded", () => {
       pill = document.createElement("span");
       pill.className = "af-stock-pill";
       pill.setAttribute("data-stock-pill", "");
-      const tagsWrap = card.querySelector(".af-card-top div[style], .af-menu-head div[style]");
+      const tagsWrap = card.querySelector(".af-card-top div[style], .af-menu-meta, .af-menu-head div[style]");
       if (tagsWrap) tagsWrap.appendChild(pill);
     }
     pill.textContent = label;
@@ -401,18 +416,35 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!list || !totalEl) return;
       list.innerHTML = "";
 
+      if (!state.cart.length) {
+        const empty = document.createElement("li");
+        empty.className = "af-cart-empty";
+        empty.innerHTML = `
+          <strong>Your cart is empty.</strong>
+          <span>Add something delicious from the menu.</span>
+          <button type="button" class="af-btn af-btn-sm af-btn-outline" data-cart-browse>Browse Menu</button>
+        `;
+        list.appendChild(empty);
+      }
+
       state.cart.forEach((item, index) => {
+        const lineTotal = item.price * item.qty;
+        const itemName = escapeHtml(item.name);
         const li = document.createElement("li");
         li.className = "af-cart-item";
         li.innerHTML = `
           <div class="af-cart-item-info">
-            <span class="af-cart-item-name">${item.name}</span>
-            <span class="af-cart-item-meta">${formatMoney(item.price)} × ${item.qty}</span>
+            <div class="af-cart-item-title">
+              <span class="af-cart-item-name">${itemName}</span>
+              <button class="af-cart-remove" data-action="remove" data-index="${index}" aria-label="Remove ${itemName}">×</button>
+            </div>
+            <span class="af-cart-item-meta">${formatMoney(item.price)} each</span>
+            <strong class="af-cart-item-line-total">${formatMoney(lineTotal)}</strong>
           </div>
           <div class="af-cart-actions">
-            <button class="af-qty-btn" data-action="dec" data-index="${index}">-</button>
-            <button class="af-qty-btn" data-action="inc" data-index="${index}">+</button>
-            <button class="af-qty-btn" data-action="remove" data-index="${index}">×</button>
+            <button class="af-qty-btn" data-action="dec" data-index="${index}" aria-label="Decrease ${itemName} quantity">-</button>
+            <span class="af-cart-qty" aria-label="Quantity">${item.qty}</span>
+            <button class="af-qty-btn" data-action="inc" data-index="${index}" aria-label="Increase ${itemName} quantity">+</button>
           </div>
         `;
         list.appendChild(li);
@@ -491,10 +523,19 @@ document.addEventListener("DOMContentLoaded", () => {
       const listEl = document.getElementById(listId);
       if (!listEl) return;
       listEl.addEventListener("click", (e) => {
+        const browseBtn = e.target.closest("[data-cart-browse]");
+        if (browseBtn) {
+          closeCartOverlay();
+          document.getElementById("menu")?.scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+
         const btn = e.target.closest(".af-qty-btn");
-        if (!btn) return;
-        const index = parseInt(btn.getAttribute("data-index"), 10);
-        const action = btn.getAttribute("data-action");
+        const removeBtn = e.target.closest(".af-cart-remove");
+        const actionBtn = btn || removeBtn;
+        if (!actionBtn) return;
+        const index = parseInt(actionBtn.getAttribute("data-index"), 10);
+        const action = actionBtn.getAttribute("data-action");
         const item = state.cart[index];
         if (!item) return;
 
@@ -528,8 +569,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const chipBtn = e.target.closest(".af-chip");
       if (!chipBtn) return;
       state.activeFilter = slugify(chipBtn.getAttribute("data-filter") || "all");
-      dom.menuFilters.querySelectorAll(".af-chip").forEach((chip) => chip.classList.remove("af-chip-active"));
+      dom.menuFilters.querySelectorAll(".af-chip").forEach((chip) => {
+        chip.classList.remove("af-chip-active");
+        chip.setAttribute("aria-pressed", "false");
+      });
       chipBtn.classList.add("af-chip-active");
+      chipBtn.setAttribute("aria-pressed", "true");
       applyFilter();
     });
   };
@@ -550,6 +595,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const btn = document.createElement("button");
     btn.className = "af-chip";
     btn.setAttribute("data-filter", slug);
+    btn.setAttribute("aria-pressed", "false");
     btn.textContent = catName;
     dom.menuFilters.appendChild(btn);
     bindFilterButtons();
@@ -574,8 +620,8 @@ document.addEventListener("DOMContentLoaded", () => {
     dom.menuFilters.innerHTML = chips
       .map(
         (chip) => `
-        <button class="af-chip ${chip.active ? "af-chip-active" : ""}" data-filter="${chip.slug}">
-          ${chip.name}
+        <button class="af-chip ${chip.active ? "af-chip-active" : ""}" data-filter="${chip.slug}" aria-pressed="${chip.active ? "true" : "false"}">
+          ${escapeHtml(chip.name)}
         </button>
       `
       )
@@ -681,6 +727,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const topThree = normalized.slice(0, 3);
     dom.featuredGrid.innerHTML = topThree
       .map((item) => {
+        const itemName = escapeHtml(item.name);
+        const itemDescription = escapeHtml(item.description);
+        const categoryName = escapeHtml(item.categoryName);
         return `
           <article
             class="af-card"
@@ -691,12 +740,12 @@ document.addEventListener("DOMContentLoaded", () => {
             data-stock-unit="${item.stock_unit || ""}"
             data-category="${item.categorySlug}"
           >
-            ${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}" class="af-card-img" loading="lazy" decoding="async" />` : ""}
+            ${item.imageUrl ? `<img src="${escapeHtml(item.imageUrl)}" alt="${itemName}" class="af-card-img" loading="lazy" decoding="async" />` : `<div class="af-menu-thumb-fallback" aria-hidden="true"><span>AFC</span></div>`}
             <div class="af-card-body">
               <div class="af-card-top">
-                <h3>${item.name}</h3>
+                <h3>${itemName}</h3>
                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                  <span class="af-tag">${item.categoryName}</span>
+                  <span class="af-tag">${categoryName}</span>
                   ${item.stockLabel ? `<span class="af-stock-pill" data-stock-pill>${item.stockLabel}</span>` : ""}
                   <span
                     class="af-pill"
@@ -705,17 +754,18 @@ document.addEventListener("DOMContentLoaded", () => {
                   >Sold Out</span>
                 </div>
               </div>
-              <p>${item.description}</p>
+              <p>${itemDescription}</p>
               <div class="af-card-footer">
                 <span class="af-price">${formatMoney(item.price)}</span>
                 <button
                   class="af-btn af-btn-sm af-btn-primary"
-                  data-item="${item.name}"
+                  data-item="${itemName}"
                   data-item-id="${item.id}"
                   data-item-price="${item.price}"
                   data-sold-out="${item.is_sold_out ? "1" : "0"}"
                   data-stock="${item.stock ?? ""}"
                   data-stock-unit="${item.stock_unit || ""}"
+                  aria-label="${item.is_sold_out ? `Sold out: ${itemName}` : `Add ${itemName} to cart`}"
                   ${item.is_sold_out ? "disabled" : ""}
                 >
                   ${item.is_sold_out ? "Sold Out" : "Add to Cart"}
@@ -734,6 +784,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const createMenuCard = (rawItem) => {
     const item = normalizeItem(rawItem);
     const soldOut = item.is_sold_out ? "1" : "0";
+    const itemName = escapeHtml(item.name);
+    const itemDescription = escapeHtml(item.description);
+    const categoryName = escapeHtml(item.categoryName);
+    const imageUrl = escapeHtml(item.imageUrl);
     const card = document.createElement("article");
     card.className = "af-menu-item";
     card.setAttribute("data-menu-item", "");
@@ -743,12 +797,14 @@ document.addEventListener("DOMContentLoaded", () => {
     card.setAttribute("data-stock-unit", item.stock_unit || "");
     card.setAttribute("data-category", item.categorySlug);
     card.innerHTML = `
-      ${item.imageUrl ? `<div class="af-menu-thumb"><img src="${item.imageUrl}" alt="${item.name}" loading="lazy" decoding="async"></div>` : ""}
+      <div class="af-menu-thumb">
+        ${item.imageUrl ? `<img src="${imageUrl}" alt="${itemName}" loading="lazy" decoding="async">` : `<div class="af-menu-thumb-fallback" aria-hidden="true"><span>AFC</span></div>`}
+      </div>
       <div class="af-menu-body">
       <div class="af-menu-head">
-        <h3>${item.name}</h3>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-          <span class="af-pill">${item.categoryName}</span>
+        <h3>${itemName}</h3>
+        <div class="af-menu-meta">
+          <span class="af-pill">${categoryName}</span>
           ${item.stockLabel ? `<span class="af-stock-pill" data-stock-pill>${item.stockLabel}</span>` : ""}
           <span
             class="af-pill"
@@ -757,17 +813,18 @@ document.addEventListener("DOMContentLoaded", () => {
           >Sold Out</span>
         </div>
       </div>
-      <p>${item.description}</p>
+      <p>${itemDescription}</p>
       <div class="af-menu-footer">
         <span class="af-price">${formatMoney(item.price)}</span>
         <button
           class="af-btn af-btn-sm af-btn-outline"
-          data-item="${item.name}"
+          data-item="${itemName}"
           data-item-id="${item.id}"
           data-item-price="${item.price}"
           data-sold-out="${soldOut}"
           data-stock="${item.stock ?? ""}"
           data-stock-unit="${item.stock_unit || ""}"
+          aria-label="${item.is_sold_out ? `Sold out: ${itemName}` : `Add ${itemName} to cart`}"
           ${item.is_sold_out ? "disabled" : ""}
         >
           ${item.is_sold_out ? "Sold Out" : "Add to Cart"}
@@ -799,7 +856,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     dom.menuGrid.innerHTML = normalized
       .map(
-        (item) => `
+        (item) => {
+          const itemName = escapeHtml(item.name);
+          const itemDescription = escapeHtml(item.description);
+          const categoryName = escapeHtml(item.categoryName);
+          const imageUrl = escapeHtml(item.imageUrl);
+          return `
         <article
           class="af-menu-item"
           data-menu-item
@@ -809,12 +871,14 @@ document.addEventListener("DOMContentLoaded", () => {
           data-stock-unit="${item.stock_unit || ""}"
           data-category="${item.categorySlug}"
         >
-          ${item.imageUrl ? `<div class="af-menu-thumb"><img src="${item.imageUrl}" alt="${item.name}" loading="lazy" decoding="async"></div>` : ""}
+          <div class="af-menu-thumb">
+            ${item.imageUrl ? `<img src="${imageUrl}" alt="${itemName}" loading="lazy" decoding="async">` : `<div class="af-menu-thumb-fallback" aria-hidden="true"><span>AFC</span></div>`}
+          </div>
           <div class="af-menu-body">
             <div class="af-menu-head">
-              <h3>${item.name}</h3>
-              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                <span class="af-pill">${item.categoryName}</span>
+              <h3>${itemName}</h3>
+              <div class="af-menu-meta">
+                <span class="af-pill">${categoryName}</span>
                 ${item.stockLabel ? `<span class="af-stock-pill" data-stock-pill>${item.stockLabel}</span>` : ""}
                 <span
                   class="af-pill"
@@ -823,17 +887,18 @@ document.addEventListener("DOMContentLoaded", () => {
                 >Sold Out</span>
               </div>
             </div>
-            <p>${item.description}</p>
+            <p>${itemDescription}</p>
             <div class="af-menu-footer">
               <span class="af-price">${formatMoney(item.price)}</span>
               <button
                 class="af-btn af-btn-sm af-btn-outline"
-                data-item="${item.name}"
+                data-item="${itemName}"
                 data-item-id="${item.id}"
                 data-item-price="${item.price}"
                 data-sold-out="${item.is_sold_out ? "1" : "0"}"
                 data-stock="${item.stock ?? ""}"
                 data-stock-unit="${item.stock_unit || ""}"
+                aria-label="${item.is_sold_out ? `Sold out: ${itemName}` : `Add ${itemName} to cart`}"
                 ${item.is_sold_out ? "disabled" : ""}
               >
                 ${item.is_sold_out ? "Sold Out" : "Add to Cart"}
@@ -841,7 +906,8 @@ document.addEventListener("DOMContentLoaded", () => {
             </div>
           </div>
         </article>
-      `
+      `;
+        }
       )
       .join("") || '<p style="grid-column:1/-1;text-align:center;">Menu failed to render.</p>';
 
