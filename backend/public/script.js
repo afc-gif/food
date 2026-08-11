@@ -361,22 +361,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
-  const updateStockPill = (card, stock, stockUnit) => {
+  const updateStockPill = (card) => {
     if (!card) return;
-    const label = formatStockLabel(stock, stockUnit);
-    let pill = card.querySelector("[data-stock-pill]");
-    if (!label) {
-      if (pill) pill.remove();
-      return;
-    }
-    if (!pill) {
-      pill = document.createElement("span");
-      pill.className = "af-stock-pill";
-      pill.setAttribute("data-stock-pill", "");
-      const tagsWrap = card.querySelector(".af-card-top div[style], .af-menu-meta, .af-menu-head div[style]");
-      if (tagsWrap) tagsWrap.appendChild(pill);
-    }
-    pill.textContent = label;
+    card.querySelectorAll("[data-stock-pill]").forEach((pill) => pill.remove());
   };
 
   const setSoldOutState = (itemId, isSoldOut, stock = null, stockUnit = "") => {
@@ -782,7 +769,6 @@ document.addEventListener("DOMContentLoaded", () => {
       categorySlug: slugify(categoryName),
       stock,
       stock_unit: stockUnit,
-      stockLabel: formatStockLabel(stock, stockUnit),
       is_sold_out: !!item?.is_sold_out || stock === 0,
       imageUrl,
       valid: isValid
@@ -824,7 +810,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 <h3>${itemName}</h3>
                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                   <span class="af-tag">${categoryName}</span>
-                  ${item.stockLabel ? `<span class="af-stock-pill" data-stock-pill>${item.stockLabel}</span>` : ""}
                   <span
                     class="af-pill"
                     data-soldout-pill
@@ -883,7 +868,6 @@ document.addEventListener("DOMContentLoaded", () => {
         <h3>${itemName}</h3>
         <div class="af-menu-meta">
           <span class="af-pill">${categoryName}</span>
-          ${item.stockLabel ? `<span class="af-stock-pill" data-stock-pill>${item.stockLabel}</span>` : ""}
           <span
             class="af-pill"
             data-soldout-pill
@@ -957,7 +941,6 @@ document.addEventListener("DOMContentLoaded", () => {
               <h3>${itemName}</h3>
               <div class="af-menu-meta">
                 <span class="af-pill">${categoryName}</span>
-                ${item.stockLabel ? `<span class="af-stock-pill" data-stock-pill>${item.stockLabel}</span>` : ""}
                 <span
                   class="af-pill"
                   data-soldout-pill

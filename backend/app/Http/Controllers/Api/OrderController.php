@@ -120,8 +120,9 @@ class OrderController extends Controller
 
                 if ($menuItem->stock !== null && $menuItem->stock < $quantity) {
                     $unit = $this->formatStockUnit($menuItem->stock, $menuItem->stock_unit);
+                    $available = trim("{$menuItem->stock} {$unit}");
                     throw ValidationException::withMessages([
-                        'items' => ["Only {$menuItem->stock} {$unit} of {$menuItem->name} left."],
+                        'items' => ["Only {$available} of {$menuItem->name} left."],
                     ]);
                 }
 
@@ -308,7 +309,7 @@ class OrderController extends Controller
     {
         $unit = trim((string) $unit);
         if ($unit === '') {
-            return 'left';
+            return '';
         }
 
         if ($quantity === 1) {

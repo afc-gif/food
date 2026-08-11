@@ -31,7 +31,7 @@
 
   <!-- Favicon -->
   <link rel="icon" href="{{ asset('assets/logo2.png') }}" type="image/png" />
-  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=19" />
+  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=20" />
 </head>
 <body>
   <header class="af-header">
@@ -113,12 +113,6 @@
           @forelse ($featured as $item)
             @php
               $isSoldOut = $item->is_sold_out || $item->stock === 0;
-              $stockUnit = trim((string) $item->stock_unit);
-              $stockLabel = $item->stock === null
-                ? null
-                : ($stockUnit !== ''
-                  ? $item->stock.' '.($item->stock == 1 ? rtrim($stockUnit, 's') : (Str::endsWith($stockUnit, 's') ? $stockUnit : $stockUnit.'s')).' left'
-                  : $item->stock.' left');
             @endphp
             <article
               class="af-card"
@@ -143,9 +137,6 @@
                   <h3>{{ $item->name }}</h3>
                   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
                     <span class="af-tag">{{ optional($item->category)->name ?? 'Signature' }}</span>
-                    @if($stockLabel)
-                      <span class="af-stock-pill" data-stock-pill>{{ $stockLabel }}</span>
-                    @endif
                   </div>
                 </div>
                 <p>{{ $item->description ?? 'Fresh from our kitchen.' }}</p>
@@ -234,12 +225,6 @@
                   @php
                       $catSlug = Str::slug(optional($item->category)->name ?? 'menu');
                       $isSoldOut = $item->is_sold_out || $item->stock === 0;
-                      $stockUnit = trim((string) $item->stock_unit);
-                      $stockLabel = $item->stock === null
-                        ? null
-                        : ($stockUnit !== ''
-                          ? $item->stock.' '.($item->stock == 1 ? rtrim($stockUnit, 's') : (Str::endsWith($stockUnit, 's') ? $stockUnit : $stockUnit.'s')).' left'
-                          : $item->stock.' left');
                   @endphp
                   <article
                     class="af-menu-item"
@@ -264,9 +249,6 @@
                         <h3>{{ $item->name }}</h3>
                         <div class="af-menu-meta">
                           <span class="af-pill">{{ optional($item->category)->name ?? 'Menu' }}</span>
-                          @if($stockLabel)
-                            <span class="af-stock-pill" data-stock-pill>{{ $stockLabel }}</span>
-                          @endif
                         </div>
                       </div>
                       <p>{{ $item->description ?? 'Freshly prepared from our kitchen.' }}</p>
@@ -523,6 +505,6 @@
     </div>
   </footer>
 
-  <script src="{{ asset('script.js') }}?v=37" defer></script>
+  <script src="{{ asset('script.js') }}?v=38" defer></script>
 </body>
 </html>
