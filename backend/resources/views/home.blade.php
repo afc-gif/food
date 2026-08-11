@@ -31,7 +31,7 @@
 
   <!-- Favicon -->
   <link rel="icon" href="{{ asset('assets/logo2.png') }}" type="image/png" />
-  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=14" />
+  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=16" />
 </head>
 <body>
   <header class="af-header">
@@ -490,6 +490,6 @@
     </div>
   </footer>
 
-  <script src="{{ asset('script.js') }}?v=35" defer></script>
+  <script src="{{ asset('script.js') }}?v=36" defer></script>
 </body>
 </html>
