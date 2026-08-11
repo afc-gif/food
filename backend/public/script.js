@@ -1431,9 +1431,6 @@ document.addEventListener("DOMContentLoaded", () => {
       loadMenuData();
     }
 
-    const menuAvailabilityPoller = createPoller(syncMenuAvailability, 10000, { immediate: false });
-    menuAvailabilityPoller.start();
-
     const availabilityPoller = createPoller(syncOrderAvailability, 60000);
     availabilityPoller.start();
   };
