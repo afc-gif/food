@@ -196,6 +196,9 @@
     </style>
 </head>
 <body>
+    @php
+        $receiptTimezone = 'Africa/Lagos';
+    @endphp
     <div class="receipt-container">
         <div class="receipt-header">
             <img src="{{ asset('assets/logo2.png') }}" alt="Acie Fraiche Cafe Logo" class="receipt-logo">
@@ -214,7 +217,7 @@
             </div>
             <div class="order-meta-col">
                 <div class="order-meta-label">Time</div>
-                <div class="order-meta-value">{{ $order->created_at?->format('H:i') ?? 'N/A' }}</div>
+                <div class="order-meta-value">{{ $order->created_at?->timezone($receiptTimezone)->format('M d, Y H:i T') ?? 'N/A' }}</div>
             </div>
         </div>
 
@@ -279,14 +282,14 @@
         <div class="payment-method">
             <strong>Paid via {{ ucfirst($payment->method ?? 'Cash') }}</strong>
             <div style="font-size: 10px; margin-top: 4px;">
-                {{ $payment->paid_at?->format('M d, Y H:i') ?? 'N/A' }}
+                {{ $payment->paid_at?->timezone($receiptTimezone)->format('M d, Y H:i T') ?? 'N/A' }}
             </div>
         </div>
         @endif
 
         <div class="receipt-footer">
             <p>Thank you for your order!</p>
-            <p style="margin-top: 4px;">Printed: {{ now()->format('M d, Y H:i:s') }}</p>
+            <p style="margin-top: 4px;">Generated: {{ now($receiptTimezone)->format('M d, Y H:i:s T') }}</p>
         </div>
 
         @unless($publicReceipt ?? false)
