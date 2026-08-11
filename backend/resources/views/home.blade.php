@@ -31,7 +31,7 @@
 
   <!-- Favicon -->
   <link rel="icon" href="{{ asset('assets/logo2.png') }}" type="image/png" />
-  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=17" />
+  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=18" />
 </head>
 <body>
   <header class="af-header">

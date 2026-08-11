@@ -1776,6 +1776,12 @@ body.af-modal-open {
   border-radius: 999px;
 }
 
+.af-products-mode .af-menu-filters {
+  position: sticky;
+  top: 84px;
+  z-index: 35;
+}
+
 .af-chip {
   background: var(--af-white);
   border: 1px solid var(--af-line);
@@ -2352,6 +2358,7 @@ body.af-modal-open {
   .af-menu-filters {
     margin-left: -1px;
     padding-bottom: 0.75rem;
+    top: 68px;
   }
 
   .af-chip {
@@ -2451,6 +2458,7 @@ body.af-modal-open {
     border-radius: 10px;
     margin-bottom: 0.85rem;
     padding: 0.55rem;
+    top: 86px;
   }
 
   .af-menu-shell {
