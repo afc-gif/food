@@ -46,7 +46,6 @@
 
       <nav class="af-nav">
         <a href="#home">Home</a>
-        <a href="#featured">Signatures</a>
         <a href="#menu">Menu</a>
         <a href="#about">Story</a>
         <a href="#contact">Visit</a>
@@ -97,69 +96,6 @@
             <strong data-business-hours-summary>Mon–Sat 8am - 10pm</strong>
             <small><span data-business-hours-sunday>Sun 12noon - 10pm</span> · Dine-in · Takeout · Pickup</small>
           </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="af-section" id="featured">
-      <div class="af-container">
-        <div class="af-section-head">
-          <p class="af-kicker">Chef's Signatures</p>
-          <h2>Plates our guests keep coming back for.</h2>
-          <p>Modern takes on familiar comfort, layered with bold, memorable flavors.</p>
-        </div>
-
-        <div class="af-grid af-grid-3 af-cards" id="featuredGrid">
-          @forelse ($featured as $item)
-            @php
-              $isSoldOut = $item->is_sold_out || $item->stock === 0;
-            @endphp
-            <article
-              class="af-card"
-              data-menu-item
-              data-item-id="{{ $item->id }}"
-              data-sold-out="{{ $isSoldOut ? '1' : '0' }}"
-              data-stock="{{ $item->stock ?? '' }}"
-              data-stock-unit="{{ $item->stock_unit ?? '' }}"
-              data-category="{{ Str::slug(optional($item->category)->name ?? 'menu') }}"
-            >
-              @if($item->image_url)
-                <img
-                  src="{{ $item->image_url }}"
-                  alt="{{ $item->name }}"
-                  class="af-card-img"
-                  loading="lazy"
-                  decoding="async"
-                />
-              @endif
-              <div class="af-card-body">
-                <div class="af-card-top">
-                  <h3>{{ $item->name }}</h3>
-                  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                    <span class="af-tag">{{ optional($item->category)->name ?? 'Signature' }}</span>
-                  </div>
-                </div>
-                <p>{{ $item->description ?? 'Fresh from our kitchen.' }}</p>
-                <div class="af-card-footer">
-                  <span class="af-price">₦{{ number_format($item->price, 0) }}</span>
-                  <button
-                    class="af-btn af-btn-sm af-btn-primary"
-                    data-item="{{ $item->name }}"
-                    data-item-id="{{ $item->id }}"
-                    data-item-price="{{ $item->price }}"
-                    data-sold-out="{{ $isSoldOut ? '1' : '0' }}"
-                    data-stock="{{ $item->stock ?? '' }}"
-                    data-stock-unit="{{ $item->stock_unit ?? '' }}"
-                    @if($isSoldOut) disabled @endif
-                  >
-                    {{ $isSoldOut ? 'Sold Out' : 'Add to Cart' }}
-                  </button>
-                </div>
-              </div>
-            </article>
-          @empty
-            <p style="text-align:center; width:100%;">No featured items yet. Check back soon.</p>
-          @endforelse
         </div>
       </div>
     </section>
