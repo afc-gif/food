@@ -153,6 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
     filtersSignature: "",
     filtersBound: false,
     categoryCardsBound: false,
+    categorySlidesStarted: false,
     categoryMode: !!document.getElementById("categoryGrid"),
     hasSSRMenuItems: !!(dom.menuGrid && dom.menuGrid.querySelector("[data-menu-item]")),
     hasSSRFeatured: !!(dom.featuredGrid && dom.featuredGrid.querySelector("[data-menu-item]")),
@@ -624,6 +625,22 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  const startCategorySlideshows = () => {
+    if (!dom.categoryGrid || state.categorySlidesStarted) return;
+    state.categorySlidesStarted = true;
+    window.setInterval(() => {
+      if (document.visibilityState === "hidden") return;
+      dom.categoryGrid.querySelectorAll(".af-category-preview").forEach((preview) => {
+        const images = Array.from(preview.querySelectorAll("img"));
+        if (images.length < 2) return;
+        const currentIndex = Math.max(0, images.findIndex((img) => img.classList.contains("is-active")));
+        const nextIndex = (currentIndex + 1) % images.length;
+        images[currentIndex]?.classList.remove("is-active");
+        images[nextIndex]?.classList.add("is-active");
+      });
+    }, 3500);
+  };
+
   const bindFilterButtons = () => {
     if (!dom.menuFilters) return;
     if (state.filtersBound) return;
@@ -761,7 +778,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ].filter(Boolean).slice(0, 4);
       const uniqueImages = [...new Set(images)];
       const imageHtml = uniqueImages.length
-        ? uniqueImages.map((url, index) => `<img src="${escapeHtml(url)}" alt="" loading="lazy" decoding="async" style="--slide-index: ${index};">`).join("")
+        ? uniqueImages.map((url, index) => `<img src="${escapeHtml(url)}" alt="" loading="lazy" decoding="async" class="${index === 0 ? "is-active" : ""}">`).join("")
         : '<span class="af-menu-thumb-fallback"><span>AFC</span></span>';
       return `
         <article class="af-category-card" data-category-card data-filter="${slug}" data-category-id="${categoryId}">
@@ -1431,6 +1448,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     bindFilterButtons();
     bindCategoryCards();
+    startCategorySlideshows();
     bindCategoryBack();
     bindMobileCategorySwitcher();
     setMenuMode("categories");

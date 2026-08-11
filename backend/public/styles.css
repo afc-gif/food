@@ -2785,14 +2785,16 @@ body.af-modal-open {
 }
 
 .af-category-preview img {
-  animation: afCategoryPreview 12s infinite;
-  animation-delay: calc(var(--slide-index, 0) * 3s);
   transform: scale(1.01);
+  transition: opacity 0.7s ease, transform 0.42s ease;
 }
 
 .af-category-card-action:hover .af-category-preview img {
   transform: scale(1.045);
-  transition: transform 0.42s ease;
+}
+
+.af-category-preview img.is-active {
+  opacity: 1;
 }
 
 .af-category-overlay {
@@ -2815,20 +2817,9 @@ body.af-modal-open {
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.28);
 }
 
-@keyframes afCategoryPreview {
-  0%,
-  22% {
-    opacity: 1;
-  }
-  28%,
-  100% {
-    opacity: 0;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .af-category-preview img {
-    animation: none;
+    transition: none;
   }
 }
 

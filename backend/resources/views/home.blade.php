@@ -31,7 +31,7 @@
 
   <!-- Favicon -->
   <link rel="icon" href="{{ asset('assets/logo2.png') }}" type="image/png" />
-  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=25" />
+  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=26" />
 </head>
 <body>
   <header class="af-header">
@@ -150,7 +150,7 @@
                     <button type="button" class="af-category-card-action" data-category-card-button aria-label="View {{ $category->name }} items">
                       <span class="af-category-preview" aria-hidden="true">
                         @forelse ($previewImages as $image)
-                          <img src="{{ $image }}" alt="" loading="lazy" decoding="async" style="--slide-index: {{ $loop->index }};">
+                          <img src="{{ $image }}" alt="" loading="lazy" decoding="async" class="{{ $loop->first ? 'is-active' : '' }}">
                         @empty
                           <span class="af-menu-thumb-fallback"><span>AFC</span></span>
                         @endforelse
@@ -464,6 +464,6 @@
     </div>
   </footer>
 
-  <script src="{{ asset('script.js') }}?v=48" defer></script>
+  <script src="{{ asset('script.js') }}?v=49" defer></script>
 </body>
 </html>
