@@ -31,7 +31,7 @@
 
   <!-- Favicon -->
   <link rel="icon" href="{{ asset('assets/logo2.png') }}" type="image/png" />
-  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=22" />
+  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=23" />
 </head>
 <body>
   <header class="af-header">
@@ -114,6 +114,23 @@
             @foreach ($categories as $category)
               <button class="af-chip" data-filter="{{ Str::slug($category->name) }}" aria-pressed="false">{{ $category->name }}</button>
             @endforeach
+          </div>
+
+          <div class="af-mobile-category-bar" data-mobile-category-bar>
+            <button class="af-mobile-category-back" type="button" data-category-back aria-label="Back to categories">
+              <span aria-hidden="true">&larr;</span>
+              <span>Categories</span>
+            </button>
+            <strong data-mobile-category-current>All Menu</strong>
+            <button class="af-mobile-category-toggle" type="button" data-mobile-category-toggle aria-expanded="false" aria-controls="mobileCategoryMenu">
+              Change
+            </button>
+            <div class="af-mobile-category-menu" id="mobileCategoryMenu" data-mobile-category-menu hidden>
+              <button type="button" data-mobile-filter="all">All Menu</button>
+              @foreach ($categories as $category)
+                <button type="button" data-mobile-filter="{{ Str::slug($category->name) }}">{{ $category->name }}</button>
+              @endforeach
+            </div>
           </div>
 
           <div class="af-menu-shell">
@@ -446,6 +463,6 @@
     </div>
   </footer>
 
-  <script src="{{ asset('script.js') }}?v=41" defer></script>
+  <script src="{{ asset('script.js') }}?v=43" defer></script>
 </body>
 </html>

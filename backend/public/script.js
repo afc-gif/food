@@ -128,7 +128,10 @@ document.addEventListener("DOMContentLoaded", () => {
     menuGrid: document.getElementById("menuGrid"),
     menuFilters: document.getElementById("menuFilters"),
     menuPanel: document.getElementById("menuPanel"),
-    categoryGrid: document.getElementById("categoryGrid")
+    categoryGrid: document.getElementById("categoryGrid"),
+    mobileCategoryCurrent: document.querySelector("[data-mobile-category-current]"),
+    mobileCategoryToggle: document.querySelector("[data-mobile-category-toggle]"),
+    mobileCategoryMenu: document.querySelector("[data-mobile-category-menu]")
   };
 
   const state = {
@@ -546,11 +549,36 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   };
 
+  const getCategoryLabel = (filter) => {
+    const slug = slugify(filter || "all");
+    if (slug === "all") return "All Menu";
+    const chip = dom.menuFilters?.querySelector(`[data-filter="${slug}"]`);
+    return chip?.textContent?.trim() || "Menu";
+  };
+
+  const closeMobileCategoryMenu = () => {
+    if (dom.mobileCategoryMenu) dom.mobileCategoryMenu.hidden = true;
+    if (dom.mobileCategoryToggle) dom.mobileCategoryToggle.setAttribute("aria-expanded", "false");
+  };
+
+  const updateMobileCategorySwitcher = () => {
+    const activeLabel = getCategoryLabel(state.activeFilter);
+    if (dom.mobileCategoryCurrent) dom.mobileCategoryCurrent.textContent = activeLabel;
+    if (dom.mobileCategoryMenu) {
+      dom.mobileCategoryMenu.querySelectorAll("[data-mobile-filter]").forEach((btn) => {
+        const active = slugify(btn.getAttribute("data-mobile-filter") || "all") === state.activeFilter;
+        btn.classList.toggle("is-active", active);
+        btn.setAttribute("aria-current", active ? "true" : "false");
+      });
+    }
+  };
+
   const setMenuMode = (mode) => {
     state.categoryMode = mode === "categories";
     if (!dom.menuPanel) return;
     dom.menuPanel.classList.toggle("af-category-mode", state.categoryMode);
     dom.menuPanel.classList.toggle("af-products-mode", !state.categoryMode);
+    closeMobileCategoryMenu();
   };
 
   const setActiveFilter = (filter) => {
@@ -562,6 +590,7 @@ document.addEventListener("DOMContentLoaded", () => {
         chip.setAttribute("aria-pressed", active ? "true" : "false");
       });
     }
+    updateMobileCategorySwitcher();
     applyFilter();
   };
 
@@ -598,6 +627,32 @@ document.addEventListener("DOMContentLoaded", () => {
         document.getElementById("menu")?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
     });
+  };
+
+  const bindMobileCategorySwitcher = () => {
+    if (dom.mobileCategoryToggle && dom.mobileCategoryToggle.dataset.bound !== "1") {
+      dom.mobileCategoryToggle.dataset.bound = "1";
+      dom.mobileCategoryToggle.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const nextOpen = !!dom.mobileCategoryMenu?.hidden;
+        if (dom.mobileCategoryMenu) dom.mobileCategoryMenu.hidden = !nextOpen;
+        dom.mobileCategoryToggle.setAttribute("aria-expanded", nextOpen ? "true" : "false");
+      });
+    }
+
+    if (dom.mobileCategoryMenu && dom.mobileCategoryMenu.dataset.bound !== "1") {
+      dom.mobileCategoryMenu.dataset.bound = "1";
+      dom.mobileCategoryMenu.addEventListener("click", (e) => {
+        const option = e.target.closest("[data-mobile-filter]");
+        if (!option) return;
+        setMenuMode("products");
+        setActiveFilter(option.getAttribute("data-mobile-filter") || "all");
+        closeMobileCategoryMenu();
+        dom.menuGrid?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    }
+
+    document.addEventListener("click", closeMobileCategoryMenu);
   };
 
   const syncActiveFilterFromDom = () => {
@@ -648,7 +703,20 @@ document.addEventListener("DOMContentLoaded", () => {
       )
       .join("");
 
+    if (dom.mobileCategoryMenu) {
+      dom.mobileCategoryMenu.innerHTML = chips
+        .map(
+          (chip) => `
+          <button type="button" data-mobile-filter="${chip.slug}" class="${chip.active ? "is-active" : ""}" aria-current="${chip.active ? "true" : "false"}">
+            ${escapeHtml(chip.slug === "all" ? "All Menu" : chip.name)}
+          </button>
+        `
+        )
+        .join("");
+    }
+
     bindFilterButtons();
+    updateMobileCategorySwitcher();
   };
 
   const renderCategoryCards = (categories, items) => {
@@ -1321,8 +1389,10 @@ document.addEventListener("DOMContentLoaded", () => {
     bindFilterButtons();
     bindCategoryCards();
     bindCategoryBack();
+    bindMobileCategorySwitcher();
     setMenuMode("categories");
     syncActiveFilterFromDom();
+    updateMobileCategorySwitcher();
     bindAddToCartButtons(); // in case items are server-rendered
     syncOrderAvailability();
     applyFilter();
@@ -1333,6 +1403,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!hasSSR) {
       loadMenuData();
     }
+
+    const menuAvailabilityPoller = createPoller(syncMenuAvailability, 10000, { immediate: false });
+    menuAvailabilityPoller.start();
 
     const availabilityPoller = createPoller(syncOrderAvailability, 60000);
     availabilityPoller.start();
