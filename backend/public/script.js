@@ -1122,7 +1122,23 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!res.ok) return;
       const items = await res.json();
       if (!Array.isArray(items)) return;
-      items.forEach((item) => upsertMenuItem(item));
+      items.map(normalizeItem).filter((item) => item.valid).forEach((item) => {
+        const soldOut = !!item.is_sold_out;
+        document.querySelectorAll(`[data-menu-item][data-item-id="${item.id}"]`).forEach((card) => {
+          card.setAttribute("data-sold-out", soldOut ? "1" : "0");
+          card.setAttribute("data-stock", item.stock ?? "");
+          card.setAttribute("data-stock-unit", item.stock_unit || "");
+        });
+
+        document.querySelectorAll(`[data-item][data-item-id="${item.id}"]`).forEach((btn) => {
+          btn.setAttribute("data-sold-out", soldOut ? "1" : "0");
+          btn.setAttribute("data-stock", item.stock ?? "");
+          btn.setAttribute("data-stock-unit", item.stock_unit || "");
+          btn.disabled = soldOut;
+          btn.textContent = soldOut ? "Sold Out" : "Add to Cart";
+        });
+      });
+      applyOrderAvailability();
       hideErrorBanner();
     } catch (error) {
       // network errors are ignored; next poll will retry
@@ -1430,6 +1446,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!hasSSR) {
       loadMenuData();
     }
+
+    const menuAvailabilityPoller = createPoller(syncMenuAvailability, 10000, { immediate: false });
+    menuAvailabilityPoller.start();
 
     const availabilityPoller = createPoller(syncOrderAvailability, 60000);
     availabilityPoller.start();
