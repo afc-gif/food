@@ -137,6 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const state = {
     cart: [],
     activeFilter: "all",
+    activeCategoryId: "",
     checkout: {
       inProgress: false,
       inFlightSignature: null,
@@ -543,10 +544,26 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const applyFilter = () => {
     if (!dom.menuGrid) return;
+    let visibleCount = 0;
     dom.menuGrid.querySelectorAll(".af-menu-item").forEach((item) => {
       const category = slugify(item.getAttribute("data-category") || "all");
-      item.style.display = state.activeFilter === "all" || category === state.activeFilter ? "" : "none";
+      const categoryId = item.getAttribute("data-category-id") || "";
+      const matchesFilter = state.activeFilter === "all" || category === state.activeFilter;
+      const matchesCategoryId = !!state.activeCategoryId && categoryId === state.activeCategoryId;
+      const visible = matchesFilter || matchesCategoryId;
+      item.style.display = visible ? "" : "none";
+      if (visible) visibleCount += 1;
     });
+
+    let empty = dom.menuGrid.querySelector("[data-category-empty]");
+    if (!empty) {
+      empty = document.createElement("p");
+      empty.className = "af-menu-empty";
+      empty.setAttribute("data-category-empty", "");
+      empty.textContent = "No dishes in this category yet.";
+      dom.menuGrid.appendChild(empty);
+    }
+    empty.hidden = visibleCount > 0;
   };
 
   const getCategoryLabel = (filter) => {
@@ -581,8 +598,9 @@ document.addEventListener("DOMContentLoaded", () => {
     closeMobileCategoryMenu();
   };
 
-  const setActiveFilter = (filter) => {
+  const setActiveFilter = (filter, categoryId = "") => {
     state.activeFilter = slugify(filter || "all");
+    state.activeCategoryId = state.activeFilter === "all" ? "" : String(categoryId || "");
     if (dom.menuFilters) {
       dom.menuFilters.querySelectorAll(".af-chip").forEach((chip) => {
         const active = slugify(chip.getAttribute("data-filter") || "all") === state.activeFilter;
@@ -601,7 +619,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const card = e.target.closest("[data-category-card]");
       if (!card) return;
       setMenuMode("products");
-      setActiveFilter(card.getAttribute("data-filter") || "all");
+      setActiveFilter(card.getAttribute("data-filter") || "all", card.getAttribute("data-category-id") || "");
       dom.menuGrid?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
   };
@@ -614,7 +632,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const chipBtn = e.target.closest(".af-chip");
       if (!chipBtn) return;
       setMenuMode("products");
-      setActiveFilter(chipBtn.getAttribute("data-filter") || "all");
+      setActiveFilter(chipBtn.getAttribute("data-filter") || "all", chipBtn.getAttribute("data-category-id") || "");
     });
   };
 
@@ -646,7 +664,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const option = e.target.closest("[data-mobile-filter]");
         if (!option) return;
         setMenuMode("products");
-        setActiveFilter(option.getAttribute("data-mobile-filter") || "all");
+        setActiveFilter(option.getAttribute("data-mobile-filter") || "all", option.getAttribute("data-category-id") || "");
         closeMobileCategoryMenu();
         dom.menuGrid?.scrollIntoView({ behavior: "smooth", block: "start" });
       });
@@ -671,6 +689,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const btn = document.createElement("button");
     btn.className = "af-chip";
     btn.setAttribute("data-filter", slug);
+    btn.setAttribute("data-category-id", "");
     btn.setAttribute("aria-pressed", "false");
     btn.textContent = catName;
     dom.menuFilters.appendChild(btn);
@@ -684,6 +703,7 @@ document.addEventListener("DOMContentLoaded", () => {
       { slug: "all", name: "All", active: existingActive === "all" },
       ...categories.map((c) => ({
         slug: slugify(c.name),
+        id: c.id ?? "",
         name: c.name,
         active: slugify(c.name) === existingActive
       }))
@@ -696,7 +716,7 @@ document.addEventListener("DOMContentLoaded", () => {
     dom.menuFilters.innerHTML = chips
       .map(
         (chip) => `
-        <button class="af-chip ${chip.active ? "af-chip-active" : ""}" data-filter="${chip.slug}" aria-pressed="${chip.active ? "true" : "false"}">
+        <button class="af-chip ${chip.active ? "af-chip-active" : ""}" data-filter="${chip.slug}" data-category-id="${chip.id || ""}" aria-pressed="${chip.active ? "true" : "false"}">
           ${escapeHtml(chip.name)}
         </button>
       `
@@ -707,7 +727,7 @@ document.addEventListener("DOMContentLoaded", () => {
       dom.mobileCategoryMenu.innerHTML = chips
         .map(
           (chip) => `
-          <button type="button" data-mobile-filter="${chip.slug}" class="${chip.active ? "is-active" : ""}" aria-current="${chip.active ? "true" : "false"}">
+          <button type="button" data-mobile-filter="${chip.slug}" data-category-id="${chip.id || ""}" class="${chip.active ? "is-active" : ""}" aria-current="${chip.active ? "true" : "false"}">
             ${escapeHtml(chip.slug === "all" ? "All Menu" : chip.name)}
           </button>
         `
@@ -730,9 +750,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const categoryName = escapeHtml(category?.name || "Menu");
       const categoryDescription = escapeHtml(category?.description || "Freshly prepared favorites from our kitchen.");
       const slug = slugify(category?.name || "menu");
+      const categoryId = category?.id === null || category?.id === undefined ? "" : String(category.id);
       const categoryItems = items.filter((item) => {
         const normalized = normalizeItem(item);
-        return normalized.categorySlug === slug;
+        return normalized.categorySlug === slug || (!!categoryId && String(normalized.categoryId || "") === categoryId);
       });
       const images = [
         category?.image_url,
@@ -743,7 +764,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ? uniqueImages.map((url, index) => `<img src="${escapeHtml(url)}" alt="" loading="lazy" decoding="async" style="--slide-index: ${index};">`).join("")
         : '<span class="af-menu-thumb-fallback"><span>AFC</span></span>';
       return `
-        <article class="af-category-card" data-category-card data-filter="${slug}">
+        <article class="af-category-card" data-category-card data-filter="${slug}" data-category-id="${categoryId}">
           <button type="button" class="af-category-card-action" data-category-card-button aria-label="View ${categoryName} items">
             <span class="af-category-preview" aria-hidden="true">
               ${imageHtml}
@@ -823,6 +844,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const rawPrice = Number(item?.price);
     const price = Number.isFinite(rawPrice) ? rawPrice : null;
     const categoryName = item?.category?.name ?? item?.category_name ?? "Menu";
+    const categoryId = item?.category_id ?? item?.category?.id ?? "";
     const description = item?.description ?? "";
     const imageUrl = resolveImageUrl(item);
     const stock = item?.stock === null || item?.stock === undefined || item?.stock === "" ? null : Number(item.stock);
@@ -836,6 +858,7 @@ document.addEventListener("DOMContentLoaded", () => {
       price,
       categoryName,
       categorySlug: slugify(categoryName),
+      categoryId: categoryId === null || categoryId === undefined ? "" : String(categoryId),
       stock,
       stock_unit: stockUnit,
       is_sold_out: !!item?.is_sold_out || stock === 0,
@@ -872,6 +895,7 @@ document.addEventListener("DOMContentLoaded", () => {
             data-stock="${item.stock ?? ""}"
             data-stock-unit="${item.stock_unit || ""}"
             data-category="${item.categorySlug}"
+            data-category-id="${item.categoryId || ""}"
           >
             ${item.imageUrl ? `<img src="${escapeHtml(item.imageUrl)}" alt="${itemName}" class="af-card-img" loading="lazy" decoding="async" />` : `<div class="af-menu-thumb-fallback" aria-hidden="true"><span>AFC</span></div>`}
             <div class="af-card-body">
@@ -928,6 +952,7 @@ document.addEventListener("DOMContentLoaded", () => {
     card.setAttribute("data-stock", item.stock ?? "");
     card.setAttribute("data-stock-unit", item.stock_unit || "");
     card.setAttribute("data-category", item.categorySlug);
+    card.setAttribute("data-category-id", item.categoryId || "");
     card.innerHTML = `
       <div class="af-menu-thumb">
         ${item.imageUrl ? `<img src="${imageUrl}" alt="${itemName}" loading="lazy" decoding="async">` : `<div class="af-menu-thumb-fallback" aria-hidden="true"><span>AFC</span></div>`}
@@ -1001,6 +1026,7 @@ document.addEventListener("DOMContentLoaded", () => {
           data-stock="${item.stock ?? ""}"
           data-stock-unit="${item.stock_unit || ""}"
           data-category="${item.categorySlug}"
+          data-category-id="${item.categoryId || ""}"
         >
           <div class="af-menu-thumb">
             ${item.imageUrl ? `<img src="${imageUrl}" alt="${itemName}" loading="lazy" decoding="async">` : `<div class="af-menu-thumb-fallback" aria-hidden="true"><span>AFC</span></div>`}
@@ -1067,6 +1093,7 @@ document.addEventListener("DOMContentLoaded", () => {
       existing.setAttribute("data-sold-out", item.is_sold_out ? "1" : "0");
       existing.setAttribute("data-stock", item.stock ?? "");
       existing.setAttribute("data-stock-unit", item.stock_unit || "");
+      existing.setAttribute("data-category-id", item.categoryId || "");
       const pill = existing.querySelector("[data-soldout-pill]");
       if (pill) pill.style.display = item.is_sold_out ? "inline-flex" : "none";
       const btn = existing.querySelector("[data-item]");

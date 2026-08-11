@@ -2884,6 +2884,10 @@ body.af-modal-open {
   display: none;
 }
 
+.af-products-mode #menuGrid {
+  display: grid !important;
+}
+
 .af-menu-back {
   background: var(--af-white);
   border: 1px solid var(--af-line);

@@ -31,7 +31,7 @@
 
   <!-- Favicon -->
   <link rel="icon" href="{{ asset('assets/logo2.png') }}" type="image/png" />
-  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=23" />
+  <link rel="stylesheet" href="{{ asset('styles.css') }}?v=25" />
 </head>
 <body>
   <header class="af-header">
@@ -110,9 +110,9 @@
 
         <div class="af-menu-panel af-category-mode" id="menuPanel">
           <div class="af-menu-filters" id="menuFilters" aria-label="Menu categories">
-            <button class="af-chip af-chip-active" data-filter="all" aria-pressed="true">All</button>
+            <button class="af-chip af-chip-active" data-filter="all" data-category-id="" aria-pressed="true">All</button>
             @foreach ($categories as $category)
-              <button class="af-chip" data-filter="{{ Str::slug($category->name) }}" aria-pressed="false">{{ $category->name }}</button>
+              <button class="af-chip" data-filter="{{ Str::slug($category->name) }}" data-category-id="{{ $category->id }}" aria-pressed="false">{{ $category->name }}</button>
             @endforeach
           </div>
 
@@ -126,9 +126,9 @@
               Change
             </button>
             <div class="af-mobile-category-menu" id="mobileCategoryMenu" data-mobile-category-menu hidden>
-              <button type="button" data-mobile-filter="all">All Menu</button>
+              <button type="button" data-mobile-filter="all" data-category-id="">All Menu</button>
               @foreach ($categories as $category)
-                <button type="button" data-mobile-filter="{{ Str::slug($category->name) }}">{{ $category->name }}</button>
+                <button type="button" data-mobile-filter="{{ Str::slug($category->name) }}" data-category-id="{{ $category->id }}">{{ $category->name }}</button>
               @endforeach
             </div>
           </div>
@@ -146,7 +146,7 @@
                       ->take(4)
                       ->values();
                   @endphp
-                  <article class="af-category-card" data-category-card data-filter="{{ Str::slug($category->name) }}">
+                  <article class="af-category-card" data-category-card data-filter="{{ Str::slug($category->name) }}" data-category-id="{{ $category->id }}">
                     <button type="button" class="af-category-card-action" data-category-card-button aria-label="View {{ $category->name }} items">
                       <span class="af-category-preview" aria-hidden="true">
                         @forelse ($previewImages as $image)
@@ -192,6 +192,7 @@
                     data-stock="{{ $item->stock ?? '' }}"
                     data-stock-unit="{{ $item->stock_unit ?? '' }}"
                     data-category="{{ $catSlug }}"
+                    data-category-id="{{ $item->category_id ?? '' }}"
                   >
                     <div class="af-menu-thumb">
                       @if($item->image_url)
@@ -463,6 +464,6 @@
     </div>
   </footer>
 
-  <script src="{{ asset('script.js') }}?v=43" defer></script>
+  <script src="{{ asset('script.js') }}?v=46" defer></script>
 </body>
 </html>
