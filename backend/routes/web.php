@@ -76,6 +76,13 @@ Route::get('/', function () {
     return view('home', compact('categories', 'menuItems', 'featured'));
 })->name('home');
 
+Route::get('/receipt/{order:code}', function (Order $order) {
+    return view('print-receipt', [
+        'order' => $order->load(['items', 'payments']),
+        'publicReceipt' => true,
+    ]);
+})->name('public-receipt');
+
 Route::middleware('auth')->group(function () {
     Route::view('/admin', 'admin')->middleware(['active', 'role:admin'])->name('admin');
     Route::view('/pos', 'pos')->middleware(['active', 'role:admin|pos'])->name('pos');

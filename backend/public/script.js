@@ -1336,23 +1336,27 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   };
 
+  const buildReceiptUrl = (order) => {
+    if (!order?.code) return window.location.origin;
+    return `${window.location.origin}/receipt/${encodeURIComponent(order.code)}`;
+  };
+
   const buildWhatsAppUrl = ({ name, phone, note, service, time, order }) => {
+    const receiptUrl = buildReceiptUrl(order);
     const lines = [
-      "New Order - Acie Fraiche Cafe",
+      "New AFC Website Order",
       "",
       order?.code ? `Order Code: ${order.code}` : "",
+      `Receipt: ${receiptUrl}`,
+      order?.total !== undefined && order?.total !== null ? `Official Total: ${formatMoney(Number(order.total))}` : "",
+      "",
       `Name: ${name}`,
       `Phone: ${phone}`,
       `Service: ${service}`,
       `Time: ${time}`,
       note ? `Note: ${note}` : "",
       "",
-      "Items:",
-      ...state.cart.map((item) => `- ${item.name} (${formatMoney(item.price)} x ${item.qty})`),
-      "",
-      `Total: ${formatMoney(getCartTotal())}`,
-      "",
-      "Order Source: Website"
+      "Please use the receipt link for the trusted item list and total."
     ].filter((line) => line !== "").join("\n");
 
     const whatsappNumber = "2348143190700";

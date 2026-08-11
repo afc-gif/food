@@ -26,6 +26,13 @@
             padding-bottom: 12px;
             margin-bottom: 14px;
         }
+        .receipt-logo {
+            width: 58px;
+            height: 58px;
+            object-fit: contain;
+            margin: 0 auto 8px;
+            display: block;
+        }
         .receipt-header h1 {
             font-size: 18px;
             font-weight: 700;
@@ -191,6 +198,7 @@
 <body>
     <div class="receipt-container">
         <div class="receipt-header">
+            <img src="{{ asset('assets/logo2.png') }}" alt="Acie Fraiche Cafe Logo" class="receipt-logo">
             <h1>ACIE FRAICHE</h1>
             <p>Restaurant · Kitchen · Delivery</p>
         </div>
@@ -281,10 +289,12 @@
             <p style="margin-top: 4px;">Printed: {{ now()->format('M d, Y H:i:s') }}</p>
         </div>
 
+        @unless($publicReceipt ?? false)
         <div class="actions">
             <button type="button" onclick="window.print()">Print Receipt</button>
             <button type="button" class="secondary" onclick="window.close()">Close</button>
         </div>
+        @endunless
     </div>
 
     <script>
