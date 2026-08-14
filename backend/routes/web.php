@@ -87,6 +87,7 @@ Route::middleware('auth')->group(function () {
     Route::view('/admin', 'admin')->middleware(['active', 'role:admin'])->name('admin');
     Route::view('/pos', 'pos')->middleware(['active', 'role:admin|pos'])->name('pos');
     Route::view('/staff', 'staff')->middleware(['active', 'role:admin|staff'])->name('staff');
+    Route::view('/inventory', 'inventory')->middleware(['active', 'role:admin|inventory'])->name('inventory');
     Route::get('/kitchen', function () {
         $orders = Order::with(['items', 'payments', 'creator'])
             ->orderByDesc('created_at')

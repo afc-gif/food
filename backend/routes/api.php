@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\BusinessHoursController;
 use App\Http\Controllers\Api\MenuItemController;
 use App\Http\Controllers\Api\OrderController;
+use App\Http\Controllers\Api\StoreInventoryController;
 use App\Http\Controllers\Api\UserAdminController;
 use Illuminate\Support\Facades\Route;
 
@@ -47,4 +48,13 @@ Route::middleware(['web', 'auth', 'active', 'role:admin|pos|kitchen|staff'])->gr
 
 Route::middleware(['web', 'auth', 'active', 'role:admin|staff'])->group(function () {
     Route::delete('/orders/{order}', [OrderController::class, 'destroy']);
+});
+
+Route::middleware(['web', 'auth', 'active', 'role:admin|inventory'])->group(function () {
+    Route::get('/store-items', [StoreInventoryController::class, 'index']);
+    Route::post('/store-items', [StoreInventoryController::class, 'store']);
+    Route::put('/store-items/{storeItem}', [StoreInventoryController::class, 'update']);
+    Route::delete('/store-items/{storeItem}', [StoreInventoryController::class, 'destroy']);
+    Route::post('/store-items/{storeItem}/adjust', [StoreInventoryController::class, 'adjust']);
+    Route::get('/store-items/{storeItem}/history', [StoreInventoryController::class, 'history']);
 });

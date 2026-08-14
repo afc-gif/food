@@ -171,6 +171,7 @@
             <button class="nav-btn" data-tab="pos"><span class="nav-label">POS</span></button>
             <button class="nav-btn" data-tab="health"><span class="nav-label">Health</span></button>
             <button class="nav-btn" data-tab="site"><span class="nav-label">Public Site</span></button>
+            <a href="{{ route('inventory') }}" class="nav-btn" target="_blank" style="text-decoration:none;"><span class="nav-label">📦 Store Inventory</span></a>
         </nav>
         <div style="margin-top:12px;">
             <div class="muted" style="margin-bottom:8px;">
@@ -215,6 +216,7 @@
                         <button class="btn-ghost" onclick="switchTab('categories')">Manage Categories</button>
                         <button class="btn-ghost" onclick="switchTab('orders')">View Orders</button>
                         <button class="btn-ghost" onclick="switchTab('pos')">Open POS</button>
+                        <a href="{{ route('inventory') }}" class="btn-ghost" target="_blank" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">📦 Store Inventory</a>
                     </div>
                     <div style="margin-top:14px; border:1px solid var(--af-line); border-radius:12px; padding:12px; background:#fff;">
                         <div style="display:flex; justify-content:space-between; gap:10px; align-items:flex-start; flex-wrap:wrap;">
@@ -571,7 +573,7 @@
         const statOrders = document.getElementById('statOrders');
         const statRevenue = document.getElementById('statRevenue');
         const healthDetail = document.getElementById('healthDetail');
-        const roles = ['admin', 'staff', 'pos', 'kitchen', 'desk'];
+        const roles = ['admin', 'staff', 'pos', 'kitchen', 'inventory', 'desk'];
         const posBarcodeInput = document.getElementById('posBarcodeInput');
         const posLookupResult = document.getElementById('posLookupResult');
         const posScanStatus = document.getElementById('posScanStatus');
