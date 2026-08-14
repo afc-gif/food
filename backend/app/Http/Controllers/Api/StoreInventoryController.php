@@ -3,26 +3,69 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\StoreItem;
 use App\Models\StoreAdjustment;
+use App\Models\StoreCategory;
+use App\Models\StoreItem;
 use Illuminate\Http\Request;
 
 class StoreInventoryController extends Controller
 {
-    // ------------------------------------------------------------------ index
+    // ═══════════════════════════════════════════════
+    //  CATEGORIES
+    // ═══════════════════════════════════════════════
+
+    public function categories()
+    {
+        return StoreCategory::orderBy('sort_order')->orderBy('name')->get();
+    }
+
+    public function storeCategory(Request $request)
+    {
+        $data = $request->validate([
+            'name'       => 'required|string|max:100|unique:store_categories,name',
+            'sort_order' => 'nullable|integer|min:0',
+        ]);
+
+        return response()->json(StoreCategory::create($data), 201);
+    }
+
+    public function updateCategory(Request $request, StoreCategory $storeCategory)
+    {
+        $data = $request->validate([
+            'name'       => 'required|string|max:100|unique:store_categories,name,' . $storeCategory->id,
+            'sort_order' => 'nullable|integer|min:0',
+        ]);
+
+        $storeCategory->update($data);
+
+        return response()->json($storeCategory->fresh());
+    }
+
+    public function destroyCategory(StoreCategory $storeCategory)
+    {
+        // Null-out items in this category before deleting (nullOnDelete handles FK)
+        $storeCategory->delete();
+
+        return response()->noContent();
+    }
+
+    // ═══════════════════════════════════════════════
+    //  ITEMS
+    // ═══════════════════════════════════════════════
+
     public function index()
     {
-        return StoreItem::orderBy('category')
+        return StoreItem::with('category')
+            ->orderBy('store_category_id')
             ->orderBy('name')
             ->get();
     }
 
-    // ------------------------------------------------------------------ store
     public function store(Request $request)
     {
         $data = $request->validate([
             'name'                => 'required|string|max:255',
-            'category'            => 'nullable|string|max:100',
+            'store_category_id'   => 'nullable|exists:store_categories,id',
             'quantity'            => 'required|numeric|min:0',
             'unit'                => 'required|string|max:50',
             'low_stock_threshold' => 'nullable|numeric|min:0',
@@ -31,7 +74,7 @@ class StoreInventoryController extends Controller
 
         $item = StoreItem::create($data);
 
-        // Log the initial stock as a restock adjustment
+        // Log initial stock
         if ((float) $item->quantity > 0) {
             StoreAdjustment::create([
                 'store_item_id'   => $item->id,
@@ -41,15 +84,14 @@ class StoreInventoryController extends Controller
             ]);
         }
 
-        return response()->json($item, 201);
+        return response()->json($item->load('category'), 201);
     }
 
-    // ------------------------------------------------------------------ update
     public function update(Request $request, StoreItem $storeItem)
     {
         $data = $request->validate([
             'name'                => 'sometimes|required|string|max:255',
-            'category'            => 'nullable|string|max:100',
+            'store_category_id'   => 'nullable|exists:store_categories,id',
             'unit'                => 'sometimes|required|string|max:50',
             'low_stock_threshold' => 'nullable|numeric|min:0',
             'supplier_notes'      => 'nullable|string',
@@ -57,10 +99,9 @@ class StoreInventoryController extends Controller
 
         $storeItem->update($data);
 
-        return response()->json($storeItem->fresh());
+        return response()->json($storeItem->fresh()->load('category'));
     }
 
-    // ------------------------------------------------------------------ destroy
     public function destroy(StoreItem $storeItem)
     {
         $storeItem->delete();
@@ -68,7 +109,10 @@ class StoreInventoryController extends Controller
         return response()->noContent();
     }
 
-    // ------------------------------------------------------------------ adjust
+    // ═══════════════════════════════════════════════
+    //  ADJUST STOCK
+    // ═══════════════════════════════════════════════
+
     public function adjust(Request $request, StoreItem $storeItem)
     {
         $data = $request->validate([
@@ -76,7 +120,6 @@ class StoreInventoryController extends Controller
             'reason'          => 'nullable|string|max:255',
         ]);
 
-        // Prevent quantity going negative
         $newQty = (float) $storeItem->quantity + (float) $data['quantity_change'];
         if ($newQty < 0) {
             return response()->json([
@@ -93,17 +136,17 @@ class StoreInventoryController extends Controller
             'adjusted_by'     => $request->user()->email ?? 'system',
         ]);
 
-        return response()->json($storeItem->fresh());
+        return response()->json($storeItem->fresh()->load('category'));
     }
 
-    // ------------------------------------------------------------------ history
+    // ═══════════════════════════════════════════════
+    //  HISTORY
+    // ═══════════════════════════════════════════════
+
     public function history(StoreItem $storeItem)
     {
-        $adjustments = $storeItem->adjustments()
-            ->orderByDesc('created_at')
-            ->limit(50)
-            ->get();
-
-        return response()->json($adjustments);
+        return response()->json(
+            $storeItem->adjustments()->orderByDesc('created_at')->limit(50)->get()
+        );
     }
 }

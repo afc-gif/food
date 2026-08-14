@@ -51,6 +51,13 @@ Route::middleware(['web', 'auth', 'active', 'role:admin|staff'])->group(function
 });
 
 Route::middleware(['web', 'auth', 'active', 'role:admin|inventory'])->group(function () {
+    // Store categories
+    Route::get('/store-categories', [StoreInventoryController::class, 'categories']);
+    Route::post('/store-categories', [StoreInventoryController::class, 'storeCategory']);
+    Route::put('/store-categories/{storeCategory}', [StoreInventoryController::class, 'updateCategory']);
+    Route::delete('/store-categories/{storeCategory}', [StoreInventoryController::class, 'destroyCategory']);
+
+    // Store items
     Route::get('/store-items', [StoreInventoryController::class, 'index']);
     Route::post('/store-items', [StoreInventoryController::class, 'store']);
     Route::put('/store-items/{storeItem}', [StoreInventoryController::class, 'update']);

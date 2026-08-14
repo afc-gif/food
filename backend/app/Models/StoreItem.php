@@ -11,7 +11,7 @@ class StoreItem extends Model
 
     protected $fillable = [
         'name',
-        'category',
+        'store_category_id',
         'quantity',
         'unit',
         'low_stock_threshold',
@@ -22,6 +22,8 @@ class StoreItem extends Model
         'quantity'            => 'decimal:2',
         'low_stock_threshold' => 'decimal:2',
     ];
+
+    protected $appends = ['status'];
 
     /**
      * "out_of_stock" | "low_stock" | "in_stock"
@@ -39,7 +41,10 @@ class StoreItem extends Model
         return 'in_stock';
     }
 
-    protected $appends = ['status'];
+    public function category()
+    {
+        return $this->belongsTo(StoreCategory::class, 'store_category_id');
+    }
 
     public function adjustments()
     {
