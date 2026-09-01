@@ -550,13 +550,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const applyFilter = () => {
     if (!dom.menuGrid) return;
+    const searchQuery = (dom.menuSearchInput?.value || "").trim().toLowerCase();
     let visibleCount = 0;
+
     dom.menuGrid.querySelectorAll(".af-menu-item").forEach((item) => {
       const category = slugify(item.getAttribute("data-category") || "all");
       const categoryId = item.getAttribute("data-category-id") || "";
-      const matchesFilter = state.activeFilter === "all" || category === state.activeFilter;
-      const matchesCategoryId = !!state.activeCategoryId && categoryId === state.activeCategoryId;
-      const visible = matchesFilter || matchesCategoryId;
+      const itemName = (item.getAttribute("data-item-name") || item.querySelector("h3")?.textContent || "").toLowerCase();
+      const catName = (item.getAttribute("data-category-name") || item.querySelector(".af-pill")?.textContent || "").toLowerCase();
+      const desc = (item.getAttribute("data-description") || item.querySelector("p")?.textContent || "").toLowerCase();
+
+      const matchesCategory = state.activeFilter === "all" || category === state.activeFilter || (!!state.activeCategoryId && categoryId === state.activeCategoryId);
+      const matchesSearch = !searchQuery || itemName.includes(searchQuery) || catName.includes(searchQuery) || desc.includes(searchQuery);
+
+      const visible = matchesCategory && matchesSearch;
       item.style.display = visible ? "" : "none";
       if (visible) visibleCount += 1;
     });
@@ -566,8 +573,12 @@ document.addEventListener("DOMContentLoaded", () => {
       empty = document.createElement("p");
       empty.className = "af-menu-empty";
       empty.setAttribute("data-category-empty", "");
-      empty.textContent = "No dishes in this category yet.";
       dom.menuGrid.appendChild(empty);
+    }
+    if (searchQuery && visibleCount === 0) {
+      empty.textContent = `No dishes matching "${escapeHtml(searchQuery)}" found.`;
+    } else {
+      empty.textContent = "No dishes in this category yet.";
     }
     empty.hidden = visibleCount > 0;
   };
@@ -624,6 +635,11 @@ document.addEventListener("DOMContentLoaded", () => {
     dom.categoryGrid.addEventListener("click", (e) => {
       const card = e.target.closest("[data-category-card]");
       if (!card) return;
+      if (dom.menuSearchInput) {
+        dom.menuSearchInput.value = "";
+        if (dom.menuSearchClear) dom.menuSearchClear.hidden = true;
+        if (dom.menuSearchDropdown) dom.menuSearchDropdown.hidden = true;
+      }
       setMenuMode("products");
       setActiveFilter(card.getAttribute("data-filter") || "all", card.getAttribute("data-category-id") || "");
       dom.menuGrid?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -653,6 +669,11 @@ document.addEventListener("DOMContentLoaded", () => {
     dom.menuFilters.addEventListener("click", (e) => {
       const chipBtn = e.target.closest(".af-chip");
       if (!chipBtn) return;
+      if (dom.menuSearchInput) {
+        dom.menuSearchInput.value = "";
+        if (dom.menuSearchClear) dom.menuSearchClear.hidden = true;
+        if (dom.menuSearchDropdown) dom.menuSearchDropdown.hidden = true;
+      }
       setMenuMode("products");
       setActiveFilter(chipBtn.getAttribute("data-filter") || "all", chipBtn.getAttribute("data-category-id") || "");
     });
@@ -876,7 +897,12 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     dom.menuSearchInput.addEventListener("input", (e) => {
-      renderSuggestions(e.target.value);
+      const val = e.target.value;
+      renderSuggestions(val);
+      if (val.trim().length >= 1) {
+        setMenuMode("products");
+      }
+      applyFilter();
     });
 
     dom.menuSearchInput.addEventListener("focus", () => {
@@ -891,6 +917,7 @@ document.addEventListener("DOMContentLoaded", () => {
         dom.menuSearchInput.focus();
         hideDropdown();
         dom.menuSearchClear.hidden = true;
+        applyFilter();
       });
     }
 

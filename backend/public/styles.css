@@ -558,10 +558,10 @@ a {
 
 .af-menu-search-wrapper {
   position: relative;
-  max-width: 580px;
-  margin: 0 auto 1.5rem auto;
-  z-index: 50;
   width: 100%;
+  max-width: 640px;
+  margin: 0.2rem auto 1.2rem auto;
+  z-index: 50;
 }
 
 .af-search-input-wrapper {
@@ -571,14 +571,15 @@ a {
   background: var(--af-white);
   border: 2px solid var(--af-line);
   border-radius: 999px;
-  box-shadow: 0 8px 24px rgba(82, 55, 0, 0.06);
+  box-shadow: 0 4px 16px rgba(82, 55, 0, 0.05);
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
   overflow: hidden;
 }
 
-.af-search-input-wrapper:focus-within {
+.af-search-input-wrapper:focus-within,
+.af-search-input-wrapper:hover {
   border-color: var(--af-gold);
-  box-shadow: 0 10px 28px rgba(204, 153, 51, 0.22), 0 0 0 3.5px rgba(204, 153, 51, 0.15);
+  box-shadow: 0 8px 26px rgba(204, 153, 51, 0.22), 0 0 0 3px rgba(204, 153, 51, 0.12);
   background: #ffffff;
 }
 
@@ -586,7 +587,7 @@ a {
   position: absolute;
   left: 1.15rem;
   color: var(--af-brown);
-  opacity: 0.65;
+  opacity: 0.7;
   pointer-events: none;
   flex-shrink: 0;
   transition: opacity 0.2s ease, color 0.2s ease;
@@ -599,17 +600,17 @@ a {
 
 .af-search-input {
   width: 100%;
-  padding: 0.85rem 2.8rem 0.85rem 3.2rem;
+  padding: 0.9rem 2.8rem 0.9rem 3.2rem;
   border: none;
   background: transparent;
   font-family: var(--af-font-body);
-  font-size: 0.95rem;
+  font-size: 0.96rem;
   color: var(--af-ink);
   outline: none;
 }
 
 .af-search-input::placeholder {
-  color: rgba(82, 55, 0, 0.52);
+  color: rgba(82, 55, 0, 0.55);
   font-size: 0.92rem;
 }
 
@@ -650,10 +651,10 @@ a {
   top: calc(100% + 0.45rem);
   left: 0;
   right: 0;
-  background: var(--af-white);
+  background: #ffffff;
   border: 1px solid var(--af-line);
   border-radius: var(--af-radius-md);
-  box-shadow: 0 16px 42px rgba(20, 14, 4, 0.14);
+  box-shadow: 0 18px 46px rgba(20, 14, 4, 0.16);
   max-height: 380px;
   overflow-y: auto;
   z-index: 100;
