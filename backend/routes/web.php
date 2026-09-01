@@ -9,11 +9,17 @@ use Illuminate\Support\Facades\Route;
 
 // Serve static assets directly
 Route::get('/styles.css', function () {
-    return response()->file(public_path('styles.css'), ['Content-Type' => 'text/css']);
+    return response()->file(public_path('styles.css'), [
+        'Content-Type' => 'text/css',
+        'Cache-Control' => 'no-cache, must-revalidate',
+    ]);
 });
 
 Route::get('/script.js', function () {
-    return response()->file(public_path('script.js'), ['Content-Type' => 'application/javascript']);
+    return response()->file(public_path('script.js'), [
+        'Content-Type' => 'application/javascript',
+        'Cache-Control' => 'no-cache, must-revalidate',
+    ]);
 });
 
 // Admin preview of the public site
