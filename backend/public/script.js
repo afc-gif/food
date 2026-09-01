@@ -131,7 +131,12 @@ document.addEventListener("DOMContentLoaded", () => {
     categoryGrid: document.getElementById("categoryGrid"),
     mobileCategoryCurrent: document.querySelector("[data-mobile-category-current]"),
     mobileCategoryToggle: document.querySelector("[data-mobile-category-toggle]"),
-    mobileCategoryMenu: document.querySelector("[data-mobile-category-menu]")
+    mobileCategoryMenu: document.querySelector("[data-mobile-category-menu]"),
+    menuSearchWrapper: document.getElementById("menuSearchWrapper"),
+    menuSearchInput: document.getElementById("menuSearchInput"),
+    menuSearchClear: document.getElementById("menuSearchClear"),
+    menuSearchDropdown: document.getElementById("menuSearchDropdown"),
+    menuSearchSuggestions: document.getElementById("menuSearchSuggestions")
   };
 
   const state = {
@@ -696,6 +701,249 @@ document.addEventListener("DOMContentLoaded", () => {
     if (initial) {
       state.activeFilter = slugify(initial.getAttribute("data-filter") || "all");
     }
+  };
+
+  const getAllMenuItems = () => {
+    const items = [];
+    const cards = document.querySelectorAll("[data-menu-item]");
+    cards.forEach((card) => {
+      const id = parseInt(card.getAttribute("data-item-id"), 10);
+      if (!id || items.some((i) => i.id === id)) return;
+      const name = card.querySelector(".af-menu-head h3, h3")?.textContent?.trim() || "";
+      const categoryName = card.querySelector(".af-pill")?.textContent?.trim() || "Menu";
+      const categorySlug = card.getAttribute("data-category") || slugify(categoryName);
+      const categoryId = card.getAttribute("data-category-id") || "";
+      const priceText = card.querySelector(".af-price")?.textContent || "0";
+      const priceAttr = card.querySelector("[data-item-price]")?.getAttribute("data-item-price");
+      const price = priceAttr ? parseFloat(priceAttr) : parseInt(priceText.replace(/[^\d]/g, ""), 10) || 0;
+      const isSoldOut = card.getAttribute("data-sold-out") === "1";
+      const stockAttr = card.getAttribute("data-stock");
+      const stockUnit = card.getAttribute("data-stock-unit") || "";
+      const imgEl = card.querySelector("img");
+      const imageUrl = imgEl ? imgEl.src : "";
+      const description = card.querySelector(".af-menu-body p")?.textContent?.trim() || "";
+
+      items.push({
+        id,
+        name,
+        categoryName,
+        categorySlug,
+        categoryId,
+        price,
+        is_sold_out: isSoldOut,
+        stock: stockAttr === "" || stockAttr === null ? null : Number(stockAttr),
+        stock_unit: stockUnit,
+        imageUrl,
+        description,
+        cardEl: card
+      });
+    });
+    return items;
+  };
+
+  const highlightMatch = (text, query) => {
+    if (!query) return escapeHtml(text);
+    const safeText = escapeHtml(text);
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`(${escapedQuery})`, "gi");
+    return safeText.replace(regex, `<mark class="af-search-highlight">$1</mark>`);
+  };
+
+  const initMenuSearch = () => {
+    if (!dom.menuSearchInput || !dom.menuSearchDropdown || !dom.menuSearchSuggestions) return;
+
+    let activeSuggestionIndex = -1;
+
+    const hideDropdown = () => {
+      dom.menuSearchDropdown.hidden = true;
+      activeSuggestionIndex = -1;
+    };
+
+    const renderSuggestions = (query) => {
+      const q = (query || "").trim().toLowerCase();
+      if (!q) {
+        hideDropdown();
+        if (dom.menuSearchClear) dom.menuSearchClear.hidden = true;
+        return;
+      }
+
+      if (dom.menuSearchClear) dom.menuSearchClear.hidden = false;
+
+      const items = getAllMenuItems();
+      const matches = items.filter((item) => {
+        const nameMatch = item.name.toLowerCase().includes(q);
+        const catMatch = item.categoryName.toLowerCase().includes(q);
+        const descMatch = item.description.toLowerCase().includes(q);
+        return nameMatch || catMatch || descMatch;
+      });
+
+      if (!matches.length) {
+        dom.menuSearchSuggestions.innerHTML = `
+          <div class="af-suggestion-empty">
+            <span>No dishes matching "<strong>${escapeHtml(query)}</strong>"</span>
+            <small style="display:block;margin-top:4px;color:rgba(0,0,0,0.5);">Try searching for "chicken", "rice", "drinks", or browse categories below.</small>
+          </div>
+        `;
+        dom.menuSearchDropdown.hidden = false;
+        activeSuggestionIndex = -1;
+        return;
+      }
+
+      const html = matches
+        .slice(0, 8)
+        .map((item, index) => {
+          const itemName = escapeHtml(item.name);
+          const categoryName = escapeHtml(item.categoryName);
+          const isSoldOut = item.is_sold_out;
+          const highlightedName = highlightMatch(item.name, q);
+
+          return `
+            <div
+              class="af-suggestion-item"
+              data-suggestion-item
+              data-item-id="${item.id}"
+              data-index="${index}"
+              role="option"
+              tabindex="0"
+            >
+              <div class="af-suggestion-thumb">
+                ${item.imageUrl ? `<img src="${escapeHtml(item.imageUrl)}" alt="${itemName}">` : `<div class="af-menu-thumb-fallback" aria-hidden="true"><span>AFC</span></div>`}
+              </div>
+              <div class="af-suggestion-details">
+                <div class="af-suggestion-title">
+                  <span class="af-suggestion-name">${highlightedName}</span>
+                  <span class="af-suggestion-cat">${categoryName}</span>
+                </div>
+                <div class="af-suggestion-price">${formatMoney(item.price)}</div>
+              </div>
+              <div class="af-suggestion-action">
+                ${
+                  isSoldOut
+                    ? `<span class="af-pill" style="background:#fef2f2;color:#b91c1c;border-color:#fecdd3;">Sold Out</span>`
+                    : `<button type="button" class="af-btn af-btn-xs af-btn-outline" data-suggestion-add="${item.id}" aria-label="Add ${itemName} to cart">+ Add</button>`
+                }
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+
+      dom.menuSearchSuggestions.innerHTML = html;
+      dom.menuSearchDropdown.hidden = false;
+      activeSuggestionIndex = -1;
+    };
+
+    const updateActiveSuggestion = (items) => {
+      items.forEach((el, idx) => {
+        const isSelected = idx === activeSuggestionIndex;
+        el.classList.toggle("is-selected", isSelected);
+        if (isSelected) {
+          el.scrollIntoView({ block: "nearest" });
+        }
+      });
+    };
+
+    const selectSuggestion = (itemId, isDirectAdd = false) => {
+      const items = getAllMenuItems();
+      const item = items.find((i) => i.id === itemId);
+      if (!item) return;
+
+      hideDropdown();
+
+      setMenuMode("products");
+      setActiveFilter("all");
+
+      if (isDirectAdd && !item.is_sold_out) {
+        addToCart({
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          stock: item.stock,
+          stockUnit: item.stock_unit
+        });
+      }
+
+      const card = document.querySelector(`[data-menu-item][data-item-id="${item.id}"]`);
+      if (card) {
+        card.scrollIntoView({ behavior: "smooth", block: "center" });
+        card.classList.remove("af-item-highlight");
+        void card.offsetWidth;
+        card.classList.add("af-item-highlight");
+        setTimeout(() => {
+          card.classList.remove("af-item-highlight");
+        }, 2500);
+      }
+    };
+
+    dom.menuSearchInput.addEventListener("input", (e) => {
+      renderSuggestions(e.target.value);
+    });
+
+    dom.menuSearchInput.addEventListener("focus", () => {
+      if (dom.menuSearchInput.value.trim()) {
+        renderSuggestions(dom.menuSearchInput.value);
+      }
+    });
+
+    if (dom.menuSearchClear) {
+      dom.menuSearchClear.addEventListener("click", () => {
+        dom.menuSearchInput.value = "";
+        dom.menuSearchInput.focus();
+        hideDropdown();
+        dom.menuSearchClear.hidden = true;
+      });
+    }
+
+    dom.menuSearchSuggestions.addEventListener("click", (e) => {
+      const addBtn = e.target.closest("[data-suggestion-add]");
+      if (addBtn) {
+        e.stopPropagation();
+        const id = parseInt(addBtn.getAttribute("data-suggestion-add"), 10);
+        selectSuggestion(id, true);
+        flyToCart(addBtn);
+        return;
+      }
+
+      const itemRow = e.target.closest("[data-suggestion-item]");
+      if (itemRow) {
+        const id = parseInt(itemRow.getAttribute("data-item-id"), 10);
+        selectSuggestion(id, false);
+      }
+    });
+
+    dom.menuSearchInput.addEventListener("keydown", (e) => {
+      const suggestionRows = Array.from(dom.menuSearchSuggestions.querySelectorAll("[data-suggestion-item]"));
+      if (dom.menuSearchDropdown.hidden || !suggestionRows.length) {
+        if (e.key === "Escape") hideDropdown();
+        return;
+      }
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        activeSuggestionIndex = (activeSuggestionIndex + 1) % suggestionRows.length;
+        updateActiveSuggestion(suggestionRows);
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        activeSuggestionIndex = (activeSuggestionIndex - 1 + suggestionRows.length) % suggestionRows.length;
+        updateActiveSuggestion(suggestionRows);
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        const selected = activeSuggestionIndex >= 0 ? suggestionRows[activeSuggestionIndex] : suggestionRows[0];
+        if (selected) {
+          const id = parseInt(selected.getAttribute("data-item-id"), 10);
+          selectSuggestion(id, false);
+        }
+      } else if (e.key === "Escape") {
+        hideDropdown();
+        dom.menuSearchInput.blur();
+      }
+    });
+
+    document.addEventListener("click", (e) => {
+      if (dom.menuSearchWrapper && !dom.menuSearchWrapper.contains(e.target)) {
+        hideDropdown();
+      }
+    });
   };
 
   const ensureCategoryChip = (catName) => {
@@ -1455,6 +1703,7 @@ document.addEventListener("DOMContentLoaded", () => {
     startCategorySlideshows();
     bindCategoryBack();
     bindMobileCategorySwitcher();
+    initMenuSearch();
     setMenuMode("categories");
     syncActiveFilterFromDom();
     updateMobileCategorySwitcher();

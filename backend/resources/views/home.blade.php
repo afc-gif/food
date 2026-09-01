@@ -108,6 +108,27 @@
           <p>Choose your craving; we will prepare it hot and have it ready in minutes.</p>
         </div>
 
+        <div class="af-menu-search-wrapper" id="menuSearchWrapper">
+          <div class="af-search-input-wrapper">
+            <svg class="af-search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input
+              type="search"
+              id="menuSearchInput"
+              class="af-search-input"
+              placeholder="Search dishes or ingredients (e.g. chicken, turkey, rice)..."
+              aria-label="Search menu items"
+              autocomplete="off"
+            />
+            <button type="button" class="af-search-clear" id="menuSearchClear" aria-label="Clear search" hidden>&times;</button>
+          </div>
+          <div class="af-search-dropdown" id="menuSearchDropdown" hidden>
+            <div class="af-search-suggestions" id="menuSearchSuggestions" role="listbox"></div>
+          </div>
+        </div>
+
         <div class="af-menu-panel af-category-mode" id="menuPanel">
           <div class="af-menu-filters" id="menuFilters" aria-label="Menu categories">
             <button class="af-chip af-chip-active" data-filter="all" data-category-id="" aria-pressed="true">All</button>
