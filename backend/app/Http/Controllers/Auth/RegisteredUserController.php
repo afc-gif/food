@@ -46,10 +46,12 @@ class RegisteredUserController extends Controller
 
         // Ensure base roles exist
         Role::firstOrCreate(['name' => 'admin']);
+        Role::firstOrCreate(['name' => 'manager']);
         Role::firstOrCreate(['name' => 'staff']);
         Role::firstOrCreate(['name' => 'pos']);
         Role::firstOrCreate(['name' => 'kitchen']);
         Role::firstOrCreate(['name' => 'desk']);
+        Role::firstOrCreate(['name' => 'inventory']);
         $user->syncRoles('staff');
 
         event(new Registered($user));

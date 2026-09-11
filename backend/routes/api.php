@@ -24,21 +24,26 @@ Route::middleware(['web', 'auth', 'active', 'role:admin'])->group(function () {
 
     Route::post('/menu-items', [MenuItemController::class, 'store']);
     Route::put('/menu-items/{menuItem}', [MenuItemController::class, 'update']);
-    Route::post('/menu-items/{menuItem}/toggle-sold-out', [MenuItemController::class, 'toggleSoldOut']);
     Route::post('/menu-items/{menuItem}/regenerate-barcode', [MenuItemController::class, 'regenerateBarcode']);
     Route::delete('/menu-items/{menuItem}', [MenuItemController::class, 'destroy']);
 
     Route::get('/orders/summary', [OrderController::class, 'summary']);
     Route::get('/orders/export', [OrderController::class, 'export']);
     Route::post('/orders/purge', [OrderController::class, 'purge']);
-    Route::put('/order-availability', [BusinessHoursController::class, 'update']);
 
     Route::get('/users', [UserAdminController::class, 'index']);
     Route::put('/users/{user}', [UserAdminController::class, 'update']);
     Route::delete('/users/{user}', [UserAdminController::class, 'destroy']);
 });
 
-Route::middleware(['web', 'auth', 'active', 'role:admin|pos|kitchen|staff'])->group(function () {
+Route::middleware(['web', 'auth', 'active', 'role:admin|manager'])->group(function () {
+    Route::post('/menu-items/{menuItem}/toggle-sold-out', [MenuItemController::class, 'toggleSoldOut']);
+    Route::put('/order-availability', [BusinessHoursController::class, 'update']);
+    Route::get('/manager/orders', [OrderController::class, 'managerOrders']);
+    Route::get('/manager/summary', [OrderController::class, 'managerSummary']);
+});
+
+Route::middleware(['web', 'auth', 'active', 'role:admin|manager|pos|kitchen|staff'])->group(function () {
     Route::get('/orders', [OrderController::class, 'index']);
     Route::get('/orders/{order}', [OrderController::class, 'show']);
     Route::post('/orders/{order}/send-to-kitchen', [OrderController::class, 'sendToKitchen']);

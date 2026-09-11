@@ -171,6 +171,7 @@
             <button class="nav-btn" data-tab="pos"><span class="nav-label">POS</span></button>
             <button class="nav-btn" data-tab="health"><span class="nav-label">Health</span></button>
             <button class="nav-btn" data-tab="site"><span class="nav-label">Public Site</span></button>
+            <a href="{{ route('manager') }}" class="nav-btn" target="_blank" style="text-decoration:none;"><span class="nav-label">📊 Manager Panel</span></a>
             <a href="{{ route('inventory') }}" class="nav-btn" target="_blank" style="text-decoration:none;"><span class="nav-label">📦 Store Inventory</span></a>
         </nav>
         <div style="margin-top:12px;">
@@ -573,7 +574,7 @@
         const statOrders = document.getElementById('statOrders');
         const statRevenue = document.getElementById('statRevenue');
         const healthDetail = document.getElementById('healthDetail');
-        const roles = ['admin', 'staff', 'pos', 'kitchen', 'inventory', 'desk'];
+        const roles = ['admin', 'manager', 'staff', 'pos', 'kitchen', 'inventory', 'desk'];
         const posBarcodeInput = document.getElementById('posBarcodeInput');
         const posLookupResult = document.getElementById('posLookupResult');
         const posScanStatus = document.getElementById('posScanStatus');

@@ -91,6 +91,7 @@ Route::get('/receipt/{order:code}', function (Order $order) {
 
 Route::middleware('auth')->group(function () {
     Route::view('/admin', 'admin')->middleware(['active', 'role:admin'])->name('admin');
+    Route::view('/manager', 'manager')->middleware(['active', 'role:admin|manager'])->name('manager');
     Route::view('/pos', 'pos')->middleware(['active', 'role:admin|pos'])->name('pos');
     Route::view('/staff', 'staff')->middleware(['active', 'role:admin|staff'])->name('staff');
     Route::view('/inventory', 'inventory')->middleware(['active', 'role:admin|inventory'])->name('inventory');

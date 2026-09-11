@@ -69,6 +69,14 @@ class AuthenticatedSessionController extends Controller
             return redirect('/admin');
         }
 
+        if ($user->hasRole('manager') || $role === 'manager') {
+            return redirect('/manager');
+        }
+
+        if ($user->hasRole('inventory') || $role === 'inventory') {
+            return redirect('/inventory');
+        }
+
         if ($user->hasRole('pos') || $role === 'pos') {
             return redirect('/pos');
         }

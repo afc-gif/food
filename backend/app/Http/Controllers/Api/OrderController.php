@@ -482,6 +482,38 @@ class OrderController extends Controller
         return Carbon::now()->addMinutes($minutes);
     }
 
+    public function managerOrders(Request $request)
+    {
+        return Order::with(['items', 'payments', 'creator'])
+            ->whereDate('created_at', Carbon::today())
+            ->orderByDesc('created_at')
+            ->get();
+    }
+
+    public function managerSummary(Request $request, BusinessHours $businessHours)
+    {
+        $todayOrdersQuery = Order::query()->whereDate('created_at', Carbon::today());
+        $todayOrders = $todayOrdersQuery->count();
+        $todayRevenue = (float) $todayOrdersQuery->sum('total');
+
+        $soldOutCount = MenuItem::query()
+            ->where(function ($q) {
+                $q->where('is_sold_out', true)
+                  ->orWhere('stock', 0);
+            })
+            ->count();
+
+        $availability = $businessHours->availability();
+
+        return response()->json([
+            'today_orders' => $todayOrders,
+            'today_revenue' => $todayRevenue,
+            'sold_out_count' => $soldOutCount,
+            'is_open' => (bool) $availability['is_open'],
+            'availability_message' => $availability['message'],
+        ]);
+    }
+
     protected function broadcastOrderChange(Order $order, bool $isNew = false): void
     {
         $order->loadMissing(['items', 'payments', 'creator']);
