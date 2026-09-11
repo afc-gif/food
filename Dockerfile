@@ -5,7 +5,8 @@ FROM php:8.3-fpm-bullseye AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update -o Acquire::Check-Valid-Until=false \
+RUN sed -i 's|deb.debian.org/debian-security|archive.debian.org/debian-security|g; s|deb.debian.org/debian|archive.debian.org/debian|g; s|security.debian.org|archive.debian.org|g' /etc/apt/sources.list \
+ && apt-get update -o Acquire::Check-Valid-Until=false \
  && apt-get install -y --no-install-recommends \
     git unzip zip curl libpq-dev libzip-dev libonig-dev \
     libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
@@ -42,7 +43,8 @@ FROM php:8.3-fpm-bullseye
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update -o Acquire::Check-Valid-Until=false \
+RUN sed -i 's|deb.debian.org/debian-security|archive.debian.org/debian-security|g; s|deb.debian.org/debian|archive.debian.org/debian|g; s|security.debian.org|archive.debian.org|g' /etc/apt/sources.list \
+ && apt-get update -o Acquire::Check-Valid-Until=false \
  && apt-get install -y --no-install-recommends \
     nginx curl libpq-dev libzip-dev libonig-dev gettext-base \
     libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
