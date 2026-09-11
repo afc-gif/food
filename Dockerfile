@@ -5,14 +5,14 @@ FROM php:8.3-fpm-bullseye AS builder
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update \
+RUN apt-get update -o Acquire::Check-Valid-Until=false \
  && apt-get install -y --no-install-recommends \
     git unzip zip curl libpq-dev libzip-dev libonig-dev \
     libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
  && docker-php-ext-configure gd --with-freetype --with-jpeg \
  && docker-php-ext-install pdo_pgsql gd zip bcmath mbstring pcntl \
  && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
- && apt-get update && apt-get install -y --no-install-recommends nodejs \
+ && apt-get update -o Acquire::Check-Valid-Until=false && apt-get install -y --no-install-recommends nodejs \
  && curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer \
  && rm -rf /var/lib/apt/lists/*
 
@@ -42,7 +42,7 @@ FROM php:8.3-fpm-bullseye
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update \
+RUN apt-get update -o Acquire::Check-Valid-Until=false \
  && apt-get install -y --no-install-recommends \
     nginx curl libpq-dev libzip-dev libonig-dev gettext-base \
     libpng-dev libjpeg62-turbo-dev libfreetype6-dev \
