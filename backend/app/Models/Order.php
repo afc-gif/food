@@ -41,6 +41,19 @@ class Order extends Model
         'kitchen_sent_at' => 'datetime',
     ];
 
+    protected $appends = [
+        'receipt_url',
+    ];
+
+    public function getReceiptUrlAttribute(): ?string
+    {
+        if (empty($this->code)) {
+            return null;
+        }
+
+        return url('/receipt/'.rawurlencode($this->code));
+    }
+
     protected static function booted(): void
     {
         static::creating(function (Order $order) {

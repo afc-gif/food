@@ -1531,6 +1531,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const cached = JSON.parse(localStorage.getItem(CHECKOUT_CACHE_KEY) || "null");
       if (!cached || cached.signature !== signature || !cached.order) return null;
       if (Date.now() - Number(cached.savedAt || 0) > CHECKOUT_CACHE_TTL_MS) return null;
+      if (!cached.order.code && !cached.order.receipt_url) {
+        localStorage.removeItem(CHECKOUT_CACHE_KEY);
+        return null;
+      }
       return cached.order;
     } catch {
       return null;
@@ -1612,7 +1616,15 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const buildReceiptUrl = (order) => {
-    if (!order?.code) return window.location.origin;
+    if (order?.receipt_url) {
+      try {
+        const receipt = new URL(order.receipt_url, window.location.origin);
+        return `${window.location.origin}${receipt.pathname}${receipt.search}${receipt.hash}`;
+      } catch {
+        return order.receipt_url;
+      }
+    }
+    if (!order?.code) return null;
     return `${window.location.origin}/receipt/${encodeURIComponent(order.code)}`;
   };
 
@@ -1622,7 +1634,7 @@ document.addEventListener("DOMContentLoaded", () => {
       "New AFC Website Order",
       "",
       order?.code ? `Order Code: ${order.code}` : "",
-      `Receipt: ${receiptUrl}`,
+      receiptUrl ? `Receipt: ${receiptUrl}` : "",
       order?.total !== undefined && order?.total !== null ? `Official Total: ${formatMoney(Number(order.total))}` : "",
       "",
       `Name: ${name}`,
@@ -1631,7 +1643,9 @@ document.addEventListener("DOMContentLoaded", () => {
       `Time: ${time}`,
       note ? `Note: ${note}` : "",
       "",
-      "Please use the receipt link for the trusted item list and total."
+      receiptUrl
+        ? "Please use the receipt link for the trusted item list and total."
+        : "Receipt link could not be created automatically. Please confirm this order manually."
     ].filter((line) => line !== "").join("\n");
 
     const whatsappNumber = "2348143190700";
