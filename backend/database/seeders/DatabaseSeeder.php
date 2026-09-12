@@ -28,13 +28,13 @@ class DatabaseSeeder extends Seeder
 
     private function seedUsers(): void
     {
-        $roles = ['admin', 'kitchen', 'staff', 'desk', 'pos'];
+        $roles = ['admin', 'manager', 'kitchen', 'staff', 'desk', 'pos', 'inventory'];
         foreach ($roles as $role) {
             Role::firstOrCreate(['name' => $role]);
         }
 
         $users = [
-            ['name' => 'Admin', 'email' => 'admin@afc.com.ng', 'password' => 'Diode4me123@', 'role' => 'admin'],
+            ['name' => 'Admin', 'email' => 'admin@afc.com.ng', 'password' => 'Password123@', 'role' => 'admin'],
             ['name' => 'Kitchen', 'email' => 'kitchen@example.com', 'password' => 'password', 'role' => 'kitchen'],
             ['name' => 'Staff', 'email' => 'staff@example.com', 'password' => 'password', 'role' => 'staff'],
             ['name' => 'Desk', 'email' => 'desk@example.com', 'password' => 'password', 'role' => 'desk'],
@@ -52,6 +52,9 @@ class DatabaseSeeder extends Seeder
                     'approved_by' => 1,
                 ]
             );
+            if ($data['email'] === 'admin@afc.com.ng') {
+                $user->update(['password' => bcrypt($data['password']), 'is_active' => true]);
+            }
             $user->syncRoles($data['role']);
         }
     }
@@ -73,11 +76,20 @@ class DatabaseSeeder extends Seeder
         $menuItems = [
             [
                 'category' => 'Mains',
+                'name' => 'Catfish Pepper Soup',
+                'description' => 'Rich, spicy catfish pepper soup served with your choice of side.',
+                'price' => 5000,
+                'sides' => ['Rice', 'Yam', 'Plantain'],
+                'image_url' => '/assets/meal-1.jpg',
+                'sort_order' => 1,
+            ],
+            [
+                'category' => 'Mains',
                 'name' => 'Jollof Rice Special',
                 'description' => 'Smoky peppers, butter-soft chicken, charred vegetables, plantain.',
                 'price' => 3500,
                 'image_url' => '/assets/meal-1.jpg',
-                'sort_order' => 1,
+                'sort_order' => 2,
             ],
             [
                 'category' => 'Mains',
@@ -85,7 +97,7 @@ class DatabaseSeeder extends Seeder
                 'description' => 'Herb basmati, roasted peppers, tamarind glaze.',
                 'price' => 4200,
                 'image_url' => '/assets/meal-2.jpg',
-                'sort_order' => 2,
+                'sort_order' => 3,
             ],
             [
                 'category' => 'Sides',
@@ -93,7 +105,7 @@ class DatabaseSeeder extends Seeder
                 'description' => 'Caramelized edges, sea salt, suya spice.',
                 'price' => 1500,
                 'image_url' => '/assets/meal-3.jpg',
-                'sort_order' => 3,
+                'sort_order' => 4,
             ],
         ];
 
@@ -105,6 +117,7 @@ class DatabaseSeeder extends Seeder
                 'name' => $item['name'],
                 'slug' => Str::slug($item['name'] . '-' . Str::random(6)),
                 'description' => $item['description'],
+                'sides' => $item['sides'] ?? null,
                 'price' => $item['price'],
                 'image_url' => $item['image_url'],
                 'sort_order' => $item['sort_order'],

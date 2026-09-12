@@ -451,6 +451,83 @@ document.addEventListener("DOMContentLoaded", () => {
     updateCartCount();
   };
 
+  const promptSideChoice = (name, sidesRaw, callback) => {
+    let sides = [];
+    if (typeof sidesRaw === 'string') {
+      const txt = document.createElement('textarea');
+      txt.innerHTML = sidesRaw;
+      const decoded = txt.value;
+      try {
+        sides = JSON.parse(decoded);
+      } catch (e) {
+        sides = decoded.split(',').map(s => s.trim().replace(/^["'\[\]]+|["'\[\]]+$/g, '')).filter(Boolean);
+      }
+    } else if (Array.isArray(sidesRaw)) {
+      sides = sidesRaw;
+    }
+
+    if (!Array.isArray(sides) || !sides.length) {
+      sides = ['Rice', 'Yam', 'Plantain'];
+    }
+
+    const backdrop = document.createElement('div');
+    backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;backdrop-filter:blur(3px);';
+
+    const card = document.createElement('div');
+    card.style.cssText = 'background:#ffffff;border-radius:20px;padding:28px 24px;max-width:400px;width:100%;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);font-family:inherit;text-align:left;box-sizing:border-box;color:#111827;';
+
+    card.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <div>
+          <h3 style="margin:0;font-size:20px;font-weight:800;color:#111827;">Select Side Choice</h3>
+          <p style="margin:4px 0 0;font-size:14px;color:#6b7280;">For <strong>${name}</strong> (Included at no extra charge)</p>
+        </div>
+        <button type="button" class="af-side-cancel-btn" style="background:#f3f4f6;border:none;border-radius:50%;width:32px;height:32px;font-size:18px;color:#4b5563;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+      </div>
+      
+      <div style="margin:20px 0 24px;">
+        <label for="afScriptSideSelectInput" style="display:block;font-size:13px;font-weight:700;color:#374151;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Choose your side dish:</label>
+        <select id="afScriptSideSelectInput" style="width:100%;padding:14px 16px;border-radius:12px;border:2px solid #d1d5db;background:#fff;font-size:16px;font-weight:600;color:#111827;outline:none;cursor:pointer;box-sizing:border-box;">
+          <option value="" disabled selected>-- Select a Side Option --</option>
+          ${sides.map(s => `<option value="${s}">${s} (Included)</option>`).join('')}
+        </select>
+      </div>
+
+      <div style="display:flex;gap:12px;">
+        <button type="button" class="af-side-cancel-btn" style="flex:1;padding:12px;border-radius:12px;border:1px solid #d1d5db;background:#fff;font-size:15px;font-weight:600;color:#4b5563;cursor:pointer;">Cancel</button>
+        <button type="button" class="af-side-confirm-btn" style="flex:2;padding:12px;border-radius:12px;border:none;background:#f97316;font-size:15px;font-weight:700;color:#fff;cursor:pointer;opacity:0.5;pointer-events:none;" disabled>Add to Order</button>
+      </div>
+    `;
+
+    backdrop.appendChild(card);
+    document.body.appendChild(backdrop);
+
+    const selectEl = card.querySelector('#afScriptSideSelectInput');
+    const confirmBtn = card.querySelector('.af-side-confirm-btn');
+
+    selectEl.addEventListener('change', () => {
+      if (selectEl.value) {
+        confirmBtn.style.opacity = '1';
+        confirmBtn.style.pointerEvents = 'auto';
+        confirmBtn.disabled = false;
+      }
+    });
+
+    confirmBtn.addEventListener('click', () => {
+      const chosenSide = selectEl.value;
+      if (chosenSide) {
+        document.body.removeChild(backdrop);
+        callback(chosenSide);
+      }
+    });
+
+    card.querySelectorAll('.af-side-cancel-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.body.removeChild(backdrop);
+      });
+    });
+  };
+
   const addToCart = (item) => {
     if (state.orderAvailability.is_open === false) {
       alert(state.orderAvailability.message || "We are currently closed and not accepting orders.");
@@ -460,7 +537,8 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Missing menu item ID; please refresh and try again.");
       return;
     }
-    const existing = state.cart.find((i) => i.id === item.id);
+    const displayName = item.sideChoice ? `${item.name} (${item.sideChoice})` : item.name;
+    const existing = state.cart.find((i) => i.id === item.id && (i.sideChoice || '') === (item.sideChoice || ''));
     const nextQty = existing ? existing.qty + 1 : 1;
     if (item.stock !== null && item.stock !== undefined && nextQty > Number(item.stock)) {
       alert(`Only ${formatStockLabel(item.stock, item.stockUnit || item.stock_unit || "").replace(/ left$/, "")} available.`);
@@ -471,11 +549,13 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
       state.cart.push({
         id: item.id,
-        name: item.name,
+        name: displayName,
+        rawName: item.name,
         price: item.price || 0,
         qty: 1,
         stock: item.stock,
-        stockUnit: item.stockUnit || item.stock_unit || ""
+        stockUnit: item.stockUnit || item.stock_unit || "",
+        sideChoice: item.sideChoice || null
       });
     }
     renderCart();
@@ -507,8 +587,24 @@ document.addEventListener("DOMContentLoaded", () => {
         const price = Number.isFinite(parsedPrice) ? parsedPrice : 0;
         const stockAttr = btn.getAttribute("data-stock");
         const stock = stockAttr === "" || stockAttr === null ? null : Number(stockAttr);
-        addToCart({ id, name, price, stock, stockUnit: btn.getAttribute("data-stock-unit") || "" });
-        flyToCart(btn);
+
+        let sidesRaw = btn.getAttribute("data-sides") || btn.closest("article")?.getAttribute("data-sides");
+        const lowerName = (name || '').toLowerCase();
+        if (!sidesRaw && (lowerName.includes('catfish') || (lowerName.includes('pepper') && lowerName.includes('soup')))) {
+          sidesRaw = '["Rice","Yam","Plantain"]';
+        }
+
+        if (sidesRaw) {
+          promptSideChoice(name, sidesRaw, (chosenSide) => {
+            if (chosenSide) {
+              addToCart({ id, name, price, stock, stockUnit: btn.getAttribute("data-stock-unit") || "", sideChoice: chosenSide });
+              flyToCart(btn);
+            }
+          });
+        } else {
+          addToCart({ id, name, price, stock, stockUnit: btn.getAttribute("data-stock-unit") || "" });
+          flyToCart(btn);
+        }
       });
     });
   };
@@ -864,7 +960,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     };
 
-    const selectSuggestion = (itemId, isDirectAdd = false) => {
+    const selectSuggestion = (itemId, isDirectAdd = false, targetBtn = null) => {
       const items = getAllMenuItems();
       const item = items.find((i) => i.id === itemId);
       if (!item) return;
@@ -875,13 +971,36 @@ document.addEventListener("DOMContentLoaded", () => {
       setActiveFilter("all");
 
       if (isDirectAdd && !item.is_sold_out) {
-        addToCart({
-          id: item.id,
-          name: item.name,
-          price: item.price,
-          stock: item.stock,
-          stockUnit: item.stock_unit
-        });
+        let sidesRaw = item.sides;
+        const lowerName = (item.name || '').toLowerCase();
+        if (!sidesRaw && (lowerName.includes('catfish') || (lowerName.includes('pepper') && lowerName.includes('soup')))) {
+          sidesRaw = '["Rice","Yam","Plantain"]';
+        }
+
+        if (sidesRaw) {
+          promptSideChoice(item.name, sidesRaw, (chosenSide) => {
+            if (chosenSide) {
+              addToCart({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                stock: item.stock,
+                stockUnit: item.stock_unit,
+                sideChoice: chosenSide
+              });
+              if (targetBtn) flyToCart(targetBtn);
+            }
+          });
+        } else {
+          addToCart({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            stock: item.stock,
+            stockUnit: item.stock_unit
+          });
+          if (targetBtn) flyToCart(targetBtn);
+        }
       }
 
       const card = document.querySelector(`[data-menu-item][data-item-id="${item.id}"]`);
@@ -926,8 +1045,7 @@ document.addEventListener("DOMContentLoaded", () => {
       if (addBtn) {
         e.stopPropagation();
         const id = parseInt(addBtn.getAttribute("data-suggestion-add"), 10);
-        selectSuggestion(id, true);
-        flyToCart(addBtn);
+        selectSuggestion(id, true, addBtn);
         return;
       }
 
@@ -1142,11 +1260,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const stock = item?.stock === null || item?.stock === undefined || item?.stock === "" ? null : Number(item.stock);
     const stockUnit = item?.stock_unit || "";
     const isValid = !!id && !!name && price !== null;
+
+    let sides = item?.sides || null;
+    const lowerName = (name || '').toLowerCase();
+    if (!sides && (lowerName.includes('catfish') || (lowerName.includes('pepper') && lowerName.includes('soup')))) {
+      sides = ['Rice', 'Yam', 'Plantain'];
+    }
+
     return {
       ...item,
       id,
       name,
       description,
+      sides,
       price,
       categoryName,
       categorySlug: slugify(categoryName),
@@ -1178,11 +1304,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const itemName = escapeHtml(item.name);
         const itemDescription = escapeHtml(item.description);
         const categoryName = escapeHtml(item.categoryName);
+        const sidesJson = escapeHtml(JSON.stringify(item.sides || []));
         return `
           <article
             class="af-card"
             data-menu-item
             data-item-id="${item.id}"
+            data-sides="${sidesJson}"
             data-sold-out="${item.is_sold_out ? "1" : "0"}"
             data-stock="${item.stock ?? ""}"
             data-stock-unit="${item.stock_unit || ""}"
@@ -1210,6 +1338,7 @@ document.addEventListener("DOMContentLoaded", () => {
                   data-item="${itemName}"
                   data-item-id="${item.id}"
                   data-item-price="${item.price}"
+                  data-sides="${sidesJson}"
                   data-sold-out="${item.is_sold_out ? "1" : "0"}"
                   data-stock="${item.stock ?? ""}"
                   data-stock-unit="${item.stock_unit || ""}"
@@ -1236,10 +1365,12 @@ document.addEventListener("DOMContentLoaded", () => {
     const itemDescription = escapeHtml(item.description);
     const categoryName = escapeHtml(item.categoryName);
     const imageUrl = escapeHtml(item.imageUrl);
+    const sidesJson = escapeHtml(JSON.stringify(item.sides || []));
     const card = document.createElement("article");
     card.className = "af-menu-item";
     card.setAttribute("data-menu-item", "");
     card.setAttribute("data-item-id", item.id);
+    card.setAttribute("data-sides", sidesJson);
     card.setAttribute("data-sold-out", soldOut);
     card.setAttribute("data-stock", item.stock ?? "");
     card.setAttribute("data-stock-unit", item.stock_unit || "");
@@ -1269,6 +1400,7 @@ document.addEventListener("DOMContentLoaded", () => {
           data-item="${itemName}"
           data-item-id="${item.id}"
           data-item-price="${item.price}"
+          data-sides="${sidesJson}"
           data-sold-out="${soldOut}"
           data-stock="${item.stock ?? ""}"
           data-stock-unit="${item.stock_unit || ""}"
@@ -1309,11 +1441,13 @@ document.addEventListener("DOMContentLoaded", () => {
           const itemDescription = escapeHtml(item.description);
           const categoryName = escapeHtml(item.categoryName);
           const imageUrl = escapeHtml(item.imageUrl);
+          const sidesJson = escapeHtml(JSON.stringify(item.sides || []));
           return `
         <article
           class="af-menu-item"
           data-menu-item
           data-item-id="${item.id}"
+          data-sides="${sidesJson}"
           data-sold-out="${item.is_sold_out ? "1" : "0"}"
           data-stock="${item.stock ?? ""}"
           data-stock-unit="${item.stock_unit || ""}"
@@ -1343,6 +1477,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 data-item="${itemName}"
                 data-item-id="${item.id}"
                 data-item-price="${item.price}"
+                data-sides="${sidesJson}"
                 data-sold-out="${item.is_sold_out ? "1" : "0"}"
                 data-stock="${item.stock ?? ""}"
                 data-stock-unit="${item.stock_unit || ""}"
@@ -1562,14 +1697,17 @@ document.addEventListener("DOMContentLoaded", () => {
       return state.checkout.inFlightPromise;
     }
 
+    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || "";
+
     const payload = {
       channel: "web",
       customer_name: name || null,
       customer_phone: phone || null,
       items: state.cart.map((item) => ({
-        menu_item_id: item.id,
-        quantity: item.qty,
-        price: item.price
+        menu_item_id: parseInt(item.id, 10),
+        quantity: parseInt(item.qty, 10),
+        price: parseFloat(item.price),
+        side_choice: item.sideChoice || null
       })),
       discount: 0,
       tax: 0,
@@ -1583,14 +1721,18 @@ document.addEventListener("DOMContentLoaded", () => {
     state.checkout.inFlightPromise = (async () => {
       const res = await fetch("/api/orders", {
         method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+          "X-CSRF-TOKEN": csrfToken
+        },
         body: JSON.stringify(payload),
         cache: "no-store"
       });
       if (!res.ok) {
         let message = `Order save failed (${res.status})`;
         try {
-          const data = await res.clone().json();
+          const data = await res.json();
           if (data?.errors) {
             message = Object.values(data.errors).flat().filter(Boolean).join(" ");
           } else if (data?.message) {
@@ -1673,34 +1815,46 @@ document.addEventListener("DOMContentLoaded", () => {
     const time = formData.get("time");
     const note = formData.get("note");
     const signature = buildCheckoutSignature({ name, phone, note, service, time });
-    const whatsappWindow = window.open("", "_blank");
+
+    const btn = form.querySelector("[data-whatsapp-btn]");
+    const originalText = btn ? btn.textContent : "";
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = "Opening WhatsApp...";
+    }
 
     state.checkout.inProgress = true;
     applyOrderAvailability();
+
+    let order = null;
     try {
-      await syncOrderAvailability();
       if (state.orderAvailability.is_open === false) {
-        if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
         alert(state.orderAvailability.message || "We are currently closed and not accepting orders.");
         openCartOverlay();
         return;
       }
 
-      const order = await createBackendOrder({ name, phone, note, service, time, signature });
+      // Try creating backend order record for staff
+      try {
+        order = await createBackendOrder({ name, phone, note, service, time, signature });
+      } catch (err) {
+        console.warn("Backend order creation error (proceeding to WhatsApp directly)", err);
+      }
+
+      // Build WhatsApp URL with full itemized details (+ order code/receipt if saved)
       const url = buildWhatsAppUrl({ name, phone, note, service, time, order });
-      if (whatsappWindow && !whatsappWindow.closed) {
-        whatsappWindow.location.href = url;
-      } else {
+
+      // Always direct customer to WhatsApp so order is never blocked
+      const win = window.open(url, "_blank");
+      if (!win) {
         window.location.href = url;
       }
-    } catch (e) {
-      console.warn("Could not create backend order", e);
-      if (whatsappWindow && !whatsappWindow.closed) whatsappWindow.close();
-      alert(e?.message || "We could not save your order for staff. Please try again.");
-      await syncOrderAvailability();
     } finally {
       state.checkout.inProgress = false;
       applyOrderAvailability();
+      if (btn && originalText) {
+        btn.textContent = originalText;
+      }
     }
   };
 

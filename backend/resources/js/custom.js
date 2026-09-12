@@ -196,42 +196,140 @@ function renderCart() {
   updateCartCount();
 }
 
+function promptSideChoice(name, sidesRaw, callback) {
+  let sides = [];
+  if (typeof sidesRaw === 'string') {
+    const txt = document.createElement('textarea');
+    txt.innerHTML = sidesRaw;
+    const decoded = txt.value;
+    try {
+      sides = JSON.parse(decoded);
+    } catch (e) {
+      sides = decoded.split(',').map(s => s.trim().replace(/^["'\[\]]+|["'\[\]]+$/g, '')).filter(Boolean);
+    }
+  } else if (Array.isArray(sidesRaw)) {
+    sides = sidesRaw;
+  }
+
+  if (!Array.isArray(sides) || !sides.length) {
+    sides = ['Rice', 'Yam', 'Plantain'];
+  }
+
+  const backdrop = document.createElement('div');
+  backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;backdrop-filter:blur(3px);';
+
+  const card = document.createElement('div');
+  card.style.cssText = 'background:#ffffff;border-radius:20px;padding:28px 24px;max-width:400px;width:100%;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);font-family:inherit;text-align:left;box-sizing:border-box;';
+
+  card.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+      <div>
+        <h3 style="margin:0;font-size:20px;font-weight:800;color:#111827;">Select Side Choice</h3>
+        <p style="margin:4px 0 0;font-size:14px;color:#6b7280;">For <strong>${name}</strong> (Included at no extra charge)</p>
+      </div>
+      <button type="button" class="af-side-cancel-btn" style="background:#f3f4f6;border:none;border-radius:50%;width:32px;height:32px;font-size:18px;color:#4b5563;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+    </div>
+    
+    <div style="margin:20px 0 24px;">
+      <label for="afSideSelectInput" style="display:block;font-size:13px;font-weight:700;color:#374151;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Choose your side dish:</label>
+      <select id="afSideSelectInput" style="width:100%;padding:14px 16px;border-radius:12px;border:2px solid #d1d5db;background:#fff;font-size:16px;font-weight:600;color:#111827;outline:none;cursor:pointer;box-sizing:border-box;">
+        <option value="" disabled selected>-- Select a Side Option --</option>
+        ${sides.map(s => `<option value="${s}">${s} (Included)</option>`).join('')}
+      </select>
+    </div>
+
+    <div style="display:flex;gap:12px;">
+      <button type="button" class="af-side-cancel-btn" style="flex:1;padding:12px;border-radius:12px;border:1px solid #d1d5db;background:#fff;font-size:15px;font-weight:600;color:#4b5563;cursor:pointer;">Cancel</button>
+      <button type="button" class="af-side-confirm-btn" style="flex:2;padding:12px;border-radius:12px;border:none;background:#f97316;font-size:15px;font-weight:700;color:#fff;cursor:pointer;opacity:0.5;pointer-events:none;" disabled>Add to Order</button>
+    </div>
+  `;
+
+  backdrop.appendChild(card);
+  document.body.appendChild(backdrop);
+
+  const selectEl = card.querySelector('#afSideSelectInput');
+  const confirmBtn = card.querySelector('.af-side-confirm-btn');
+
+  selectEl.addEventListener('change', () => {
+    if (selectEl.value) {
+      confirmBtn.style.opacity = '1';
+      confirmBtn.style.pointerEvents = 'auto';
+      confirmBtn.disabled = false;
+    }
+  });
+
+  confirmBtn.addEventListener('click', () => {
+    const chosenSide = selectEl.value;
+    if (chosenSide) {
+      document.body.removeChild(backdrop);
+      callback(chosenSide);
+    }
+  });
+
+  card.querySelectorAll('.af-side-cancel-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.body.removeChild(backdrop);
+    });
+  });
+}
+
 function addToCart(item) {
   if (!item?.id) {
     alert("Missing menu item ID; please refresh and try again.");
     return;
   }
-  const existing = cart.find((i) => i.id === item.id);
+  const displayName = item.sideChoice ? `${item.name} (${item.sideChoice})` : item.name;
+  const existing = cart.find((i) => i.id === item.id && (i.sideChoice || '') === (item.sideChoice || ''));
   if (existing) {
     existing.qty += 1;
   } else {
-    cart.push({ id: item.id, name: item.name, price: item.price || 0, qty: 1 });
+    cart.push({
+      id: item.id,
+      name: displayName,
+      rawName: item.name,
+      price: item.price || 0,
+      qty: 1,
+      sideChoice: item.sideChoice || null
+    });
   }
   renderCart();
 }
 
-// Attach to "Add to Cart" buttons (guarded against double-binding)
-document.querySelectorAll("[data-item]").forEach((btn) => {
-  if (btn.dataset.bound === "1") return;
-  btn.dataset.bound = "1";
-  btn.addEventListener("click", () => {
-    const name = btn.getAttribute("data-item");
-    const id = parseInt(btn.getAttribute("data-item-id"), 10);
-    const soldOut = btn.getAttribute("data-sold-out") === "1" || btn.disabled;
-    if (soldOut) return;
+// Attach to "Add to Cart" buttons via global event delegation
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("[data-item]");
+  if (!btn) return;
 
-    const priceEl = btn.closest("article")?.querySelector(".af-price");
-    const priceAttr = btn.getAttribute("data-item-price");
-    const parsedPrice = priceAttr
-      ? parseFloat(priceAttr)
-      : priceEl
-        ? parseInt(priceEl.textContent.replace(/[^\d]/g, ""), 10)
-        : 0;
-    const price = Number.isFinite(parsedPrice) ? parsedPrice : 0;
+  const name = btn.getAttribute("data-item") || btn.getAttribute("data-item-name");
+  const id = parseInt(btn.getAttribute("data-item-id"), 10);
+  const soldOut = btn.getAttribute("data-sold-out") === "1" || btn.disabled;
+  if (soldOut || !id) return;
 
+  const priceEl = btn.closest("article")?.querySelector(".af-price");
+  const priceAttr = btn.getAttribute("data-item-price");
+  const parsedPrice = priceAttr
+    ? parseFloat(priceAttr)
+    : priceEl
+      ? parseInt(priceEl.textContent.replace(/[^\d]/g, ""), 10)
+      : 0;
+  const price = Number.isFinite(parsedPrice) ? parsedPrice : 0;
+  let sidesRaw = btn.getAttribute("data-sides") || btn.closest("article")?.getAttribute("data-sides");
+  const lowerName = (name || '').toLowerCase();
+  if (!sidesRaw && (lowerName.includes('catfish') || (lowerName.includes('pepper') && lowerName.includes('soup')))) {
+    sidesRaw = '["Rice","Yam","Plantain"]';
+  }
+
+  if (sidesRaw) {
+    promptSideChoice(name, sidesRaw, (chosenSide) => {
+      if (chosenSide) {
+        addToCart({ id, name, price, sideChoice: chosenSide });
+        flyToCart(btn);
+      }
+    });
+  } else {
     addToCart({ id, name, price });
     flyToCart(btn);
-  });
+  }
 });
 
 // Cart quantity buttons

@@ -428,17 +428,112 @@
             renderTotals();
         }
 
-        function addToPosCart(item) {
-            const existing = posCart.find((i) => i.id === item.id);
+        function promptPosSideChoice(name, sidesRaw, callback) {
+            let sides = [];
+            if (typeof sidesRaw === 'string') {
+                const txt = document.createElement('textarea');
+                txt.innerHTML = sidesRaw;
+                const decoded = txt.value;
+                try {
+                    sides = JSON.parse(decoded);
+                } catch (e) {
+                    sides = decoded.split(',').map(s => s.trim().replace(/^["'\[\]]+|["'\[\]]+$/g, '')).filter(Boolean);
+                }
+            } else if (Array.isArray(sidesRaw)) {
+                sides = sidesRaw;
+            }
+
+            if (!Array.isArray(sides) || !sides.length) {
+                sides = ['Rice', 'Yam', 'Plantain'];
+            }
+
+            const backdrop = document.createElement('div');
+            backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;backdrop-filter:blur(3px);';
+
+            const card = document.createElement('div');
+            card.style.cssText = 'background:#ffffff;border-radius:20px;padding:28px 24px;max-width:400px;width:100%;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);font-family:inherit;text-align:left;box-sizing:border-box;color:#111827;';
+
+            card.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+                    <div>
+                        <h3 style="margin:0;font-size:20px;font-weight:800;color:#111827;">Select Side Choice</h3>
+                        <p style="margin:4px 0 0;font-size:14px;color:#6b7280;">For <strong>${name}</strong> (Included at no extra charge)</p>
+                    </div>
+                    <button type="button" class="af-pos-side-cancel" style="background:#f3f4f6;border:none;border-radius:50%;width:32px;height:32px;font-size:18px;color:#4b5563;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+                </div>
+                
+                <div style="margin:20px 0 24px;">
+                    <label for="afPosSideSelectInput" style="display:block;font-size:13px;font-weight:700;color:#374151;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Choose your side dish:</label>
+                    <select id="afPosSideSelectInput" style="width:100%;padding:14px 16px;border-radius:12px;border:2px solid #d1d5db;background:#fff;font-size:16px;font-weight:600;color:#111827;outline:none;cursor:pointer;box-sizing:border-box;">
+                        <option value="" disabled selected>-- Select a Side Option --</option>
+                        ${sides.map(s => `<option value="${s}">${s} (Included)</option>`).join('')}
+                    </select>
+                </div>
+
+                <div style="display:flex;gap:12px;">
+                    <button type="button" class="af-pos-side-cancel" style="flex:1;padding:12px;border-radius:12px;border:1px solid #d1d5db;background:#fff;font-size:15px;font-weight:600;color:#4b5563;cursor:pointer;">Cancel</button>
+                    <button type="button" class="af-pos-side-confirm" style="flex:2;padding:12px;border-radius:12px;border:none;background:#f97316;font-size:15px;font-weight:700;color:#fff;cursor:pointer;opacity:0.5;pointer-events:none;" disabled>Add to Order</button>
+                </div>
+            `;
+
+            backdrop.appendChild(card);
+            document.body.appendChild(backdrop);
+
+            const selectEl = card.querySelector('#afPosSideSelectInput');
+            const confirmBtn = card.querySelector('.af-pos-side-confirm');
+
+            selectEl.addEventListener('change', () => {
+                if (selectEl.value) {
+                    confirmBtn.style.opacity = '1';
+                    confirmBtn.style.pointerEvents = 'auto';
+                    confirmBtn.disabled = false;
+                }
+            });
+
+            confirmBtn.addEventListener('click', () => {
+                const chosenSide = selectEl.value;
+                if (chosenSide) {
+                    document.body.removeChild(backdrop);
+                    callback(chosenSide);
+                }
+            });
+
+            card.querySelectorAll('.af-pos-side-cancel').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.body.removeChild(backdrop);
+                });
+            });
+        }
+
+        function addToPosCart(item, chosenSide = null) {
+            let sides = item.sides;
+            const lowerName = (item.name || '').toLowerCase();
+            if (!sides && (lowerName.includes('catfish') || (lowerName.includes('pepper') && lowerName.includes('soup')))) {
+                sides = ['Rice', 'Yam', 'Plantain'];
+            }
+
+            if (sides && (!Array.isArray(sides) || sides.length > 0) && !chosenSide) {
+                promptPosSideChoice(item.name, sides, (side) => {
+                    if (side) {
+                        addToPosCart(item, side);
+                    }
+                });
+                return;
+            }
+
+            const displayName = chosenSide ? `${item.name} (${chosenSide})` : item.name;
+            const existing = posCart.find((i) => i.id === item.id && (i.sideChoice || '') === (chosenSide || ''));
             if (existing) {
                 existing.qty += 1;
             } else {
                 posCart.push({
                     id: item.id,
-                    name: item.name,
+                    name: displayName,
+                    rawName: item.name,
                     price: Number(item.price) || 0,
                     barcode: item.barcode,
                     qty: 1,
+                    sideChoice: chosenSide || null,
                 });
             }
             renderPosCart();
@@ -627,6 +722,7 @@
                     menu_item_id: item.id,
                     quantity: item.qty,
                     price: item.price,
+                    side_choice: item.sideChoice || null,
                 })),
                 payment: {
                     amount: computeGrandTotal(),

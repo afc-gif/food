@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\BusinessHoursController;
+use App\Http\Controllers\Api\ExpenseController;
 use App\Http\Controllers\Api\MenuItemController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\StoreInventoryController;
@@ -15,7 +16,7 @@ Route::get('/categories', [CategoryController::class, 'index']);
 Route::get('/menu-items', [MenuItemController::class, 'index']);
 Route::get('/menu-items/lookup', [MenuItemController::class, 'lookup']);
 Route::get('/order-availability', [BusinessHoursController::class, 'show']);
-Route::post('/orders', [OrderController::class, 'store'])->middleware('throttle:15,1');
+Route::post('/orders', [OrderController::class, 'store']);
 
 Route::middleware(['web', 'auth', 'active', 'role:admin'])->group(function () {
     Route::post('/categories', [CategoryController::class, 'store']);
@@ -38,9 +39,15 @@ Route::middleware(['web', 'auth', 'active', 'role:admin'])->group(function () {
 
 Route::middleware(['web', 'auth', 'active', 'role:admin|manager'])->group(function () {
     Route::post('/menu-items/{menuItem}/toggle-sold-out', [MenuItemController::class, 'toggleSoldOut']);
+    Route::put('/menu-items/{menuItem}/stock', [MenuItemController::class, 'updateStock']);
+    Route::get('/inventory-adjustments', [MenuItemController::class, 'adjustments']);
     Route::put('/order-availability', [BusinessHoursController::class, 'update']);
     Route::get('/manager/orders', [OrderController::class, 'managerOrders']);
     Route::get('/manager/summary', [OrderController::class, 'managerSummary']);
+
+    Route::get('/expenses', [ExpenseController::class, 'index']);
+    Route::post('/expenses', [ExpenseController::class, 'store']);
+    Route::delete('/expenses/{expense}', [ExpenseController::class, 'destroy']);
 });
 
 Route::middleware(['web', 'auth', 'active', 'role:admin|manager|pos|kitchen|staff'])->group(function () {
@@ -49,6 +56,7 @@ Route::middleware(['web', 'auth', 'active', 'role:admin|manager|pos|kitchen|staf
     Route::post('/orders/{order}/send-to-kitchen', [OrderController::class, 'sendToKitchen']);
     Route::post('/orders/{order}/kitchen-status', [OrderController::class, 'updateKitchenStatus']);
     Route::post('/orders/{order}/approve', [OrderController::class, 'approve']);
+    Route::post('/orders/{order}/status', [OrderController::class, 'updateStatus']);
 });
 
 Route::middleware(['web', 'auth', 'active', 'role:admin|staff'])->group(function () {

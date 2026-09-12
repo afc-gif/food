@@ -80,7 +80,7 @@ class StoreInventoryController extends Controller
                 'store_item_id'   => $item->id,
                 'quantity_change' => $item->quantity,
                 'reason'          => 'Initial stock',
-                'adjusted_by'     => $request->user()->email ?? 'system',
+                'adjusted_by'     => $request->user()?->email ?? 'system',
             ]);
         }
 
@@ -133,7 +133,7 @@ class StoreInventoryController extends Controller
             'store_item_id'   => $storeItem->id,
             'quantity_change' => $data['quantity_change'],
             'reason'          => $data['reason'] ?? null,
-            'adjusted_by'     => $request->user()->email ?? 'system',
+            'adjusted_by'     => $request->user()?->email ?? 'system',
         ]);
 
         return response()->json($storeItem->fresh()->load('category'));

@@ -48,6 +48,7 @@ class MenuItemController extends Controller
             'name' => 'required|string|max:255',
             'barcode' => 'nullable|string|max:32|unique:menu_items,barcode',
             'description' => 'nullable|string',
+            'sides' => 'nullable',
             'price' => 'required|numeric|min:0',
             'is_sold_out' => 'boolean',
             'stock' => 'nullable|integer|min:0',
@@ -57,6 +58,17 @@ class MenuItemController extends Controller
             'is_active' => 'boolean',
             'sort_order' => 'integer|min:0',
         ]);
+
+        if (isset($data['sides'])) {
+            if (is_string($data['sides'])) {
+                $decoded = json_decode($data['sides'], true);
+                if (is_array($decoded)) {
+                    $data['sides'] = $decoded;
+                } else {
+                    $data['sides'] = array_values(array_filter(array_map('trim', explode(',', $data['sides']))));
+                }
+            }
+        }
 
         if ($request->hasFile('image')) {
             try {
@@ -81,7 +93,7 @@ class MenuItemController extends Controller
         PriceHistory::create([
             'menu_item_id' => $item->id,
             'price' => $item->price,
-            'changed_by' => $request->user()->email ?? 'system',
+            'changed_by' => $request->user()?->email ?? 'system',
         ]);
 
         $item->load('category');
@@ -97,6 +109,7 @@ class MenuItemController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'barcode' => 'nullable|string|max:32|unique:menu_items,barcode,' . $menuItem->id,
             'description' => 'nullable|string',
+            'sides' => 'nullable',
             'price' => 'nullable|numeric|min:0',
             'is_sold_out' => 'boolean',
             'stock' => 'nullable|integer|min:0',
@@ -106,6 +119,17 @@ class MenuItemController extends Controller
             'is_active' => 'boolean',
             'sort_order' => 'integer|min:0',
         ]);
+
+        if (array_key_exists('sides', $data)) {
+            if (is_string($data['sides'])) {
+                $decoded = json_decode($data['sides'], true);
+                if (is_array($decoded)) {
+                    $data['sides'] = $decoded;
+                } else {
+                    $data['sides'] = array_values(array_filter(array_map('trim', explode(',', $data['sides']))));
+                }
+            }
+        }
 
         // Ensure every item keeps a barcode even if the incoming payload omitted it.
         if (empty($data['barcode']) && empty($menuItem->barcode)) {
@@ -140,7 +164,7 @@ class MenuItemController extends Controller
             PriceHistory::create([
                 'menu_item_id' => $menuItem->id,
                 'price' => $menuItem->price,
-                'changed_by' => $request->user()->email ?? 'system',
+                'changed_by' => $request->user()?->email ?? 'system',
             ]);
         }
 
@@ -181,6 +205,55 @@ class MenuItemController extends Controller
         }
 
         return response()->json($item);
+    }
+
+    public function updateStock(Request $request, MenuItem $menuItem)
+    {
+        $data = $request->validate([
+            'stock' => 'required|integer|min:0',
+            'stock_unit' => 'nullable|string|max:50',
+        ]);
+
+        $oldStock = $menuItem->stock ?? 0;
+        $newStock = (int) $data['stock'];
+        $diff = $newStock - $oldStock;
+
+        $menuItem->stock = $newStock;
+        if (array_key_exists('stock_unit', $data)) {
+            $menuItem->stock_unit = $data['stock_unit'];
+        }
+
+        if ($newStock === 0) {
+            $menuItem->is_sold_out = true;
+        } elseif ($oldStock === 0 && $newStock > 0) {
+            $menuItem->is_sold_out = false;
+        }
+
+        $menuItem->save();
+
+        if ($diff !== 0) {
+            \App\Models\InventoryAdjustment::create([
+                'menu_item_id' => $menuItem->id,
+                'quantity_change' => $diff,
+                'reason' => $diff > 0 ? 'restock' : 'manual_adjustment',
+                'changed_by' => $request->user()?->email ?? 'admin',
+            ]);
+        }
+
+        $menuItem->refresh()->load('category');
+        $this->broadcastMenuItem($menuItem);
+
+        return response()->json($menuItem);
+    }
+
+    public function adjustments(Request $request)
+    {
+        $adjustments = \App\Models\InventoryAdjustment::with(['menuItem.category'])
+            ->orderByDesc('created_at')
+            ->limit(250)
+            ->get();
+
+        return response()->json($adjustments);
     }
 
     public function toggleSoldOut(MenuItem $menuItem)

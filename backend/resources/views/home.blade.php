@@ -11,6 +11,7 @@
   <meta name="keywords" content="cafe, fresh food, restaurant, online ordering, menu, food delivery, Acie Fraiche" />
   <meta name="author" content="Acie Fraiche Cafe" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="csrf-token" content="{{ csrf_token() }}" />
 
   <!-- Open Graph / Facebook -->
   <meta property="og:type" content="website" />
@@ -214,6 +215,7 @@
                     data-item-price="{{ $item->price }}"
                     data-description="{{ e($item->description ?? '') }}"
                     data-image-url="{{ e($item->image_url ?? '') }}"
+                    data-sides="{{ !empty($item->sides) ? json_encode($item->sides) : '' }}"
                     data-sold-out="{{ $isSoldOut ? '1' : '0' }}"
                     data-stock="{{ $item->stock ?? '' }}"
                     data-stock-unit="{{ $item->stock_unit ?? '' }}"
@@ -244,6 +246,7 @@
                           data-item="{{ $item->name }}"
                           data-item-id="{{ $item->id }}"
                           data-item-price="{{ $item->price }}"
+                          data-sides="{{ !empty($item->sides) ? json_encode($item->sides) : '' }}"
                           data-sold-out="{{ $isSoldOut ? '1' : '0' }}"
                           data-stock="{{ $item->stock ?? '' }}"
                           data-stock-unit="{{ $item->stock_unit ?? '' }}"

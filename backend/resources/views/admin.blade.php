@@ -144,7 +144,9 @@
         .menu-pill.active { border-color:#bbf7d0; color:#166534; background:#f0fdf4; }
         .menu-meta { font-size:13px; color: rgba(0,0,0,0.7); }
         .menu-actions { display:flex; gap:6px; flex-wrap:wrap; }
+        .admin-expenses-grid { display: grid; gap: 20px; grid-template-columns: 320px 1fr; align-items: start; margin-top: 20px; }
         @media (max-width: 960px) {
+            .admin-expenses-grid { grid-template-columns: 1fr; }
             body { grid-template-columns: 1fr; }
             .sidebar { position: fixed; left: 0; top: 0; width: 260px; transform: translateX(-110%); z-index: 20; }
             .sidebar.open { transform: translateX(0); }
@@ -166,11 +168,13 @@
             <button class="nav-btn active" data-tab="overview"><span class="nav-label">Overview</span></button>
             <button class="nav-btn" data-tab="categories"><span class="nav-label">Categories</span></button>
             <button class="nav-btn" data-tab="menu"><span class="nav-label">Menu</span></button>
+            <button class="nav-btn" data-tab="stock"><span class="nav-label">📦 Stock Tracker</span></button>
             <button class="nav-btn" data-tab="users"><span class="nav-label">Users</span></button>
             <button class="nav-btn" data-tab="orders"><span class="nav-label">Orders</span></button>
             <button class="nav-btn" data-tab="pos"><span class="nav-label">POS</span></button>
             <button class="nav-btn" data-tab="health"><span class="nav-label">Health</span></button>
             <button class="nav-btn" data-tab="site"><span class="nav-label">Public Site</span></button>
+            <button class="nav-btn" data-tab="expenses"><span class="nav-label">💸 Expenses Log</span></button>
             <a href="{{ route('manager') }}" class="nav-btn" target="_blank" style="text-decoration:none;"><span class="nav-label">📊 Manager Panel</span></a>
             <a href="{{ route('inventory') }}" class="nav-btn" target="_blank" style="text-decoration:none;"><span class="nav-label">📦 Store Inventory</span></a>
         </nav>
@@ -295,6 +299,8 @@
                             <input name="name" placeholder="Item name" required />
                             <label>Description</label>
                             <textarea name="description" rows="2" placeholder="Optional"></textarea>
+                            <label>Side Options (comma-separated)</label>
+                            <input name="sides" placeholder="e.g. Rice, Yam, Plantain" />
                             <label>Price (NGN)</label>
                             <input name="price" type="number" step="0.01" min="0" required />
                             <label>Stock Count</label>
@@ -312,6 +318,68 @@
                                 <button class="btn-ghost" type="button" id="menuCancelEditBtn" style="display:none;">Cancel</button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel" data-section="stock">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+                        <div>
+                            <h2>📦 Stock Tracker & Order Deductions</h2>
+                            <p class="muted">Monitor live dish stock counts, edit item inventory, and view real-time deductions from placed orders.</p>
+                        </div>
+                        <button class="btn-ghost" type="button" id="btnRefreshStock" style="padding:6px 14px;">⟳ Refresh Stock Data</button>
+                    </div>
+
+                    <div style="display:grid; gap:16px; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); margin-top:16px;">
+                        <!-- Stock Levels & Quick Edit -->
+                        <div style="border:1px solid var(--af-line); border-radius:14px; padding:16px; background:#fff;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                                <h3 style="margin:0;">Current Dish Stock</h3>
+                                <input type="text" id="stockFilterInput" placeholder="🔍 Search dish..." style="padding:6px 12px; border-radius:10px; border:1px solid var(--af-line); font-size:12px;" />
+                            </div>
+                            <div style="overflow:auto; max-height:480px;">
+                                <table id="stockTable" style="margin:0;">
+                                    <thead>
+                                        <tr>
+                                            <th>Item Name</th>
+                                            <th>Stock</th>
+                                            <th>Unit</th>
+                                            <th>Status</th>
+                                            <th>Update Stock</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="stockTableBody">
+                                        <tr><td colspan="5" class="muted">Loading stock items...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Stock Reduction History Log -->
+                        <div style="border:1px solid var(--af-line); border-radius:14px; padding:16px; background:#fff;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                                <h3 style="margin:0;">📉 Order Deductions & History Log</h3>
+                                <span class="muted" style="font-size:12px;">Real-time stock audit history</span>
+                            </div>
+                            <div style="overflow:auto; max-height:480px;">
+                                <table id="stockHistoryTable" style="margin:0;">
+                                    <thead>
+                                        <tr>
+                                            <th>Time</th>
+                                            <th>Dish / Item</th>
+                                            <th>Deduction / Change</th>
+                                            <th>Reason</th>
+                                            <th>Source</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="stockHistoryTableBody">
+                                        <tr><td colspan="5" class="muted">Loading deduction history...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -396,6 +464,18 @@
                         <div id="ordersBreakdownList" style="display:grid; gap:0; margin-top:10px; max-height:260px; overflow:auto;"></div>
                     </div>
 
+                    <div style="border:1px solid var(--af-line); border-radius:12px; padding:12px; background:#fff; margin-top:12px;">
+                        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;">
+                            <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap;">
+                                <strong style="color:var(--af-brown);">📅 Select Date:</strong>
+                                <input type="date" id="orderFilterDate" style="padding:6px 12px; border-radius:10px; border:1px solid var(--af-line); font-family:inherit; font-size:13px; outline:none;" />
+                                <button class="btn-ghost" id="btnTodayOrders" type="button" style="padding:6px 12px; font-size:12px;">Today</button>
+                                <button class="btn-ghost" id="btnClearDateOrders" type="button" style="padding:6px 12px; font-size:12px;">All Orders</button>
+                            </div>
+                            <div id="orderDateFilterBanner" class="muted" style="font-size:13px; font-weight:700; color:var(--af-brown);">Showing latest orders</div>
+                        </div>
+                    </div>
+
                     <div class="frame-wrap" style="margin-top:12px; border-color:var(--af-line); box-shadow:none;">
                         <div style="overflow:auto; max-height:420px;">
                             <table id="ordersTable" style="margin:0;">
@@ -403,6 +483,7 @@
                                     <tr>
                                         <th>Code</th>
                                         <th>Seller</th>
+                                        <th>Items Ordered</th>
                                         <th>Status</th>
                                         <th>Total</th>
                                         <th>Channel</th>
@@ -414,6 +495,130 @@
                                 </thead>
                                 <tbody></tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="panel" data-section="expenses">
+                <div class="card">
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; flex-wrap:wrap;">
+                        <div>
+                            <h2 style="margin:0 0 4px;">💸 Expenses Log & Management</h2>
+                            <p class="muted" style="margin:0;">Track all store & operating expenses ever recorded, log new costs, and review daily expenditure.</p>
+                        </div>
+                        <button class="btn-ghost" type="button" id="btnRefreshAdminExpenses" style="padding:6px 14px;">⟳ Refresh Expenses</button>
+                    </div>
+
+                    <!-- Summary Stats Cards -->
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:10px; margin-top:14px;">
+                        <div class="stat" style="margin:0; box-shadow:none; border-color:var(--af-line);">
+                            <h3 id="adminExpenseTotalAll">₦0</h3><span>All-Time Expenses</span>
+                        </div>
+                        <div class="stat" style="margin:0; box-shadow:none; border-color:var(--af-line);">
+                            <h3 id="adminExpenseTotalToday">₦0</h3><span>Expenses Today</span>
+                        </div>
+                        <div class="stat" style="margin:0; box-shadow:none; border-color:var(--af-line);">
+                            <h3 id="adminExpenseTotalMonth">₦0</h3><span>Expenses This Month</span>
+                        </div>
+                        <div class="stat" style="margin:0; box-shadow:none; border-color:var(--af-line);">
+                            <h3 id="adminExpenseCount">0</h3><span>Total Records</span>
+                        </div>
+                    </div>
+
+                    <div class="admin-expenses-grid">
+                        <!-- Record Expense Form -->
+                        <div style="border:1px solid var(--af-line); border-radius:14px; padding:16px; background:#fff;">
+                            <h3 style="margin:0 0 12px 0; color:var(--af-brown);">+ Log New Expense</h3>
+                            <form id="adminExpenseForm" style="display:grid; gap:12px;">
+                                <div>
+                                    <label style="font-size:12px; font-weight:700; display:block; margin-bottom:4px;">Title / Item Description *</label>
+                                    <input type="text" name="title" required placeholder="e.g. Cooking Gas 50kg, Generator Diesel" style="width:100%; padding:9px 12px; border-radius:10px; border:1px solid var(--af-line); font:inherit; font-size:13px; box-sizing:border-box;" />
+                                </div>
+
+                                <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:8px;">
+                                    <div>
+                                        <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Qty</label>
+                                        <input type="number" id="adminQty" name="quantity" step="any" min="0" placeholder="e.g. 5" style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid var(--af-line); font:inherit; font-size:13px; box-sizing:border-box;" />
+                                    </div>
+                                    <div>
+                                        <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Unit</label>
+                                        <select id="adminUnit" name="unit" style="width:100%; padding:8px 6px; border-radius:10px; border:1px solid var(--af-line); font:inherit; font-size:12px; box-sizing:border-box;">
+                                            <option value="">— Select —</option>
+                                            <option value="kg">kg (Kilograms)</option>
+                                            <option value="pcs">pieces (pcs)</option>
+                                            <option value="cups">cups</option>
+                                            <option value="bags">bags</option>
+                                            <option value="litres">litres (L)</option>
+                                            <option value="crates">crates</option>
+                                            <option value="cartons">cartons</option>
+                                            <option value="packs">packs</option>
+                                            <option value="bottles">bottles</option>
+                                            <option value="units">units</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="font-size:11px; font-weight:700; display:block; margin-bottom:4px;">Price/Unit (₦)</label>
+                                        <input type="number" id="adminUnitPrice" name="price_per_unit" step="any" min="0" placeholder="e.g. 1000" style="width:100%; padding:8px 10px; border-radius:10px; border:1px solid var(--af-line); font:inherit; font-size:13px; box-sizing:border-box;" />
+                                    </div>
+                                </div>
+
+                                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                                    <div>
+                                        <label style="font-size:12px; font-weight:700; display:block; margin-bottom:4px;">Total Amount (₦) *</label>
+                                        <input type="number" id="adminTotalAmount" name="amount" step="0.01" min="0.01" required placeholder="12500" style="width:100%; padding:9px 12px; border-radius:10px; border:1px solid var(--af-line); font:inherit; font-size:13px; font-weight:700; color:var(--af-brown); background:#fff; box-sizing:border-box;" />
+                                    </div>
+                                    <div>
+                                        <label style="font-size:12px; font-weight:700; display:block; margin-bottom:4px;">Category</label>
+                                        <select name="category" style="width:100%; padding:9px 12px; border-radius:10px; border:1px solid var(--af-line); font:inherit; font-size:13px; box-sizing:border-box;">
+                                            <option value="Supplies">Supplies & Ingredients</option>
+                                            <option value="Utilities">Utilities & Power</option>
+                                            <option value="Logistics">Logistics & Transport</option>
+                                            <option value="Staff">Staff / Welfare</option>
+                                            <option value="General" selected>General</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label style="font-size:12px; font-weight:700; display:block; margin-bottom:4px;">Expense Date</label>
+                                    <input type="date" name="expense_date" value="{{ date('Y-m-d') }}" style="width:100%; padding:9px 12px; border-radius:10px; border:1px solid var(--af-line); font:inherit; font-size:13px; box-sizing:border-box;" />
+                                </div>
+                                <div>
+                                    <label style="font-size:12px; font-weight:700; display:block; margin-bottom:4px;">Buyer / Person Who Purchased</label>
+                                    <input type="text" name="buyer_name" placeholder="e.g. Amaka, Emeka, Market runner" style="width:100%; padding:9px 12px; border-radius:10px; border:1px solid var(--af-line); font:inherit; font-size:13px; box-sizing:border-box;" />
+                                </div>
+                                <div>
+                                    <label style="font-size:12px; font-weight:700; display:block; margin-bottom:4px;">Note / Receipt Info (Optional)</label>
+                                    <input type="text" name="note" placeholder="Receipt no., vendor, details" style="width:100%; padding:9px 12px; border-radius:10px; border:1px solid var(--af-line); font:inherit; font-size:13px; box-sizing:border-box;" />
+                                </div>
+                                <button class="btn-primary" type="submit" style="width:100%; margin-top:4px;">Save Expense</button>
+                            </form>
+                        </div>
+
+                        <!-- All Expenses Table -->
+                        <div style="border:1px solid var(--af-line); border-radius:14px; padding:16px; background:#fff;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+                                <h3 style="margin:0;">Expenses Records History</h3>
+                                <input type="text" id="adminExpenseSearch" placeholder="🔍 Search title or notes..." style="padding:6px 12px; border-radius:10px; border:1px solid var(--af-line); font-size:12px;" />
+                            </div>
+                            <div style="overflow:auto; max-height:480px;">
+                                <table id="adminExpensesTable" style="margin:0;">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Title</th>
+                                            <th>Category</th>
+                                            <th>Buyer</th>
+                                            <th>Amount</th>
+                                            <th>Logged By</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="adminExpensesTableBody">
+                                        <tr><td colspan="7" class="muted">Loading expenses history...</td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -793,6 +998,12 @@
         function switchTab(tab) {
             navBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
             panels.forEach(p => p.classList.toggle('active', p.dataset.section === tab));
+            if (tab === 'stock') {
+                loadStockTracker();
+            }
+            if (tab === 'expenses') {
+                loadAdminExpenses();
+            }
             if (window.innerWidth <= 960) {
                 sidebar.classList.remove('open');
                 toggleSidebar.setAttribute('aria-expanded', 'false');
@@ -875,6 +1086,7 @@
                                     <div class="menu-tags">
                                         <span class="menu-pill">₦${Number(item.price).toLocaleString()}</span>
                                         <span class="menu-pill">${item.category && item.category.name ? escapeAttr(item.category.name) : 'Uncategorized'}</span>
+                                        ${item.sides && Array.isArray(item.sides) && item.sides.length ? `<span class="menu-pill" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;">Sides: ${escapeAttr(item.sides.join(', '))}</span>` : ''}
                                         <span class="menu-pill">${item.stock === null || item.stock === undefined ? 'Stock not tracked' : `${Number(item.stock).toLocaleString()} ${formatStockUnit(item.stock, item.stock_unit)} left`}</span>
                                         <span class="menu-pill ${item.is_sold_out ? 'sold' : 'active'}">${item.is_sold_out ? 'Sold Out' : 'Available'}</span>
                                     </div>
@@ -917,6 +1129,7 @@
             menuEditId.value = item.id;
             menuForm.elements.name.value = item.name || '';
             menuForm.elements.description.value = item.description || '';
+            menuForm.elements.sides.value = item.sides && Array.isArray(item.sides) ? item.sides.join(', ') : (item.sides || '');
             menuForm.elements.price.value = item.price ?? '';
             menuForm.elements.stock.value = item.stock ?? '';
             menuForm.elements.stock_unit.value = item.stock_unit || '';
@@ -954,19 +1167,47 @@
             });
         }
 
+        function renderOrderStatus(status) {
+            const map = {
+                completed: '<span class="pill" style="background:#dcfce7; color:#166534; border:1px solid #bbf7d0; font-weight:700;">Completed</span>',
+                cancelled: '<span class="pill" style="background:#fee2e2; color:#991b1b; border:1px solid #fca5a5; font-weight:700;">Cancelled</span>',
+                paid:      '<span class="pill" style="background:#dbeafe; color:#1d4ed8; border:1px solid #93c5fd; font-weight:700;">Paid</span>',
+                pending:   '<span class="pill" style="background:#fef3c7; color:#b45309; border:1px solid #fcd34d; font-weight:700;">Pending</span>',
+            };
+            return map[status] || `<span class="pill">${status}</span>`;
+        }
+
+        function renderOrderItems(order) {
+            const items = order.items || [];
+            if (!items.length) {
+                return '<span class="muted">—</span>';
+            }
+            return items.map(i => {
+                const qty = i.quantity || 1;
+                const name = i.name || i.menu_item?.name || i.item_name || 'Item';
+                return `<div style="font-size:12px; line-height:1.3; margin-bottom:3px;">
+                    <span class="pill" style="padding:1px 5px; font-weight:800; font-size:10px; background:var(--af-brown); color:#fff;">${qty}x</span>
+                    <strong style="color:var(--af-ink);">${escapeAttr(name)}</strong>
+                </div>`;
+            }).join('');
+        }
+
         function renderOrders(orders) {
             ordersCache = orders;
             let revenue = 0;
             ordersTableBody.innerHTML = orders.map(o => {
-                revenue += Number(o.total || 0);
+                if (o.status !== 'cancelled') revenue += Number(o.total || 0);
                 const kitchenBadge = renderKitchenStatus(o.kitchen_status);
+                const statusBadge = renderOrderStatus(o.status);
                 const etaText = renderEta(o);
+                const itemsList = renderOrderItems(o);
                 return `
-                    <tr>
-                        <td>${o.code}</td>
-                        <td>${o.creator && o.creator.name ? o.creator.name : '—'}</td>
-                        <td>${o.status}</td>
-                        <td>₦${Number(o.total).toLocaleString()}</td>
+                    <tr style="${o.status === 'cancelled' ? 'opacity:0.65; background:#fff8f8;' : o.status === 'completed' ? 'background:#f0fdf4;' : ''}">
+                        <td><strong>${o.code}</strong></td>
+                        <td>${o.creator && o.creator.name ? escapeAttr(o.creator.name) : '—'}</td>
+                        <td style="max-width:240px; min-width:130px;">${itemsList}</td>
+                        <td>${statusBadge}</td>
+                        <td><strong>₦${Number(o.total).toLocaleString()}</strong></td>
                         <td>${o.channel}</td>
                         <td>${kitchenBadge}</td>
                         <td>${etaText}</td>
@@ -976,10 +1217,10 @@
                                 <button class="btn-ghost" onclick="setKitchenEta(${o.id}, 15, this)">ETA 15m</button>
                                 <button class="btn-ghost" onclick="setKitchenStatus(${o.id}, 'ready', this)">Ready</button>
                                 <button class="btn-ghost" onclick="shareOrderWhatsapp(${o.id})">WhatsApp</button>
-                                ${o.status === 'pending' ? `<button class="btn-ghost" onclick="deletePendingOrder(${o.id}, this)">Delete</button>` : ''}
+                                <button class="btn-ghost" style="color:#dc2626;" onclick="deleteOrder(${o.id}, this)">Delete</button>
                             </div>
                         </td>
-                        <td>${new Date(o.created_at).toLocaleString()}</td>
+                        <td style="font-size:12px; white-space:nowrap;">${new Date(o.created_at).toLocaleString([], { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}</td>
                     </tr>
                 `;
             }).join('');
@@ -1038,24 +1279,30 @@
             });
         };
 
-        window.deletePendingOrder = async (id, btn) => {
+        window.deleteOrder = async (id, btn) => {
             const order = ordersCache.find(o => o.id === id);
-            const label = order?.code ? `order ${order.code}` : 'this pending order';
-            if (!confirm(`Delete ${label}? This can only be done before approval and cannot be undone.`)) {
+            const label = order?.code ? `order ${order.code} (${order.status})` : 'this order';
+            if (!confirm(`Are you sure you want to delete ${label}? This action cannot be undone.`)) {
                 return;
             }
 
             const originalText = btn?.textContent;
             if (btn) btn.textContent = 'Deleting...';
             await runAction(btn, async () => {
-                await safeRequest(`/api/orders/${id}`, { method: 'DELETE' });
-                ordersCache = ordersCache.filter(o => o.id !== id);
-                renderOrders(ordersCache);
-                await loadOrderSummary();
-                toast(`${order?.code || 'Order'} deleted.`);
+                const res = await safeRequest(`/api/orders/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    ordersCache = ordersCache.filter(o => o.id !== id);
+                    renderOrders(ordersCache);
+                    await loadOrderSummary();
+                    toast(`${order?.code || 'Order'} deleted.`);
+                } else {
+                    const data = await res.json().catch(() => ({}));
+                    toast(data.message || 'Failed to delete order.', true);
+                }
             });
             if (btn && originalText) btn.textContent = originalText;
         };
+        window.deletePendingOrder = window.deleteOrder;
 
         window.shareOrderWhatsapp = (id) => {
             const order = ordersCache.find(o => o.id === id);
@@ -1135,13 +1382,17 @@
             ordersBreakdownList.innerHTML = rows.map(row => {
                 const label = row.label || row.day || row.week || row.month || '—';
                 const orders = Number(row.orders || 0).toLocaleString();
+                const rawDay = row.day || '';
+                const isDaily = activeOrderBreakdown === 'daily' && rawDay;
+
                 return `
-                    <div style="display:grid; grid-template-columns: minmax(0, 1fr) auto; gap:10px; align-items:center; font-size:13px; padding:8px 0; border-bottom:1px solid var(--af-line);">
+                    <div style="display:grid; grid-template-columns: minmax(0, 1fr) auto auto; gap:10px; align-items:center; font-size:13px; padding:8px 0; border-bottom:1px solid var(--af-line);">
                         <div>
                             <strong>${label}</strong>
                             <div class="muted">${orders} orders</div>
                         </div>
-                        <strong>${currency(row.revenue)}</strong>
+                        <strong style="color:var(--af-brown);">${currency(row.revenue)}</strong>
+                        ${isDaily ? `<button class="btn-ghost" type="button" style="padding:4px 10px; font-size:11px; margin-left:6px;" onclick="selectOrderDate('${rawDay}')">View Orders</button>` : ''}
                     </div>
                 `;
             }).join('');
@@ -1195,12 +1446,27 @@
             }
         }
 
-        async function loadOrders() {
+        async function loadOrders(dateParam = null) {
             try {
-                const res = await safeRequest('/api/orders');
+                const dateInput = document.getElementById('orderFilterDate');
+                const selectedDate = dateParam !== null ? dateParam : (dateInput ? dateInput.value : '');
+                const url = selectedDate ? `/api/orders?date=${selectedDate}&all=1` : '/api/orders';
+
+                const res = await safeRequest(url);
                 const payload = await res.json();
                 const data = payload.data || payload; // paginate or flat
                 renderOrders(data);
+
+                const banner = document.getElementById('orderDateFilterBanner');
+                if (banner) {
+                    if (selectedDate) {
+                        const totalRev = data.reduce((sum, o) => sum + Number(o.total || 0), 0);
+                        banner.innerHTML = `Showing <strong>${data.length} orders</strong> for <strong>${selectedDate}</strong> (Total: ${currency(totalRev)})`;
+                    } else {
+                        banner.innerHTML = `Showing latest orders (${data.length} total)`;
+                    }
+                }
+
                 if (!lastSummary) {
                     const fallbackRev = data.reduce((sum, o) => sum + Number(o.total || 0), 0);
                     statOrders.textContent = data.length;
@@ -1210,6 +1476,293 @@
                 console.error(e);
                 ordersTableBody.innerHTML = '<tr><td colspan="9">Could not load orders.</td></tr>';
             }
+        }
+
+        window.selectOrderDate = (dateStr) => {
+            const input = document.getElementById('orderFilterDate');
+            if (input) input.value = dateStr;
+            loadOrders(dateStr);
+        };
+
+        const orderFilterDate = document.getElementById('orderFilterDate');
+        const btnTodayOrders = document.getElementById('btnTodayOrders');
+        const btnClearDateOrders = document.getElementById('btnClearDateOrders');
+
+        if (orderFilterDate) {
+            orderFilterDate.addEventListener('change', () => {
+                loadOrders(orderFilterDate.value);
+            });
+        }
+
+        if (btnTodayOrders) {
+            btnTodayOrders.addEventListener('click', () => {
+                const today = new Date().toISOString().split('T')[0];
+                if (orderFilterDate) orderFilterDate.value = today;
+                loadOrders(today);
+            });
+        }
+
+        if (btnClearDateOrders) {
+            btnClearDateOrders.addEventListener('click', () => {
+                if (orderFilterDate) orderFilterDate.value = '';
+                loadOrders('');
+            });
+        }
+
+        let adminExpensesCache = [];
+
+        async function loadAdminExpenses() {
+            try {
+                const res = await safeRequest('/api/expenses');
+                const data = await res.json();
+                adminExpensesCache = data.expenses || [];
+
+                const totalAll = data.total || 0;
+                const todayStr = new Date().toISOString().split('T')[0];
+                const currentMonthStr = todayStr.substring(0, 7);
+
+                const todayTotal = adminExpensesCache
+                    .filter(e => e.expense_date && e.expense_date.startsWith(todayStr))
+                    .reduce((sum, e) => sum + Number(e.amount || 0), 0);
+
+                const monthTotal = adminExpensesCache
+                    .filter(e => e.expense_date && e.expense_date.startsWith(currentMonthStr))
+                    .reduce((sum, e) => sum + Number(e.amount || 0), 0);
+
+                const elAll = document.getElementById('adminExpenseTotalAll');
+                const elToday = document.getElementById('adminExpenseTotalToday');
+                const elMonth = document.getElementById('adminExpenseTotalMonth');
+                const elCount = document.getElementById('adminExpenseCount');
+
+                if (elAll) elAll.textContent = currency(totalAll);
+                if (elToday) elToday.textContent = currency(todayTotal);
+                if (elMonth) elMonth.textContent = currency(monthTotal);
+                if (elCount) elCount.textContent = adminExpensesCache.length;
+
+                renderAdminExpensesTable(adminExpensesCache);
+            } catch (err) {
+                console.error('Failed to load admin expenses', err);
+            }
+        }
+
+        function renderAdminExpensesTable(expenses) {
+            const body = document.getElementById('adminExpensesTableBody');
+            if (!body) return;
+            const filter = (document.getElementById('adminExpenseSearch')?.value || '').toLowerCase().trim();
+
+            const filtered = expenses.filter(e =>
+                (e.title || '').toLowerCase().includes(filter) ||
+                (e.category || '').toLowerCase().includes(filter) ||
+                (e.buyer_name || '').toLowerCase().includes(filter) ||
+                (e.unit || '').toLowerCase().includes(filter) ||
+                (e.note || '').toLowerCase().includes(filter) ||
+                (e.logged_by || '').toLowerCase().includes(filter)
+            );
+
+            if (!filtered.length) {
+                body.innerHTML = '<tr><td colspan="7" class="muted">No expense records found.</td></tr>';
+                return;
+            }
+
+            body.innerHTML = filtered.map(e => {
+                const hasQty = e.quantity && Number(e.quantity) > 0;
+                const hasUnitPrice = e.price_per_unit && Number(e.price_per_unit) > 0;
+                let qtyStr = '';
+                if (hasQty) {
+                    const qVal = Number(e.quantity);
+                    const uVal = e.unit ? ` ${escapeAttr(e.unit)}` : '';
+                    const pVal = hasUnitPrice ? ` @ ₦${Number(e.price_per_unit).toLocaleString()}${e.unit ? '/' + escapeAttr(e.unit) : ''}` : '';
+                    qtyStr = `<div style="font-size:11px; font-weight:600; color:var(--af-brown);">📦 ${qVal}${uVal}${pVal}</div>`;
+                }
+
+                return `
+                <tr>
+                    <td style="font-size:12px; white-space:nowrap;">${e.expense_date ? new Date(e.expense_date).toLocaleDateString([], { month:'short', day:'numeric', year:'numeric' }) : '—'}</td>
+                    <td>
+                        <strong>${escapeAttr(e.title)}</strong>
+                        ${qtyStr}
+                        ${e.note ? `<small class="muted">${escapeAttr(e.note)}</small>` : ''}
+                    </td>
+                    <td><span class="pill">${escapeAttr(e.category)}</span></td>
+                    <td style="font-size:13px; font-weight:600; color:var(--af-ink);">${e.buyer_name ? escapeAttr(e.buyer_name) : '<span class="muted">—</span>'}</td>
+                    <td><strong style="color:var(--af-danger);">₦${Number(e.amount).toLocaleString()}</strong></td>
+                    <td style="font-size:12px; color:var(--af-ink-soft);">${escapeAttr(e.logged_by || 'Staff')}</td>
+                    <td>
+                        <button class="btn-ghost" style="color:var(--af-danger); padding:2px 6px; font-size:11px;" onclick="deleteAdminExpense(${e.id}, this)">Delete</button>
+                    </td>
+                </tr>
+                `;
+            }).join('');
+        }
+
+        window.deleteAdminExpense = async (id, btn) => {
+            if (!confirm('Are you sure you want to delete this expense record?')) return;
+            await runAction(btn, async () => {
+                const res = await safeRequest(`/api/expenses/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    toast('Expense record deleted');
+                    await loadAdminExpenses();
+                }
+            });
+        };
+
+        const btnRefreshAdminExpenses = document.getElementById('btnRefreshAdminExpenses');
+        const adminExpenseSearch = document.getElementById('adminExpenseSearch');
+        const adminExpenseForm = document.getElementById('adminExpenseForm');
+
+        // Auto-sum Quantity * Price/Unit for Admin Form
+        const adminQtyEl = document.getElementById('adminQty');
+        const adminUnitPriceEl = document.getElementById('adminUnitPrice');
+        const adminTotalAmountEl = document.getElementById('adminTotalAmount');
+
+        function calcAdminTotal() {
+            const qty = parseFloat(adminQtyEl?.value || 0);
+            const price = parseFloat(adminUnitPriceEl?.value || 0);
+            if (qty > 0 && price > 0) {
+                adminTotalAmountEl.value = (qty * price).toFixed(2);
+            }
+        }
+
+        if (adminQtyEl) adminQtyEl.addEventListener('input', calcAdminTotal);
+        if (adminUnitPriceEl) adminUnitPriceEl.addEventListener('input', calcAdminTotal);
+
+        if (btnRefreshAdminExpenses) btnRefreshAdminExpenses.addEventListener('click', loadAdminExpenses);
+        if (adminExpenseSearch) adminExpenseSearch.addEventListener('input', () => renderAdminExpensesTable(adminExpensesCache));
+
+        if (adminExpenseForm) {
+            adminExpenseForm.addEventListener('submit', async e => {
+                e.preventDefault();
+                const formData = new FormData(adminExpenseForm);
+                const payload = Object.fromEntries(formData.entries());
+
+                const res = await safeRequest('/api/expenses', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                if (res.ok) {
+                    toast('Expense logged successfully');
+                    adminExpenseForm.reset();
+                    await loadAdminExpenses();
+                }
+            });
+        }
+
+        let stockItemsCache = [];
+        let stockAdjustmentsCache = [];
+
+        async function loadStockTracker() {
+            try {
+                const [menuRes, adjRes] = await Promise.all([
+                    safeRequest('/api/menu-items'),
+                    safeRequest('/api/inventory-adjustments'),
+                ]);
+
+                stockItemsCache = await menuRes.json();
+                stockAdjustmentsCache = await adjRes.json();
+
+                renderStockTable(stockItemsCache);
+                renderStockHistoryTable(stockAdjustmentsCache);
+            } catch (e) {
+                console.error('Failed to load stock tracker', e);
+            }
+        }
+
+        function renderStockTable(items) {
+            const body = document.getElementById('stockTableBody');
+            if (!body) return;
+            const filter = (document.getElementById('stockFilterInput')?.value || '').toLowerCase().trim();
+
+            const filtered = items.filter(i => i.name.toLowerCase().includes(filter) || (i.category?.name || '').toLowerCase().includes(filter));
+            if (!filtered.length) {
+                body.innerHTML = '<tr><td colspan="5" class="muted">No matching items found.</td></tr>';
+                return;
+            }
+
+            body.innerHTML = filtered.map(i => {
+                const stockVal = i.stock !== null ? i.stock : '—';
+                const isSoldOut = i.is_sold_out || i.stock === 0;
+                const statusBadge = isSoldOut 
+                    ? '<span class="pill" style="background:#fee2e2; color:#991b1b; border:1px solid #fca5a5;">Sold Out</span>'
+                    : '<span class="pill" style="background:#dcfce7; color:#166534; border:1px solid #bbf7d0;">In Stock</span>';
+
+                return `
+                    <tr>
+                        <td><strong>${escapeAttr(i.name)}</strong><br/><small class="muted">${escapeAttr(i.category?.name || 'Menu')}</small></td>
+                        <td><span style="font-weight:800; font-size:15px; color:var(--af-brown);">${stockVal}</span></td>
+                        <td>${escapeAttr(i.stock_unit || 'portions')}</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <div style="display:flex; gap:6px; align-items:center;">
+                                <input type="number" min="0" value="${i.stock ?? 0}" id="stockInput_${i.id}" style="width:75px; padding:4px 8px; border-radius:8px; border:1px solid var(--af-line); text-align:center; font-weight:700;" />
+                                <button class="btn-ghost" style="padding:4px 8px; font-size:11px;" onclick="quickUpdateStock(${i.id}, this)">Save</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function renderStockHistoryTable(adjustments) {
+            const body = document.getElementById('stockHistoryTableBody');
+            if (!body) return;
+
+            if (!adjustments || !adjustments.length) {
+                body.innerHTML = '<tr><td colspan="5" class="muted">No deduction history recorded yet.</td></tr>';
+                return;
+            }
+
+            body.innerHTML = adjustments.map(a => {
+                const timeStr = new Date(a.created_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                const isNegative = a.quantity_change < 0;
+                const changePill = isNegative
+                    ? `<span class="pill" style="background:#fee2e2; color:#991b1b; font-weight:800; border:1px solid #fca5a5;">${a.quantity_change}</span>`
+                    : `<span class="pill" style="background:#dcfce7; color:#166534; font-weight:800; border:1px solid #bbf7d0;">+${a.quantity_change}</span>`;
+
+                const itemName = a.menu_item?.name || 'Item #' + a.menu_item_id;
+                const reasonLabel = a.reason === 'order' ? '📋 Customer Order' : a.reason === 'restock' ? '📦 Restock' : '⚙️ Manual Edit';
+
+                return `
+                    <tr>
+                        <td style="font-size:12px; white-space:nowrap;">${timeStr}</td>
+                        <td><strong>${escapeAttr(itemName)}</strong></td>
+                        <td>${changePill}</td>
+                        <td><span class="muted">${reasonLabel}</span></td>
+                        <td style="font-size:12px; color:var(--af-ink-soft);">${escapeAttr(a.changed_by || 'system')}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        window.quickUpdateStock = async (itemId, btn) => {
+            const input = document.getElementById(`stockInput_${itemId}`);
+            if (!input) return;
+            const newStock = parseInt(input.value) || 0;
+
+            await runAction(btn, async () => {
+                const res = await safeRequest(`/api/menu-items/${itemId}/stock`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ stock: newStock }),
+                });
+                if (res.ok) {
+                    toast('Stock updated!');
+                    await loadStockTracker();
+                    await loadMenu();
+                }
+            });
+        };
+
+        const btnRefreshStock = document.getElementById('btnRefreshStock');
+        const stockFilterInput = document.getElementById('stockFilterInput');
+
+        if (btnRefreshStock) {
+            btnRefreshStock.addEventListener('click', loadStockTracker);
+        }
+        if (stockFilterInput) {
+            stockFilterInput.addEventListener('input', () => {
+                renderStockTable(stockItemsCache);
+            });
         }
 
         async function loadOrderSummary() {
@@ -1302,17 +1855,112 @@
             renderTotals();
         }
 
-        function addToPosCart(item) {
-            const existing = posCart.find((i) => i.id === item.id);
+        function promptPosSideChoice(name, sidesRaw, callback) {
+            let sides = [];
+            if (typeof sidesRaw === 'string') {
+                const txt = document.createElement('textarea');
+                txt.innerHTML = sidesRaw;
+                const decoded = txt.value;
+                try {
+                    sides = JSON.parse(decoded);
+                } catch (e) {
+                    sides = decoded.split(',').map(s => s.trim().replace(/^["'\[\]]+|["'\[\]]+$/g, '')).filter(Boolean);
+                }
+            } else if (Array.isArray(sidesRaw)) {
+                sides = sidesRaw;
+            }
+
+            if (!Array.isArray(sides) || !sides.length) {
+                sides = ['Rice', 'Yam', 'Plantain'];
+            }
+
+            const backdrop = document.createElement('div');
+            backdrop.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;backdrop-filter:blur(3px);';
+
+            const card = document.createElement('div');
+            card.style.cssText = 'background:#ffffff;border-radius:20px;padding:28px 24px;max-width:400px;width:100%;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);font-family:inherit;text-align:left;box-sizing:border-box;color:#111827;';
+
+            card.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+                    <div>
+                        <h3 style="margin:0;font-size:20px;font-weight:800;color:#111827;">Select Side Choice</h3>
+                        <p style="margin:4px 0 0;font-size:14px;color:#6b7280;">For <strong>${name}</strong> (Included at no extra charge)</p>
+                    </div>
+                    <button type="button" class="af-pos-side-cancel" style="background:#f3f4f6;border:none;border-radius:50%;width:32px;height:32px;font-size:18px;color:#4b5563;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+                </div>
+                
+                <div style="margin:20px 0 24px;">
+                    <label for="afAdminPosSideSelectInput" style="display:block;font-size:13px;font-weight:700;color:#374151;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px;">Choose your side dish:</label>
+                    <select id="afAdminPosSideSelectInput" style="width:100%;padding:14px 16px;border-radius:12px;border:2px solid #d1d5db;background:#fff;font-size:16px;font-weight:600;color:#111827;outline:none;cursor:pointer;box-sizing:border-box;">
+                        <option value="" disabled selected>-- Select a Side Option --</option>
+                        ${sides.map(s => `<option value="${s}">${s} (Included)</option>`).join('')}
+                    </select>
+                </div>
+
+                <div style="display:flex;gap:12px;">
+                    <button type="button" class="af-pos-side-cancel" style="flex:1;padding:12px;border-radius:12px;border:1px solid #d1d5db;background:#fff;font-size:15px;font-weight:600;color:#4b5563;cursor:pointer;">Cancel</button>
+                    <button type="button" class="af-pos-side-confirm" style="flex:2;padding:12px;border-radius:12px;border:none;background:#f97316;font-size:15px;font-weight:700;color:#fff;cursor:pointer;opacity:0.5;pointer-events:none;" disabled>Add to Order</button>
+                </div>
+            `;
+
+            backdrop.appendChild(card);
+            document.body.appendChild(backdrop);
+
+            const selectEl = card.querySelector('#afAdminPosSideSelectInput');
+            const confirmBtn = card.querySelector('.af-pos-side-confirm');
+
+            selectEl.addEventListener('change', () => {
+                if (selectEl.value) {
+                    confirmBtn.style.opacity = '1';
+                    confirmBtn.style.pointerEvents = 'auto';
+                    confirmBtn.disabled = false;
+                }
+            });
+
+            confirmBtn.addEventListener('click', () => {
+                const chosenSide = selectEl.value;
+                if (chosenSide) {
+                    document.body.removeChild(backdrop);
+                    callback(chosenSide);
+                }
+            });
+
+            card.querySelectorAll('.af-pos-side-cancel').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.body.removeChild(backdrop);
+                });
+            });
+        }
+
+        function addToPosCart(item, chosenSide = null) {
+            let sides = item.sides;
+            const lowerName = (item.name || '').toLowerCase();
+            if (!sides && (lowerName.includes('catfish') || (lowerName.includes('pepper') && lowerName.includes('soup')))) {
+                sides = ['Rice', 'Yam', 'Plantain'];
+            }
+
+            if (sides && (!Array.isArray(sides) || sides.length > 0) && !chosenSide) {
+                promptPosSideChoice(item.name, sides, (side) => {
+                    if (side) {
+                        addToPosCart(item, side);
+                    }
+                });
+                return;
+            }
+
+            const displayName = chosenSide ? `${item.name} (${chosenSide})` : item.name;
+            const existing = posCart.find((i) => i.id === item.id && (i.sideChoice || '') === (chosenSide || ''));
             if (existing) {
                 existing.qty += 1;
             } else {
                 posCart.push({
                     id: item.id,
-                    name: item.name,
+                    name: displayName,
+                    rawName: item.name,
                     price: Number(item.price) || 0,
                     barcode: item.barcode,
                     qty: 1,
+                    sideChoice: chosenSide || null,
                 });
             }
             renderPosCart();
@@ -1517,6 +2165,7 @@
                     menu_item_id: item.id,
                     quantity: item.qty,
                     price: item.price,
+                    side_choice: item.sideChoice || null,
                 })),
                 payment: {
                     amount: computeGrandTotal(),

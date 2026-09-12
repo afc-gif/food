@@ -12,7 +12,8 @@ class UserAdminController extends Controller
 {
     public function index()
     {
-        return User::with('roles:id,name')
+        return User::where('email', '!=', 'admin@afc.com.ng')
+            ->with('roles:id,name')
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function (User $user) {
@@ -29,9 +30,9 @@ class UserAdminController extends Controller
 
     public function update(Request $request, User $user)
     {
-        $validRoles = Role::pluck('name')->all();
+        $allowedRoles = ['admin', 'manager', 'staff', 'pos', 'kitchen', 'inventory', 'desk'];
         $data = $request->validate([
-            'role' => ['sometimes', 'required', Rule::in($validRoles)],
+            'role' => ['sometimes', 'required', Rule::in($allowedRoles)],
             'is_active' => ['sometimes', 'boolean'],
         ]);
 
@@ -43,8 +44,10 @@ class UserAdminController extends Controller
         }
 
         if (array_key_exists('role', $data)) {
-            $user->role = $data['role'];
-            $user->syncRoles($data['role']);
+            $roleName = $data['role'];
+            Role::firstOrCreate(['name' => $roleName]);
+            $user->role = $roleName;
+            $user->syncRoles($roleName);
         }
 
         $user->save();

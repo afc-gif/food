@@ -16,6 +16,7 @@ class MenuItem extends Model
         'slug',
         'barcode',
         'description',
+        'sides',
         'price',
         'is_sold_out',
         'stock',
@@ -30,7 +31,31 @@ class MenuItem extends Model
         'is_active' => 'boolean',
         'price' => 'decimal:2',
         'stock' => 'integer',
+        'sides' => 'array',
     ];
+
+    public function getSidesAttribute($value): ?array
+    {
+        if (! empty($value)) {
+            if (is_array($value)) {
+                return $value;
+            }
+            if (is_string($value)) {
+                $decoded = json_decode($value, true);
+                if (is_array($decoded)) {
+                    return $decoded;
+                }
+                return array_values(array_filter(array_map('trim', explode(',', $value))));
+            }
+        }
+
+        $name = strtolower($this->attributes['name'] ?? '');
+        if (str_contains($name, 'catfish') || (str_contains($name, 'pepper') && str_contains($name, 'soup'))) {
+            return ['Rice', 'Yam', 'Plantain'];
+        }
+
+        return null;
+    }
 
     protected static function booted(): void
     {
