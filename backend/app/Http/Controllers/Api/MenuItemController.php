@@ -23,6 +23,7 @@ class MenuItemController extends Controller
     {
         try {
             $query = MenuItem::with('category')
+                ->orderBy('is_sold_out', 'asc')
                 ->orderBy('sort_order')
                 ->orderBy('name');
 
