@@ -229,13 +229,17 @@ class OrderController extends Controller
                     try {
                         $this->broadcastOrderChange($order, true);
                     } catch (\Throwable $e) {
-                        Log::warning('Order broadcast failed', ['error' => $e->getMessage()]);
+                        try {
+                            Log::warning('Order broadcast failed', ['error' => $e->getMessage()]);
+                        } catch (\Throwable) {}
                     }
                     try {
-                        $changedMenuItems->each(fn (MenuItem $item) => $this->broadcastMenuItemChange($item));
-                    } catch (\Throwable $e) {
-                        Log::warning('MenuItem broadcast failed', ['error' => $e->getMessage()]);
-                    }
+                        $changedMenuItems->each(function (MenuItem $item) {
+                            try {
+                                $this->broadcastMenuItemChange($item);
+                            } catch (\Throwable) {}
+                        });
+                    } catch (\Throwable) {}
                 });
 
                 return $order->load(['items', 'payments']);
@@ -243,10 +247,12 @@ class OrderController extends Controller
         } catch (ValidationException $e) {
             throw $e;
         } catch (\Throwable $e) {
-            Log::error('Order creation 500 error: '.$e->getMessage(), [
-                'exception' => $e,
-                'request' => $request->all(),
-            ]);
+            try {
+                Log::error('Order creation 500 error: '.$e->getMessage(), [
+                    'exception' => $e,
+                    'request' => $request->all(),
+                ]);
+            } catch (\Throwable) {}
 
             return response()->json([
                 'message' => 'Failed to save order: '.$e->getMessage(),
@@ -388,10 +394,30 @@ class OrderController extends Controller
         try {
             broadcast(new \App\Events\MenuItemUpdated($item));
         } catch (\Throwable $e) {
-            Log::warning('Menu item broadcast failed after order stock update', [
-                'item_id' => $item->id,
-                'error' => $e->getMessage(),
-            ]);
+            try {
+                Log::warning('Menu item broadcast failed after order stock update', [
+                    'item_id' => $item->id,
+                    'error' => $e->getMessage(),
+                ]);
+            } catch (\Throwable) {}
+        }
+    }
+
+    protected function broadcastOrderChange(Order $order, bool $isNew = false): void
+    {
+        $order->loadMissing(['items', 'payments', 'creator']);
+        try {
+            if ($isNew) {
+                broadcast(new OrderCreated($order))->toOthers();
+            }
+            broadcast(new OrderUpdated($order))->toOthers();
+        } catch (\Throwable $e) {
+            try {
+                Log::warning('Order broadcast failed', [
+                    'order_id' => $order->id,
+                    'error' => $e->getMessage(),
+                ]);
+            } catch (\Throwable) {}
         }
     }
 
@@ -611,21 +637,5 @@ class OrderController extends Controller
             'is_open' => (bool) $availability['is_open'],
             'availability_message' => $availability['message'],
         ]);
-    }
-
-    protected function broadcastOrderChange(Order $order, bool $isNew = false): void
-    {
-        $order->loadMissing(['items', 'payments', 'creator']);
-        try {
-            if ($isNew) {
-                broadcast(new OrderCreated($order))->toOthers();
-            }
-            broadcast(new OrderUpdated($order))->toOthers();
-        } catch (\Throwable $e) {
-            Log::warning('Order broadcast failed', [
-                'order_id' => $order->id,
-                'error' => $e->getMessage(),
-            ]);
-        }
     }
 }
