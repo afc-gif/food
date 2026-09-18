@@ -649,7 +649,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const searchQuery = (dom.menuSearchInput?.value || "").trim().toLowerCase();
     let visibleCount = 0;
 
-    dom.menuGrid.querySelectorAll(".af-menu-item").forEach((item) => {
+    const items = Array.from(dom.menuGrid.querySelectorAll(".af-menu-item"));
+    items.sort((a, b) => {
+      const soldA = a.getAttribute("data-sold-out") === "1" ? 1 : 0;
+      const soldB = b.getAttribute("data-sold-out") === "1" ? 1 : 0;
+      return soldA - soldB;
+    });
+
+    items.forEach((item) => {
+      dom.menuGrid.appendChild(item);
       const category = slugify(item.getAttribute("data-category") || "all");
       const categoryId = item.getAttribute("data-category-id") || "";
       const itemName = (item.getAttribute("data-item-name") || item.querySelector("h3")?.textContent || "").toLowerCase();
@@ -1433,6 +1441,9 @@ document.addEventListener("DOMContentLoaded", () => {
       renderMenuError("Menu is coming soon. Please check back.");
       return;
     }
+
+    // Always show available items first, sold-out items at the bottom
+    normalized.sort((a, b) => (a.is_sold_out ? 1 : 0) - (b.is_sold_out ? 1 : 0));
 
     dom.menuGrid.innerHTML = normalized
       .map(

@@ -884,12 +884,13 @@ a {
 
 /* Sold-out styling */
 [data-menu-item][data-sold-out="1"] {
-  opacity: 0.55;
-  filter: grayscale(1) brightness(0.95);
+  opacity: 0.52;
+  filter: grayscale(1) brightness(0.97);
+  order: 999;
 }
 
 [data-menu-item][data-sold-out="1"] img {
-  filter: grayscale(1) brightness(0.90);
+  filter: grayscale(1) brightness(0.88);
 }
 
 [data-menu-item][data-sold-out="1"] .af-menu-head h3 {
@@ -2276,7 +2277,8 @@ body.af-modal-open {
 
 [data-menu-item][data-sold-out="1"] {
   filter: grayscale(1);
-  opacity: 0.58;
+  opacity: 0.52;
+  order: 999;
 }
 
 [data-menu-item][data-sold-out="1"] .af-menu-head h3 {

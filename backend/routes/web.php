@@ -67,6 +67,7 @@ Route::get('/', function () {
         $categories = Category::orderBy('sort_order')->orderBy('name')->get();
         $menuItems = MenuItem::with('category')
             ->where('is_active', true)
+            ->orderBy('is_sold_out', 'asc')
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
