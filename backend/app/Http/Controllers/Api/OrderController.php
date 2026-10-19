@@ -128,28 +128,6 @@ class OrderController extends Controller
                     }
                 }
 
-                // Deduct stock once per menu item
-                foreach ($stockDemand as $menuItemId => $totalRequestedQty) {
-                    $menuItem = $menuItems->get($menuItemId);
-                    if ($menuItem->stock !== null) {
-                        $menuItem->stock -= $totalRequestedQty;
-                        if ($menuItem->stock <= 0) {
-                            $menuItem->stock = 0;
-                            $menuItem->is_sold_out = true;
-                        }
-                        $menuItem->save();
-
-                        InventoryAdjustment::create([
-                            'menu_item_id' => $menuItem->id,
-                            'quantity_change' => -$totalRequestedQty,
-                            'reason' => 'order',
-                            'changed_by' => $request->user()?->email ?? 'website',
-                        ]);
-
-                        $changedMenuItems->push($menuItem->fresh('category'));
-                    }
-                }
-
                 // Process individual item lines (preserving distinct side_choice selections)
                 foreach ($data['items'] as $itemInput) {
                     $menuItem = $menuItems->get($itemInput['menu_item_id']);
@@ -205,6 +183,7 @@ class OrderController extends Controller
                     'discount' => $discount,
                     'total' => $total,
                     'status' => $hasPayment ? 'paid' : 'pending',
+                    'stock_deducted' => false,
                     'paid_at' => $hasPayment ? now() : null,
                     'kitchen_status' => $sendToKitchen ? 'queued' : 'pending',
                     'kitchen_sent_at' => $sendToKitchen ? now() : null,
@@ -214,6 +193,9 @@ class OrderController extends Controller
                 foreach ($itemsData as $item) {
                     $order->items()->create($item);
                 }
+
+                // Reserve finite stock immediately so concurrent pending orders cannot oversell.
+                $changedMenuItems = $this->deductOrderStock($order, $request->user()?->email ?? 'website');
 
                 if ($hasPayment) {
                     $order->payments()->create([
@@ -297,26 +279,31 @@ class OrderController extends Controller
         $hasEta = isset($data['eta_minutes']) && $data['eta_minutes'] !== null;
 
         $newKitchenStatus = $data['kitchen_status'];
-        $order->fill([
-            'kitchen_status' => $newKitchenStatus,
-            'kitchen_eta_minutes' => $data['eta_minutes'] ?? $order->kitchen_eta_minutes,
-            'kitchen_eta_at' => $etaAt,
-            'kitchen_note' => $data['note'] ?? $order->kitchen_note,
-            'kitchen_sent_at' => $order->kitchen_sent_at ?? now(),
-        ]);
-
-        // Marking kitchen_status as ready or served automatically completes the order
-        if (in_array($newKitchenStatus, ['ready', 'served'], true)) {
-            $order->status = 'completed';
-            if (! $order->paid_at) {
-                $order->paid_at = now();
+        $changedMenuItems = DB::transaction(function () use ($order, $newKitchenStatus, $data, $etaAt, $request) {
+            $lockedOrder = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+            $changed = collect();
+            // Marking kitchen_status as ready or served automatically completes the order.
+            if (in_array($newKitchenStatus, ['ready', 'served'], true)) {
+                if (! $lockedOrder->stock_deducted) {
+                    $changed = $this->deductOrderStock($lockedOrder, $request->user()?->email ?? 'system');
+                }
+                $lockedOrder->status = 'completed';
+                $lockedOrder->paid_at = $lockedOrder->paid_at ?? now();
             }
-        }
+            $lockedOrder->fill([
+                'kitchen_status' => $newKitchenStatus,
+                'kitchen_eta_minutes' => $data['eta_minutes'] ?? $lockedOrder->kitchen_eta_minutes,
+                'kitchen_eta_at' => $etaAt,
+                'kitchen_note' => $data['note'] ?? $lockedOrder->kitchen_note,
+                'kitchen_sent_at' => $lockedOrder->kitchen_sent_at ?? now(),
+            ])->save();
+            $order->setRawAttributes($lockedOrder->getAttributes(), true);
+            return $changed;
+        });
 
-        $order->save();
-
-        DB::afterCommit(function () use ($order, $hadEta, $hasEta) {
+        DB::afterCommit(function () use ($order, $hadEta, $hasEta, $changedMenuItems) {
             $this->broadcastOrderChange($order);
+            $changedMenuItems->each(fn (MenuItem $item) => $this->broadcastMenuItemChange($item));
             // Broadcast ETA assignment only if ETA was just set
             if (! $hadEta && $hasEta) {
                 broadcast(new ETAAssigned($order))->toOthers();
@@ -366,11 +353,18 @@ class OrderController extends Controller
             ], 403);
         }
 
-        DB::transaction(function () use ($order) {
+        $changedMenuItems = DB::transaction(function () use ($order, $user) {
+            $order = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+            $changedMenuItems = $order->stock_deducted
+                ? $this->restoreOrderStock($order, $user?->email ?? 'system')
+                : collect();
             $order->items()->delete();
             $order->payments()->delete();
             $order->delete();
+            return $changedMenuItems;
         });
+
+        $changedMenuItems->each(fn (MenuItem $item) => $this->broadcastMenuItemChange($item));
 
         return response()->json(['message' => 'Order deleted successfully.']);
     }
@@ -587,20 +581,83 @@ class OrderController extends Controller
         }
 
         $status = $data['status'];
-        $order->status = $status;
-
-        if ($status === 'completed') {
-            $order->kitchen_status = 'served';
-            if (! $order->paid_at) {
-                $order->paid_at = now();
+        $changedMenuItems = DB::transaction(function () use ($order, $status, $request) {
+            $order = Order::whereKey($order->id)->lockForUpdate()->firstOrFail();
+            $changed = collect();
+            if ($status === 'completed' && ! $order->stock_deducted) {
+                $changed = $this->deductOrderStock($order, $request->user()?->email ?? 'system');
+            } elseif ($status === 'cancelled' && $order->stock_deducted) {
+                $changed = $this->restoreOrderStock($order, $request->user()?->email ?? 'system');
             }
-        }
+            $order->status = $status;
+            if ($status === 'cancelled') {
+                $order->cancelled_at = $order->cancelled_at ?? now();
+            } else {
+                $order->cancelled_at = null;
+            }
 
-        $order->save();
+            if ($status === 'completed') {
+                $order->kitchen_status = 'served';
+                if (! $order->paid_at) {
+                    $order->paid_at = now();
+                }
+            }
+            $order->save();
+            return $changed;
+        });
 
-        DB::afterCommit(fn () => $this->broadcastOrderChange($order));
+        DB::afterCommit(function () use ($order, $changedMenuItems) {
+            $this->broadcastOrderChange($order);
+            $changedMenuItems->each(fn (MenuItem $item) => $this->broadcastMenuItemChange($item));
+        });
 
         return $order->fresh(['items.menuItem', 'payments', 'creator']);
+    }
+
+    private function orderStockDemand(Order $order)
+    {
+        return $order->items()->whereNotNull('menu_item_id')->get()
+            ->groupBy('menu_item_id')->map(fn ($items) => $items->sum('quantity'));
+    }
+
+    private function deductOrderStock(Order $order, string $changedBy)
+    {
+        $demand = $this->orderStockDemand($order);
+        $items = MenuItem::whereIn('id', $demand->keys())->lockForUpdate()->get()->keyBy('id');
+        foreach ($demand as $id => $quantity) {
+            $item = $items->get($id);
+            if ($item && $item->stock !== null && $item->stock < $quantity) {
+                throw ValidationException::withMessages(['status' => ["Not enough stock for {$item->name} to complete this order."]]);
+            }
+        }
+        foreach ($demand as $id => $quantity) {
+            $item = $items->get($id);
+            if (! $item || $item->stock === null) continue;
+            $item->stock -= $quantity;
+            if ($item->stock <= 0) { $item->stock = 0; $item->is_sold_out = true; }
+            $item->save();
+            InventoryAdjustment::create(['menu_item_id' => $id, 'quantity_change' => -$quantity, 'reason' => 'order', 'changed_by' => $changedBy]);
+        }
+        $order->stock_deducted = true;
+        $order->save();
+        return $items->values()->filter(fn ($item) => $item->stock !== null)->map(fn ($item) => $item->fresh('category'));
+    }
+
+    private function restoreOrderStock(Order $order, string $changedBy)
+    {
+        $demand = $this->orderStockDemand($order);
+        $items = MenuItem::whereIn('id', $demand->keys())->lockForUpdate()->get()->keyBy('id');
+        foreach ($demand as $id => $quantity) {
+            $item = $items->get($id);
+            if (! $item || $item->stock === null) continue;
+            $item->stock += $quantity;
+            $item->is_sold_out = false;
+            $item->save();
+            InventoryAdjustment::create(['menu_item_id' => $id, 'quantity_change' => $quantity, 'reason' => 'order_cancelled', 'changed_by' => $changedBy]);
+        }
+        $order->stock_deducted = false;
+        $order->save();
+        return $items->values()->filter(fn ($item) => $item->stock !== null)->map(fn ($item) => $item->fresh('category'));
     }
 
     public function managerOrders(Request $request)

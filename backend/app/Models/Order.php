@@ -23,6 +23,7 @@ class Order extends Model
         'total',
         'paid_at',
         'cancelled_at',
+        'stock_deducted',
         'kitchen_status',
         'kitchen_eta_minutes',
         'kitchen_eta_at',
@@ -37,6 +38,7 @@ class Order extends Model
         'total' => 'decimal:2',
         'paid_at' => 'datetime',
         'cancelled_at' => 'datetime',
+        'stock_deducted' => 'boolean',
         'kitchen_eta_at' => 'datetime',
         'kitchen_sent_at' => 'datetime',
     ];
