@@ -3320,3 +3320,90 @@ body.af-modal-open {
     grid-template-columns: 1fr;
   }
 }
+
+.af-footer {
+  padding: 2.25rem 0 1rem;
+  text-align: left;
+}
+
+.af-footer-inner {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr 0.9fr;
+  gap: 2rem;
+}
+
+.af-footer-brand strong {
+  color: var(--af-white);
+  font-family: var(--af-font-heading);
+  font-size: 1.2rem;
+}
+
+.af-footer h2,
+.af-footer h3 {
+  color: var(--af-white);
+  font-family: var(--af-font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin: 0 0 0.65rem;
+}
+
+.af-footer h3 {
+  margin-top: 1rem;
+}
+
+.af-footer p {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.86rem;
+  line-height: 1.55;
+  margin: 0 0 0.55rem;
+}
+
+.af-footer-brand p {
+  margin-top: 0.35rem;
+}
+
+.af-footer-contact a {
+  color: rgba(255, 255, 255, 0.82);
+  display: block;
+  font-size: 0.86rem;
+  margin-bottom: 0.35rem;
+  text-decoration: none;
+}
+
+.af-footer-contact a:hover {
+  color: var(--af-gold);
+}
+
+.af-footer-contact p {
+  margin-top: 0.7rem;
+}
+
+.af-footer .af-socials {
+  margin: 0;
+}
+
+.af-footer-bottom {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.78rem;
+  margin-top: 1.75rem;
+  padding-top: 0.8rem;
+}
+
+@media (max-width: 720px) {
+  .af-footer-inner {
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+  }
+
+  .af-footer-brand {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 480px) {
+  .af-footer-inner {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+}
