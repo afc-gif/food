@@ -320,8 +320,7 @@
   <footer class="af-footer">
     <div class="af-container af-footer-inner">
       <div class="af-footer-brand">
-        <strong>Acie Fraiche Cafe</strong>
-        <p>Freshly Crafted, Simply Delicious.</p>
+        <img src="{{ asset('assets/logo2.png') }}" alt="Acie Fraiche Cafe — Freshly Crafted, Simply Delicious" class="af-footer-logo" />
       </div>
 
       <div class="af-footer-contact">

@@ -3332,10 +3332,11 @@ body.af-modal-open {
   gap: 2rem;
 }
 
-.af-footer-brand strong {
-  color: var(--af-white);
-  font-family: var(--af-font-heading);
-  font-size: 1.2rem;
+.af-footer-logo {
+  display: block;
+  height: auto;
+  max-width: 100%;
+  width: 190px;
 }
 
 .af-footer h2,
