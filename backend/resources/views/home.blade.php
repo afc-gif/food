@@ -1,6 +1,5 @@
 @php
     use Illuminate\Support\Str;
-    $heroBackgroundUrl = config('services.cloudinary.hero_background_url');
 @endphp
 <!DOCTYPE html>
 <html lang="en">
@@ -46,11 +45,8 @@
       </div>
 
       <nav class="af-nav">
-        <a href="#home">Home</a>
         <a href="#menu">Menu</a>
-        <a href="#about">Story</a>
-        <a href="#contact">Visit</a>
-        <a href="#order" class="af-btn af-btn-outline">Order</a>
+        <a href="#menu" class="af-btn af-btn-outline" data-cart-open>Order</a>
       </nav>
 
       <button class="af-nav-toggle" id="navToggle" aria-label="Toggle navigation">
@@ -60,47 +56,6 @@
   </header>
 
   <main>
-    <section id="home" class="af-hero" style="--af-hero-bg: url('{{ e($heroBackgroundUrl) }}');">
-      <div class="af-hero-gradient"></div>
-      <div class="af-container af-hero-inner">
-        <div class="af-hero-content">
-          <p class="af-kicker">Acie Fraiche Cafe</p>
-          <h1>Elevated fast-casual dining with West African flair.</h1>
-          <p class="af-lead">
-            Comfort classics, elegant plating, and the warmth of our hosts. Crafted fresh,
-            served swiftly, and priced for every day indulgence.
-          </p>
-          <div class="af-hero-actions">
-            <a href="#menu" class="af-btn af-btn-primary">View Menu</a>
-            <a href="#order" class="af-btn af-btn-ghost">Order Now</a>
-          </div>
-          <div class="af-hero-metrics">
-            <div>
-              <strong>20+</strong>
-              <span>Signature bowls &amp; grills</span>
-            </div>
-            <div>
-              <strong>15 mins</strong>
-              <span>Avg. pickup prep time</span>
-            </div>
-            <div>
-              <strong>Trusted</strong>
-              <span>By families &amp; food lovers</span>
-            </div>
-          </div>
-        </div>
-
-        <div class="af-hero-visual">
-          <img src="{{ asset('assets/logo2.png') }}" alt="Acie Fraiche Cafe Emblem" class="af-hero-logo" />
-          <div class="af-floating-note">
-            <span>Opening hours</span>
-            <strong data-business-hours-summary>Mon–Sat 8am - 10pm</strong>
-            <small><span data-business-hours-sunday>Sun 12noon - 10pm</span> · Dine-in · Takeout · Pickup</small>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <section class="af-section af-section-alt" id="menu">
       <div class="af-container">
         <div class="af-section-head">
@@ -283,131 +238,6 @@
       </div>
     </section>
 
-    <section class="af-section" id="order">
-      <div class="af-container af-order-placeholder">
-        <div class="af-order-prompt">
-          <p class="af-kicker">Checkout</p>
-          <h2>Open the cart to review and pay</h2>
-          <p>Tap the cart button to see your order summary and complete checkout in the overlay.</p>
-          <button class="af-btn af-btn-primary" type="button" id="orderPromptBtn">Open Cart</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="af-section af-section-alt" id="about">
-      <div class="af-container af-about">
-        <div class="af-about-copy">
-          <div class="af-about-header">
-            <p class="af-kicker">Our Story</p>
-            <span class="af-about-badge">Rooted in grace</span>
-          </div>
-          <h2>Food that loves you back.</h2>
-          <p>
-            Acie Fraiche Cafe was born from a simple belief that everyone deserves food that loves
-            them back. Growing up, we watched people around us struggle to find meals that were
-            both natural and affordable, and we saw how good food could lift a person's spirit, even
-            on their hardest days.
-          </p>
-          <p>
-            So we created a place where every dish is made with intention—organic ingredients,
-            natural flavors, and the kind of care you would give to someone you truly value. At Acie
-            Fraiche Cafe, we serve more than meals; we serve comfort, dignity, and a reminder that
-            quality should never be a luxury. At the heart of it all, we honor the grace of God,
-            believing that every hand that prepares, every ingredient that grows, and every life we
-            touch is guided by His goodness. Acie Fraiche Cafe is our way of sharing that blessing
-            with everyone who walks through our doors.
-          </p>
-          <div class="af-about-pills">
-            <span>Organic ingredients</span>
-            <span>Natural flavors</span>
-            <span>Everyday affordability</span>
-            <span>Guided by grace</span>
-          </div>
-          <div class="af-about-signoff">
-            <span class="af-script">With gratitude,</span>
-            <strong>Team Acie Fraiche</strong>
-          </div>
-        </div>
-        <div class="af-about-panel">
-          <div class="af-about-card">
-            <div class="af-about-card-head">
-              <span class="af-about-pill">Our Promise</span>
-              <p>Every plate is crafted with intention, priced for everyday joy.</p>
-            </div>
-            <ul class="af-about-checklist">
-              <li>Comfort and dignity in every serving.</li>
-              <li>Organic ingredients and honest, natural flavor.</li>
-              <li>Warm hospitality that feels like family.</li>
-              <li>Guided by God's grace in how we work and serve.</li>
-            </ul>
-          </div>
-          <div class="af-about-stats">
-            <div>
-              <strong>15+</strong>
-              <span>Team members from top kitchens</span>
-            </div>
-            <div>
-              <strong>Fresh</strong>
-              <span>Produce delivered daily</span>
-            </div>
-            <div>
-              <strong>Community</strong>
-              <span>We give back every month</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="af-section" id="contact">
-      <div class="af-container af-contact">
-        <div class="af-contact-card">
-          <p class="af-kicker">Visit Us</p>
-          <h2>We would love to host you.</h2>
-          <p>Book a table, grab takeaway, or call ahead and we'll have it ready for pickup.</p>
-          <div class="af-contact-grid">
-            <div>
-              <strong>Phone</strong>
-              <p><a href="tel:08143190700">08143190700</a></p>
-            </div>
-            <div>
-              <strong>Email</strong>
-              <p><a href="mailto:support@afc.com.ng">support@afc.com.ng</a></p>
-            </div>
-            <div>
-              <strong>Address</strong>
-              <p>
-                <strong>SARS ROAD</strong><br>
-                Immediately after the SARS Police Station you will see a Smart Home Office.
-              </p>
-            </div>
-            <div>
-              <strong>Hours</strong>
-              <p><span data-business-hours-weekday>Mon. – Sat.: 8am - 10pm</span><br /><span data-business-hours-sunday>Sun.: 12noon - 10pm</span></p>
-            </div>
-          </div>
-        </div>
-        <div class="af-contact-cta">
-          <h3>Stay Connected</h3>
-          <p>Follow us for chef drops, new pairings, and weekly tastings.</p>
-          <div class="af-socials" aria-label="Social media links">
-            <a class="af-social-link" href="https://www.instagram.com/afc.ng?igsh=MTQxMGV4bzhmM2I2dg%3D%3D&utm_source=qr" target="_blank" rel="noopener noreferrer" aria-label="Follow Acie Fraiche Cafe on Instagram">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">
-                <rect x="3" y="3" width="18" height="18" rx="5"></rect>
-                <circle cx="12" cy="12" r="4"></circle>
-                <circle cx="17.5" cy="6.5" r="1.2" fill="currentColor" stroke="none"></circle>
-              </svg>
-            </a>
-            <a class="af-social-link" href="https://www.tiktok.com/@acie_fraiche_cafe?_r=1&_t=ZS-98WFafKvipp" target="_blank" rel="noopener noreferrer" aria-label="Follow Acie Fraiche Cafe on TikTok">
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <path d="M16.75 3c.34 2.16 1.58 3.54 3.75 3.75v3.21a7.12 7.12 0 0 1-3.75-1.1v5.95c0 3.15-2.12 5.19-5.23 5.19-2.88 0-5.02-2.02-5.02-4.72 0-2.83 2.22-4.81 5.32-4.81.29 0 .56.02.82.06v3.31a3.2 3.2 0 0 0-.82-.11c-1.17 0-1.93.6-1.93 1.55 0 .9.7 1.52 1.68 1.52 1.1 0 1.82-.67 1.82-2.01V3h3.36Z"></path>
-              </svg>
-            </a>
-          </div>
-          <a href="#order" class="af-btn af-btn-primary">Order Your Favorites</a>
-        </div>
-      </div>
-    </section>
   </main>
 
   <button class="af-cart-fab" id="cartFab" type="button" aria-label="View cart and checkout">
