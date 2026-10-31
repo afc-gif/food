@@ -89,41 +89,41 @@ function CategoryCard({ category, imageUrl, count, selected, onSelect }) {
   );
 }
 
-function MenuGuideIllustration() {
+function FloatingMascot({ mood }) {
   return (
     <svg
-      className="menu-guide-illustration"
-      viewBox="0 0 112 112"
-      role="img"
-      aria-label="Friendly guide pointing to the menu search"
+      className="floating-mascot-figure"
+      viewBox="0 0 112 140"
+      aria-hidden="true"
     >
-      <circle cx="56" cy="56" r="52" fill="#f3ead8" />
-      <circle cx="56" cy="56" r="43" fill="#fffaf0" />
+      <ellipse cx="57" cy="132" rx="33" ry="5" fill="rgba(57,43,19,.12)" />
+      <path d="M34 99c-13 0-19-4-25-15" fill="none" stroke="#e9b181" strokeLinecap="round" strokeWidth="10" />
+      <path d="m10 81-7 1 4 7" fill="none" stroke="#e9b181" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" />
+      <path d="M75 100c14 2 21 9 23 19" fill="none" stroke="#e9b181" strokeLinecap="round" strokeWidth="10" />
+      <path d="M39 91h34c13 7 20 18 21 38H19c1-20 8-31 20-38z" fill="#856128" />
+      <path d="m43 91 13 13 13-13 7 38H36z" fill="#fffefa" />
+      <path d="M48 76h20v21l-10 9-10-9z" fill="#e9b181" />
       <path
-        d="M25 108c1-21 12-32 31-32s30 11 31 32"
-        fill="#856128"
-      />
-      <path d="M42 77h28l8 31H34z" fill="#fffefa" />
-      <path d="M48 75v13l8 8 8-8V75" fill="#e9b181" />
-      <path
-        d="M38 43c0-14 8-24 19-24 12 0 19 10 19 24v11c0 12-8 21-19 21S38 66 38 54z"
+        d="M33 47c0-19 10-30 27-30s27 11 27 30v15c0 18-11 30-27 30S33 80 33 62z"
         fill="#e9b181"
       />
       <path
-        d="M38 46c-5-17 5-30 20-30 13 0 21 9 19 23-5-2-9-6-11-11-6 7-16 10-28 9z"
+        d="M31 49c-6-18 4-36 24-38 19-2 33 10 31 31-9-2-14-7-17-15-9 10-21 14-38 13z"
         fill="#49352c"
       />
-      <path d="M45 52h4m15 0h4" stroke="#49352c" strokeLinecap="round" strokeWidth="2.5" />
-      <path d="M51 64c4 3 8 3 12 0" fill="none" stroke="#a9574c" strokeLinecap="round" strokeWidth="2" />
+      <ellipse cx="46.5" cy="56" rx="4" ry="5" fill="#fffaf0" />
+      <ellipse cx="73.5" cy="56" rx="4" ry="5" fill="#fffaf0" />
+      <circle cx="47" cy="56" r="2" fill="#49352c" />
+      <circle cx="74" cy="56" r="2" fill="#49352c" />
       <path
-        d="M73 80c9-4 12-12 17-18l10-7"
-        fill="none"
-        stroke="#e9b181"
-        strokeLinecap="round"
-        strokeWidth="9"
+        d={mood === "happy" ? "M50 64c4 10 16 10 20 0" : "M53 67c2 2 5 2 8 0"}
+        className="mascot-smile"
       />
-      <path d="m98 55 8-3-3 8" fill="none" stroke="#e9b181" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" />
-      <path d="M34 84 25 74" stroke="#856128" strokeLinecap="round" strokeWidth="7" />
+      <path d="M45 112h29" stroke="#d3a94d" strokeLinecap="round" strokeWidth="2" />
+      <text x="60" y="124" fill="#fffaf0" fontFamily="sans-serif" fontSize="8" fontWeight="700" textAnchor="middle">AFC</text>
+      <path d="M26 48c-3-8-1-16 5-20m60 22c3-8 1-16-5-20" fill="none" stroke="#bc8e3f" strokeLinecap="round" strokeWidth="3" />
+      <circle cx="27" cy="26" r="3" fill="#bc8e3f" />
+      <circle cx="89" cy="26" r="3" fill="#bc8e3f" />
     </svg>
   );
 }
@@ -220,6 +220,11 @@ export default function App() {
   const [menuItems, setMenuItems] = useState([]);
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [mascotReaction, setMascotReaction] = useState({
+    mood: "idle",
+    message: "Pick a category or search to find a favourite!",
+    sequence: 0,
+  });
   const [cart, setCart] = useState(readSavedCart);
   const [cartOpen, setCartOpen] = useState(false);
   const [status, setStatus] = useState("loading");
@@ -288,6 +293,20 @@ export default function App() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [cartOpen]);
+
+  useEffect(() => {
+    if (mascotReaction.mood !== "happy") return undefined;
+
+    const timeout = window.setTimeout(() => {
+      setMascotReaction((current) => ({
+        ...current,
+        mood: "idle",
+        message: "Pick a category or search to find a favourite!",
+      }));
+    }, 2400);
+
+    return () => window.clearTimeout(timeout);
+  }, [mascotReaction.sequence]);
 
   const itemCountByCategory = useMemo(
     () =>
@@ -361,17 +380,30 @@ export default function App() {
     0,
   );
 
+  const reactMascot = (message) => {
+    setMascotReaction((current) => ({
+      mood: "happy",
+      message,
+      sequence: current.sequence + 1,
+    }));
+  };
+
   const addToCart = (item) => {
     setConfirmation("");
+    const currentLine = cart.find(
+      (line) => String(line.item.id) === String(item.id),
+    );
+    const stockLimit =
+      item.stock === null || item.stock === undefined
+        ? Number.POSITIVE_INFINITY
+        : Number(item.stock);
+    if ((currentLine?.quantity || 0) >= stockLimit) return;
+
     setCart((currentCart) => {
       const currentLine = currentCart.find(
         (line) => String(line.item.id) === String(item.id),
       );
       const currentQuantity = currentLine?.quantity || 0;
-      const stockLimit =
-        item.stock === null || item.stock === undefined
-          ? Number.POSITIVE_INFINITY
-          : Number(item.stock);
       if (currentQuantity >= stockLimit) return currentCart;
 
       return currentLine
@@ -382,6 +414,7 @@ export default function App() {
           )
         : [...currentCart, { item, quantity: 1 }];
     });
+    reactMascot(`Yum! ${item.name} is in your bag.`);
   };
 
   const changeQuantity = (itemId, difference) => {
@@ -412,6 +445,9 @@ export default function App() {
   const selectCategory = (categoryId) => {
     setSearchQuery("");
     setActiveCategory(categoryId);
+    const categoryName =
+      categories.find((category) => String(category.id) === categoryId)?.name;
+    reactMascot(categoryName ? `Great choice! Let's see ${categoryName}.` : "Great choice!");
     window.setTimeout(() => {
       document
         .getElementById("menu-results")
@@ -422,6 +458,7 @@ export default function App() {
   const browseCategories = () => {
     setSearchQuery("");
     setActiveCategory("all");
+    reactMascot("Take your pick! There's something delicious here.");
     window.setTimeout(() => {
       document
         .getElementById("categories")
@@ -512,10 +549,9 @@ export default function App() {
               Discover your favourites, freshly made with love at Acie Fraiche.
             </p>
             <div className="menu-guide">
-              <MenuGuideIllustration />
               <div className="menu-guide-content">
                 <p className="menu-guide-message">
-                  <strong>Hi there!</strong> Search for a favourite or browse by category.
+                  Search for a favourite or browse by category.
                 </p>
                 <form
                   className="menu-search-form"
@@ -709,6 +745,13 @@ export default function App() {
         <img src="/brand/logo2.png" alt="" width="44" height="44" loading="lazy" />
         <span>Made fresh with love at Acie Fraiche Café.</span>
       </footer>
+
+      <aside className={`floating-mascot mascot-${mascotReaction.mood}`} aria-label="Acie Fraiche menu guide">
+        <p className="mascot-speech" role="status" aria-live="polite">
+          {mascotReaction.message}
+        </p>
+        <FloatingMascot mood={mascotReaction.mood} />
+      </aside>
 
       {cartItemCount > 0 && !cartOpen && (
         <button
