@@ -13,6 +13,11 @@ export default defineConfig(({ mode }) => {
           target: backendUrl,
           changeOrigin: true,
         },
+        "/brand": {
+          target: backendUrl,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/brand/, "/assets"),
+        },
       },
     },
   };
