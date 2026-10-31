@@ -252,6 +252,9 @@
   <div class="af-cart-overlay" id="cartOverlay" aria-hidden="true">
     <div class="af-cart-overlay-backdrop" id="cartOverlayBackdrop"></div>
     <div class="af-cart-overlay-card">
+      <button class="af-btn af-btn-outline af-cart-overlay-back" id="cartOverlayBackToMenu" type="button">
+        <span aria-hidden="true">&larr;</span> Back to menu
+      </button>
       <button class="af-cart-overlay-close" id="cartOverlayClose" aria-label="Close cart overlay">
         ×
       </button>

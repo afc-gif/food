@@ -1216,6 +1216,10 @@ a {
   justify-content: center;
 }
 
+.af-cart-overlay-back {
+  margin-bottom: 1rem;
+}
+
 .af-cart-overlay-head h3 {
   margin: 0;
 }

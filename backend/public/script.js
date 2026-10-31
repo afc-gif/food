@@ -121,6 +121,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cartBarTotal: document.getElementById("cartBarTotal"),
     cartFab: document.getElementById("cartFab"),
     cartOverlay: document.getElementById("cartOverlay"),
+    cartOverlayBackToMenu: document.getElementById("cartOverlayBackToMenu"),
     cartOverlayClose: document.getElementById("cartOverlayClose"),
     cartOverlayBackdrop: document.getElementById("cartOverlayBackdrop"),
     orderPromptBtn: document.getElementById("orderPromptBtn"),
@@ -306,6 +307,11 @@ document.addEventListener("DOMContentLoaded", () => {
   };
 
   const initCartOverlay = () => {
+    const returnToMenu = () => {
+      setMenuMode("products");
+      dom.menuGrid?.scrollIntoView({ behavior: "smooth", block: "start" });
+    };
+
     if (dom.cartFab) dom.cartFab.addEventListener("click", openCartOverlay);
     if (dom.orderPromptBtn) dom.orderPromptBtn.addEventListener("click", openCartOverlay);
     document.querySelectorAll("[data-cart-open]").forEach((btn) => {
@@ -313,12 +319,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     if (dom.cartOverlayClose) dom.cartOverlayClose.addEventListener("click", closeCartOverlay);
     if (dom.cartOverlayBackdrop) dom.cartOverlayBackdrop.addEventListener("click", closeCartOverlay);
+    if (dom.cartOverlayBackToMenu) {
+      dom.cartOverlayBackToMenu.addEventListener("click", () => {
+        closeCartOverlay();
+        returnToMenu();
+      });
+    }
 
     window.addEventListener("popstate", (event) => {
       if (event.state?.afCartOverlayOpen) {
         openCartOverlay({ updateHistory: false });
-      } else {
+      } else if (isCartOverlayOpen()) {
         closeCartOverlay({ updateHistory: false });
+        returnToMenu();
       }
     });
   };
