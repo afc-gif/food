@@ -447,12 +447,15 @@ export default function App() {
               Explore the menu <span aria-hidden="true">↓</span>
             </button>
           </div>
-          <div className="hero-decoration" aria-hidden="true">
-            <span className="hero-orbit hero-orbit-one" />
-            <span className="hero-orbit hero-orbit-two" />
-            <span className="hero-stamp">Made with love<br />in our kitchen</span>
-            <span className="hero-sparkle">✳</span>
-            <span className="hero-sparkle hero-sparkle-small">✦</span>
+          <div className="hero-portrait">
+            <img
+              src="/images/temporary-chef.jpg"
+              alt="Chef preparing a fresh meal"
+              fetchPriority="high"
+            />
+            <span className="chef-caption">
+              <span aria-hidden="true">✦</span> Made fresh daily
+            </span>
           </div>
         </section>
 
