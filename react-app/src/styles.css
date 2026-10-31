@@ -1344,31 +1344,43 @@ p {
   }
 
   .hero {
-    min-height: 425px;
+    min-height: 0;
     align-items: flex-start;
-    margin: 20px 0 60px;
-    padding: 34px 21px 24px;
-    border-radius: 22px;
+    margin: 14px 0 30px;
+    padding: 25px 21px 23px;
+    border-radius: 19px;
+  }
+
+  .hero .eyebrow {
+    margin-bottom: 9px;
   }
 
   .hero h1 {
     max-width: 430px;
-    font-size: clamp(39px, 10.8vw, 53px);
+    margin-bottom: 11px;
+    font-size: clamp(36px, 9.5vw, 45px);
   }
 
   .intro-copy {
     max-width: 310px;
+    margin-bottom: 14px;
     font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .hero-cta {
+    min-height: 42px;
+    gap: 14px;
   }
 
   .categories-section,
   .menu-section {
-    padding-bottom: 57px;
+    padding-bottom: 38px;
   }
 
   .section-heading {
     align-items: flex-start;
-    margin-bottom: 18px;
+    margin-bottom: 13px;
   }
 
   .categories-section .section-heading {
@@ -1391,13 +1403,13 @@ p {
   }
 
   .category-grid {
-    width: min(280px, 100%);
+    width: min(250px, 100%);
     grid-template-columns: 1fr;
-    gap: 14px;
+    gap: 10px;
   }
 
   .category-stage {
-    padding: 10px 0;
+    padding: 6px 0;
   }
 
   .category-side-art {
@@ -1427,15 +1439,18 @@ p {
   }
 
   .category-card {
-    min-height: 145px;
-    gap: 7px;
-    padding: 17px 12px 14px;
-    border-radius: 18px;
+    min-height: 116px;
+    gap: 5px;
+    padding: 10px 10px 9px;
+    border-color: rgba(188, 142, 63, 0.2);
+    border-radius: 15px;
+    background: rgba(255, 254, 250, 0.48);
+    backdrop-filter: blur(2px);
   }
 
   .category-card-image {
-    width: 74px;
-    height: 74px;
+    width: 62px;
+    height: 62px;
   }
 
   .category-card-copy {
@@ -1444,7 +1459,7 @@ p {
   }
 
   .category-card-copy strong {
-    font-size: 16px;
+    font-size: 15px;
   }
 
   .category-card-copy > span {
@@ -1461,7 +1476,7 @@ p {
   }
 
   .menu-section {
-    padding-top: 21px;
+    padding-top: 15px;
   }
 
   .menu-section-heading {
@@ -1635,17 +1650,16 @@ p {
   }
 
   .hero {
-    min-height: 390px;
-    padding-right: 21px;
-    padding-left: 21px;
+    padding-right: 17px;
+    padding-left: 17px;
   }
 
   .hero h1 {
-    font-size: 46px;
+    font-size: 36px;
   }
 
   .category-grid {
-    width: min(260px, 100%);
+    width: min(238px, 100%);
   }
 
   .menu-card-image-wrap,
