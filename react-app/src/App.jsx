@@ -58,7 +58,7 @@ function readSavedCart() {
   }
 }
 
-function CategoryCard({ category, count, selected, onSelect }) {
+function CategoryCard({ category, imageUrl, count, selected, onSelect }) {
   return (
     <button
       className={`category-card${selected ? " is-selected" : ""}`}
@@ -67,8 +67,8 @@ function CategoryCard({ category, count, selected, onSelect }) {
       onClick={onSelect}
     >
       <span className="category-card-image">
-        {category.image_url ? (
-          <img src={category.image_url} alt="" loading="lazy" />
+        {imageUrl ? (
+          <img src={imageUrl} alt="" loading="lazy" />
         ) : (
           <span className="category-image-placeholder" aria-hidden="true">
             AF
@@ -501,6 +501,14 @@ export default function App() {
                     >
                       <CategoryCard
                         category={category}
+                        imageUrl={
+                          category.image_url ||
+                          menuItems.find(
+                            (item) =>
+                              String(item.category_id) === String(category.id) &&
+                              item.image_url,
+                          )?.image_url
+                        }
                         count={itemCountByCategory[String(category.id)] || 0}
                         selected={activeCategory === String(category.id)}
                         onSelect={() => selectCategory(String(category.id))}
