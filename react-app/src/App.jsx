@@ -447,16 +447,6 @@ export default function App() {
               Explore the menu <span aria-hidden="true">↓</span>
             </button>
           </div>
-          <div className="hero-portrait">
-            <img
-              src="/images/temporary-chef.jpg"
-              alt="Chef preparing a fresh meal"
-              fetchPriority="high"
-            />
-            <span className="chef-caption">
-              <span aria-hidden="true">✦</span> Made fresh daily
-            </span>
-          </div>
         </section>
 
         {confirmation && (
@@ -495,29 +485,37 @@ export default function App() {
               {status === "loading" ? (
                 <div className="empty-state">Setting the table…</div>
               ) : (
-                <div className="category-grid">
-                  {categories.map((category, index) => (
-                    <div
-                      className="category-card-reveal"
-                      style={{ "--reveal-index": index }}
-                      key={category.id}
-                    >
-                      <CategoryCard
-                        category={category}
-                        imageUrl={
-                          category.image_url ||
-                          menuItems.find(
-                            (item) =>
-                              String(item.category_id) === String(category.id) &&
-                              item.image_url,
-                          )?.image_url
-                        }
-                        count={itemCountByCategory[String(category.id)] || 0}
-                        selected={activeCategory === String(category.id)}
-                        onSelect={() => selectCategory(String(category.id))}
-                      />
-                    </div>
-                  ))}
+                <div className="category-stage">
+                  <div className="category-side-art category-side-art-left" aria-hidden="true">
+                    <span>✦</span>
+                  </div>
+                  <div className="category-side-art category-side-art-right" aria-hidden="true">
+                    <span>✳</span>
+                  </div>
+                  <div className="category-grid">
+                    {categories.map((category, index) => (
+                      <div
+                        className="category-card-reveal"
+                        style={{ "--reveal-index": index }}
+                        key={category.id}
+                      >
+                        <CategoryCard
+                          category={category}
+                          imageUrl={
+                            category.image_url ||
+                            menuItems.find(
+                              (item) =>
+                                String(item.category_id) === String(category.id) &&
+                                item.image_url,
+                            )?.image_url
+                          }
+                          count={itemCountByCategory[String(category.id)] || 0}
+                          selected={activeCategory === String(category.id)}
+                          onSelect={() => selectCategory(String(category.id))}
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </section>

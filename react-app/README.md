@@ -19,9 +19,9 @@ The preview includes category browsing, a locally persisted shopping cart, and
 checkout through Laravel's existing `POST /api/orders` endpoint. Laravel
 validates item availability and calculates the final order total.
 
-The hero currently uses a temporary Unsplash chef photo at
-`public/images/temporary-chef.jpg`; replace that file when the café's own chef
-photo is ready.
+The category area currently uses a temporary Unsplash chef photo in its
+background at `public/images/temporary-chef.jpg`; replace that file when the
+café's own chef photo is ready.
 
 ## Deploy as a separate Railway service
 
