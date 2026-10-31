@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const CART_STORAGE_KEY = "afc-react-menu-cart";
 
@@ -92,38 +92,44 @@ function CategoryCard({ category, imageUrl, count, selected, onSelect }) {
 function FloatingMascot({ mood }) {
   return (
     <svg
-      className="floating-mascot-figure"
+      className={`floating-mascot-figure mascot-${mood}`}
       viewBox="0 0 112 140"
       aria-hidden="true"
     >
       <ellipse cx="57" cy="132" rx="33" ry="5" fill="rgba(57,43,19,.12)" />
+      <g className="mascot-walking-legs">
+        <path className="mascot-left-leg" d="m43 120-3 10" stroke="#5d402c" strokeLinecap="round" strokeWidth="7" />
+        <path className="mascot-right-leg" d="m65 120 4 10" stroke="#5d402c" strokeLinecap="round" strokeWidth="7" />
+        <path d="M34 132h9m22 0h9" stroke="#49352c" strokeLinecap="round" strokeWidth="5" />
+      </g>
       <path d="M34 99c-13 0-19-4-25-15" fill="none" stroke="#e9b181" strokeLinecap="round" strokeWidth="10" />
       <path d="m10 81-7 1 4 7" fill="none" stroke="#e9b181" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" />
       <path d="M75 100c14 2 21 9 23 19" fill="none" stroke="#e9b181" strokeLinecap="round" strokeWidth="10" />
       <path d="M39 91h34c13 7 20 18 21 38H19c1-20 8-31 20-38z" fill="#856128" />
       <path d="m43 91 13 13 13-13 7 38H36z" fill="#fffefa" />
       <path d="M48 76h20v21l-10 9-10-9z" fill="#e9b181" />
-      <path
-        d="M33 47c0-19 10-30 27-30s27 11 27 30v15c0 18-11 30-27 30S33 80 33 62z"
-        fill="#e9b181"
-      />
-      <path
-        d="M31 49c-6-18 4-36 24-38 19-2 33 10 31 31-9-2-14-7-17-15-9 10-21 14-38 13z"
-        fill="#49352c"
-      />
-      <ellipse cx="46.5" cy="56" rx="4" ry="5" fill="#fffaf0" />
-      <ellipse cx="73.5" cy="56" rx="4" ry="5" fill="#fffaf0" />
-      <circle cx="47" cy="56" r="2" fill="#49352c" />
-      <circle cx="74" cy="56" r="2" fill="#49352c" />
-      <path
-        d={mood === "happy" ? "M50 64c4 10 16 10 20 0" : "M53 67c2 2 5 2 8 0"}
-        className="mascot-smile"
-      />
+      <g className="mascot-head">
+        <path d="M33 47c0-19 10-30 27-30s27 11 27 30v15c0 18-11 30-27 30S33 80 33 62z" fill="#e9b181" />
+        <path d="M31 49c-6-18 4-36 24-38 19-2 33 10 31 31-9-2-14-7-17-15-9 10-21 14-38 13z" fill="#49352c" />
+        <path d="M35 32c5-14 17-21 30-16" fill="none" stroke="#725448" strokeLinecap="round" strokeWidth="5" />
+        <path d="M34 44c-3-4-5-8-4-13m60 15c3-5 4-9 3-14" fill="none" stroke="#bc8e3f" strokeLinecap="round" strokeWidth="3" />
+        <g className="mascot-eyes">
+          <ellipse cx="46.5" cy="56" rx="4.3" ry="5.6" fill="#fffaf0" />
+          <ellipse cx="73.5" cy="56" rx="4.3" ry="5.6" fill="#fffaf0" />
+          <circle className="mascot-pupil" cx="48" cy="56" r="2.5" fill="#49352c" />
+          <circle className="mascot-pupil" cx="75" cy="56" r="2.5" fill="#49352c" />
+          <path className="mascot-tired-eyelid" d="M42 54c3 2 6 2 9 0m18 0c3 2 6 2 9 0" />
+        </g>
+        <path d="M50 65c4 3 12 3 17 0" fill="none" stroke="#d38a74" strokeLinecap="round" strokeWidth="2" />
+        <path
+          d={mood === "happy" ? "M50 64c4 10 16 10 20 0" : mood === "tired" ? "M53 69c2-2 5-2 8 0" : "M53 67c2 2 5 2 8 0"}
+          className="mascot-smile"
+        />
+        <ellipse cx="38" cy="65" rx="4" ry="2.5" fill="#d98272" opacity=".35" />
+        <ellipse cx="82" cy="65" rx="4" ry="2.5" fill="#d98272" opacity=".35" />
+      </g>
       <path d="M45 112h29" stroke="#d3a94d" strokeLinecap="round" strokeWidth="2" />
       <text x="60" y="124" fill="#fffaf0" fontFamily="sans-serif" fontSize="8" fontWeight="700" textAnchor="middle">AFC</text>
-      <path d="M26 48c-3-8-1-16 5-20m60 22c3-8 1-16-5-20" fill="none" stroke="#bc8e3f" strokeLinecap="round" strokeWidth="3" />
-      <circle cx="27" cy="26" r="3" fill="#bc8e3f" />
-      <circle cx="89" cy="26" r="3" fill="#bc8e3f" />
     </svg>
   );
 }
@@ -222,9 +228,11 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState("");
   const [mascotReaction, setMascotReaction] = useState({
     mood: "idle",
-    message: "Pick a category or search to find a favourite!",
     sequence: 0,
   });
+  const [mascotHelpOpen, setMascotHelpOpen] = useState(false);
+  const mascotHelpCloseRef = useRef(null);
+  const mascotHelpDialogRef = useRef(null);
   const [cart, setCart] = useState(readSavedCart);
   const [cartOpen, setCartOpen] = useState(false);
   const [status, setStatus] = useState("loading");
@@ -295,18 +303,38 @@ export default function App() {
   }, [cartOpen]);
 
   useEffect(() => {
+    if (mascotReaction.mood === "idle") {
+      const timeout = window.setTimeout(() => {
+        setMascotReaction((current) =>
+          current.mood === "idle" ? { ...current, mood: "tired" } : current,
+        );
+      }, 18000);
+
+      return () => window.clearTimeout(timeout);
+    }
+
     if (mascotReaction.mood !== "happy") return undefined;
 
     const timeout = window.setTimeout(() => {
-      setMascotReaction((current) => ({
-        ...current,
-        mood: "idle",
-        message: "Pick a category or search to find a favourite!",
-      }));
+      setMascotReaction((current) => (current.mood === "happy"
+        ? { ...current, mood: "idle" }
+        : current));
     }, 2400);
 
     return () => window.clearTimeout(timeout);
-  }, [mascotReaction.sequence]);
+  }, [mascotReaction.mood, mascotReaction.sequence]);
+
+  useEffect(() => {
+    const dialog = mascotHelpDialogRef.current;
+    if (!dialog) return undefined;
+
+    if (mascotHelpOpen && !dialog.open) dialog.showModal();
+    if (!mascotHelpOpen && dialog.open) dialog.close();
+    if (!mascotHelpOpen) return undefined;
+
+    mascotHelpCloseRef.current?.focus();
+    return undefined;
+  }, [mascotHelpOpen]);
 
   const itemCountByCategory = useMemo(
     () =>
@@ -383,7 +411,8 @@ export default function App() {
   const reactMascot = (message) => {
     setMascotReaction((current) => ({
       mood: "happy",
-      message,
+      message: "",
+      lastAction: message,
       sequence: current.sequence + 1,
     }));
   };
@@ -469,6 +498,11 @@ export default function App() {
   const updateSearchQuery = (query) => {
     setSearchQuery(query);
     if (query.trim()) setActiveCategory("all");
+    setMascotReaction((current) => ({
+      ...current,
+      mood: "idle",
+      sequence: current.sequence + 1,
+    }));
   };
 
   const submitOrder = async (event) => {
@@ -746,12 +780,83 @@ export default function App() {
         <span>Made fresh with love at Acie Fraiche Café.</span>
       </footer>
 
-      <aside className={`floating-mascot mascot-${mascotReaction.mood}`} aria-label="Acie Fraiche menu guide">
-        <p className="mascot-speech" role="status" aria-live="polite">
-          {mascotReaction.message}
-        </p>
-        <FloatingMascot mood={mascotReaction.mood} />
-      </aside>
+      {!cartOpen && (
+        <button
+          className={`floating-mascot mascot-${mascotReaction.mood}${mascotHelpOpen ? " mascot-help-open" : ""}`}
+          type="button"
+          aria-label="AFC helper. Tap to see how to order."
+          aria-haspopup="dialog"
+          aria-expanded={mascotHelpOpen}
+          aria-controls="mascot-help-dialog"
+          onClick={() => {
+            reactMascot("Happy to help! Here's how to order.");
+            setMascotHelpOpen(true);
+          }}
+        >
+          <span className="mascot-speech" aria-hidden="true">
+            {mascotReaction.mood === "happy"
+              ? mascotReaction.lastAction
+              : mascotReaction.mood === "tired"
+                ? "Need a hand? Tap me!"
+                : "Tap me if you need help"}
+          </span>
+          <FloatingMascot mood={mascotReaction.mood} />
+        </button>
+      )}
+
+      <dialog
+        id="mascot-help-dialog"
+        className="mascot-help-dialog"
+        aria-labelledby="mascot-help-title"
+        onCancel={(event) => {
+          event.preventDefault();
+          setMascotHelpOpen(false);
+        }}
+        onClose={() => setMascotHelpOpen(false)}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) setMascotHelpOpen(false);
+        }}
+        ref={mascotHelpDialogRef}
+      >
+        <section className="mascot-help-panel">
+          <button
+            ref={mascotHelpCloseRef}
+            className="cart-close mascot-help-close"
+            type="button"
+            aria-label="Close ordering guide"
+            onClick={() => setMascotHelpOpen(false)}
+          >
+            ×
+          </button>
+          <div className="mascot-help-heading">
+            <span className="mascot-help-badge" aria-hidden="true">AFC</span>
+            <p className="eyebrow">Your little guide</p>
+            <h2 id="mascot-help-title">Ordering is easy!</h2>
+            <p>Follow these simple steps and I’ll leave the rest to you.</p>
+          </div>
+          <ol className="mascot-help-steps">
+            <li><span>1</span><div><strong>Find something tasty</strong><small>Search for a dish or pick a menu category.</small></div></li>
+            <li><span>2</span><div><strong>Add it to your bag</strong><small>Tap “Add to cart” on anything you fancy.</small></div></li>
+            <li><span>3</span><div><strong>Tell us where to send it</strong><small>Open your bag, enter your name and phone, then place your order.</small></div></li>
+          </ol>
+          <button
+            className="mascot-help-start"
+            type="button"
+            onClick={() => {
+              setMascotHelpOpen(false);
+              window.setTimeout(() => {
+                document.getElementById("menu-search")?.focus({ preventScroll: true });
+                document.getElementById("menu-search")?.scrollIntoView({
+                  behavior: "smooth",
+                  block: "center",
+                });
+              }, 0);
+            }}
+          >
+            Let’s find something <span aria-hidden="true">→</span>
+          </button>
+        </section>
+      </dialog>
 
       {cartItemCount > 0 && !cartOpen && (
         <button
