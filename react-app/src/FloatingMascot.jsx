@@ -221,6 +221,7 @@ export default function FloatingMascot({ mood }) {
 
     let renderer;
     let scene;
+    let timer;
     let resizeObserver;
     let reducedMotionQuery;
     let onMotionPreferenceChange;
@@ -233,6 +234,7 @@ export default function FloatingMascot({ mood }) {
         reducedMotionQuery.removeEventListener("change", onMotionPreferenceChange);
       }
       resizeObserver?.disconnect();
+      timer?.dispose();
       const geometries = new Set();
       const materials = new Set();
       const textures = new Set();
@@ -288,7 +290,8 @@ export default function FloatingMascot({ mood }) {
 
       reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
       let isReducedMotion = reducedMotionQuery.matches;
-      const clock = new THREE.Clock();
+      timer = new THREE.Timer();
+      timer.connect(document);
 
       const resize = () => {
         const width = container.clientWidth;
@@ -302,7 +305,8 @@ export default function FloatingMascot({ mood }) {
 
       const render = () => {
         frameId = window.requestAnimationFrame(render);
-        const time = clock.getElapsedTime();
+        timer.update();
+        const time = timer.getElapsed();
         const currentMood = moodRef.current;
         const animatedTime = isReducedMotion ? 0 : time;
 
