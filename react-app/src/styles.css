@@ -1633,21 +1633,21 @@ p {
   }
 
   .category-side-art {
-    width: 58px;
-    height: 58px;
-    font-size: 17px;
+    width: 40px;
+    height: 40px;
+    font-size: 13px;
     opacity: 0.65;
   }
 
   .category-side-art::before {
-    inset: 7px;
+    inset: 5px;
   }
 
   .category-side-art::after {
-    top: 1px;
-    right: 11px;
-    width: 6px;
-    height: 6px;
+    top: 0;
+    right: 8px;
+    width: 5px;
+    height: 5px;
   }
 
   .category-side-art-left {
