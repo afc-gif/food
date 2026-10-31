@@ -89,6 +89,45 @@ function CategoryCard({ category, imageUrl, count, selected, onSelect }) {
   );
 }
 
+function MenuGuideIllustration() {
+  return (
+    <svg
+      className="menu-guide-illustration"
+      viewBox="0 0 112 112"
+      role="img"
+      aria-label="Friendly guide pointing to the menu search"
+    >
+      <circle cx="56" cy="56" r="52" fill="#f3ead8" />
+      <circle cx="56" cy="56" r="43" fill="#fffaf0" />
+      <path
+        d="M25 108c1-21 12-32 31-32s30 11 31 32"
+        fill="#856128"
+      />
+      <path d="M42 77h28l8 31H34z" fill="#fffefa" />
+      <path d="M48 75v13l8 8 8-8V75" fill="#e9b181" />
+      <path
+        d="M38 43c0-14 8-24 19-24 12 0 19 10 19 24v11c0 12-8 21-19 21S38 66 38 54z"
+        fill="#e9b181"
+      />
+      <path
+        d="M38 46c-5-17 5-30 20-30 13 0 21 9 19 23-5-2-9-6-11-11-6 7-16 10-28 9z"
+        fill="#49352c"
+      />
+      <path d="M45 52h4m15 0h4" stroke="#49352c" strokeLinecap="round" strokeWidth="2.5" />
+      <path d="M51 64c4 3 8 3 12 0" fill="none" stroke="#a9574c" strokeLinecap="round" strokeWidth="2" />
+      <path
+        d="M73 80c9-4 12-12 17-18l10-7"
+        fill="none"
+        stroke="#e9b181"
+        strokeLinecap="round"
+        strokeWidth="9"
+      />
+      <path d="m98 55 8-3-3 8" fill="none" stroke="#e9b181" strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" />
+      <path d="M34 84 25 74" stroke="#856128" strokeLinecap="round" strokeWidth="7" />
+    </svg>
+  );
+}
+
 function MenuCard({ item, onAdd }) {
   const soldOut = item.is_sold_out || item.stock === 0;
   const stockLabel =
@@ -180,6 +219,7 @@ export default function App() {
   const [categories, setCategories] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [activeCategory, setActiveCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState(readSavedCart);
   const [cartOpen, setCartOpen] = useState(false);
   const [status, setStatus] = useState("loading");
@@ -260,11 +300,27 @@ export default function App() {
   );
 
   const visibleItems = useMemo(() => {
-    if (activeCategory === "all") return menuItems;
-    return menuItems.filter(
-      (item) => String(item.category_id ?? "") === activeCategory,
-    );
-  }, [activeCategory, menuItems]);
+    const query = searchQuery.trim().toLocaleLowerCase();
+    return menuItems.filter((item) => {
+      if (
+        activeCategory !== "all" &&
+        String(item.category_id ?? "") !== activeCategory
+      ) {
+        return false;
+      }
+
+      if (!query) return true;
+
+      const categoryName =
+        categories.find(
+          (category) => String(category.id) === String(item.category_id ?? ""),
+        )?.name || "";
+      return [item.name, item.description, categoryName]
+        .join(" ")
+        .toLocaleLowerCase()
+        .includes(query);
+    });
+  }, [activeCategory, categories, menuItems, searchQuery]);
 
   const groupedItems = useMemo(() => {
     if (activeCategory !== "all") {
@@ -278,13 +334,13 @@ export default function App() {
       .map((category) => ({
         id: String(category.id),
         name: category.name,
-        items: menuItems.filter(
+        items: visibleItems.filter(
           (item) => String(item.category_id ?? "") === String(category.id),
         ),
       }))
       .filter((group) => group.items.length > 0);
     const categorizedIds = new Set(categories.map((category) => String(category.id)));
-    const uncategorizedItems = menuItems.filter(
+    const uncategorizedItems = visibleItems.filter(
       (item) => !categorizedIds.has(String(item.category_id ?? "")),
     );
 
@@ -297,7 +353,7 @@ export default function App() {
     }
 
     return groups;
-  }, [activeCategory, categories, menuItems, visibleItems]);
+  }, [activeCategory, categories, visibleItems]);
 
   const cartItemCount = cart.reduce((total, line) => total + line.quantity, 0);
   const cartTotal = cart.reduce(
@@ -354,12 +410,28 @@ export default function App() {
   };
 
   const selectCategory = (categoryId) => {
+    setSearchQuery("");
     setActiveCategory(categoryId);
     window.setTimeout(() => {
       document
         .getElementById("menu-results")
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 60);
+  };
+
+  const browseCategories = () => {
+    setSearchQuery("");
+    setActiveCategory("all");
+    window.setTimeout(() => {
+      document
+        .getElementById("categories")
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 60);
+  };
+
+  const updateSearchQuery = (query) => {
+    setSearchQuery(query);
+    if (query.trim()) setActiveCategory("all");
   };
 
   const submitOrder = async (event) => {
@@ -439,13 +511,52 @@ export default function App() {
             <p className="intro-copy">
               Discover your favourites, freshly made with love at Acie Fraiche.
             </p>
-            <button
-              className="hero-cta"
-              type="button"
-              onClick={() => document.getElementById("categories")?.scrollIntoView({ behavior: "smooth" })}
-            >
-              Explore the menu <span aria-hidden="true">↓</span>
-            </button>
+            <div className="menu-guide">
+              <MenuGuideIllustration />
+              <div className="menu-guide-content">
+                <p className="menu-guide-message">
+                  <strong>Hi there!</strong> Search for a favourite or browse by category.
+                </p>
+                <form
+                  className="menu-search-form"
+                  role="search"
+                  onSubmit={(event) => event.preventDefault()}
+                >
+                  <label className="visually-hidden" htmlFor="menu-search">
+                    Search dishes and categories
+                  </label>
+                  <svg
+                    className="menu-search-icon"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <circle cx="10.8" cy="10.8" r="6.8" />
+                    <path d="m16 16 4.5 4.5" />
+                  </svg>
+                  <input
+                    id="menu-search"
+                    type="search"
+                    value={searchQuery}
+                    onChange={(event) => updateSearchQuery(event.target.value)}
+                    placeholder="Search the menu"
+                    autoComplete="off"
+                  />
+                  {searchQuery && (
+                    <button
+                      className="menu-search-clear"
+                      type="button"
+                      onClick={() => updateSearchQuery("")}
+                      aria-label="Clear menu search"
+                    >
+                      ×
+                    </button>
+                  )}
+                </form>
+                <button className="browse-categories-link" type="button" onClick={browseCategories}>
+                  Browse all categories <span aria-hidden="true">↓</span>
+                </button>
+              </div>
+            </div>
           </div>
         </section>
 
@@ -465,7 +576,8 @@ export default function App() {
           </section>
         ) : (
           <>
-            <section className="categories-section" id="categories" aria-labelledby="categories-title">
+            {!searchQuery.trim() && (
+              <section className="categories-section" id="categories" aria-labelledby="categories-title">
               <div className="section-heading">
                 <div>
                   <p className="eyebrow">Find your favourite</p>
@@ -518,16 +630,25 @@ export default function App() {
                   </div>
                 </div>
               )}
-            </section>
+              </section>
+            )}
 
             <section className="menu-section" id="menu-results" aria-live="polite">
               <div className="section-heading menu-section-heading">
                 <div>
-                  <p className="eyebrow">{activeCategory === "all" ? "Made fresh for you" : "A delicious choice"}</p>
+                  <p className="eyebrow">
+                    {searchQuery.trim()
+                      ? `Matches for "${searchQuery.trim()}"`
+                      : activeCategory === "all"
+                        ? "Made fresh for you"
+                        : "A delicious choice"}
+                  </p>
                   <h2>
-                    {activeCategory === "all"
-                      ? "Explore our menu"
-                      : categories.find((category) => String(category.id) === activeCategory)?.name || "Our menu"}
+                    {searchQuery.trim()
+                      ? "Search results"
+                      : activeCategory === "all"
+                        ? "Explore our menu"
+                        : categories.find((category) => String(category.id) === activeCategory)?.name || "Our menu"}
                   </h2>
                 </div>
                 <span className="item-count">
@@ -574,7 +695,9 @@ export default function App() {
                 </div>
               ) : (
                 <div className="empty-state">
-                  No dishes are available in this category right now.
+                  {searchQuery.trim()
+                    ? `We couldn't find a dish matching "${searchQuery.trim()}". Try another search.`
+                    : "No dishes are available in this category right now."}
                 </div>
               )}
             </section>
