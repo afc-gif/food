@@ -19,9 +19,9 @@ The preview includes category browsing, a locally persisted shopping cart, and
 checkout through Laravel's existing `POST /api/orders` endpoint. Laravel
 validates item availability and calculates the final order total.
 
-Customers can search dishes and tap the animated AFC mascot for a short
-ordering guide. The mascot reacts to menu selections and becomes sleepy after
-the customer has been idle for a while.
+Customers can search dishes and tap the Three.js AFC mascot for a short
+ordering guide. The 3D character is generated in the app, reacts to menu
+selections, and becomes sleepy after the customer has been idle for a while.
 
 The category area currently uses a temporary Unsplash chef photo in its
 background at `public/images/temporary-chef.jpg`; replace that file when the
