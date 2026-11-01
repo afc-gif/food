@@ -662,6 +662,19 @@ export default function App() {
               </div>
             </div>
           </div>
+          <figure className="hero-chef">
+            <img
+              src="/images/chef.jpeg"
+              alt="Acie Fraiche chef ready to prepare your meal"
+              width="826"
+              height="1280"
+              fetchPriority="high"
+            />
+            <figcaption>
+              <span aria-hidden="true">✦</span>
+              Freshly made, with care
+            </figcaption>
+          </figure>
         </section>
 
         {confirmation && (

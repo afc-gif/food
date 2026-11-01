@@ -25,9 +25,7 @@ The mascot brings out a shopping cart when a category is selected, celebrates
 each item added, and runs off with the order before WhatsApp opens. The empty
 cart also links to the ordering guide.
 
-The category area currently uses a temporary Unsplash chef photo in its
-background at `public/images/temporary-chef.jpg`; replace that file when the
-café's own chef photo is ready.
+The hero features the café chef portrait at `public/images/chef.jpeg`.
 
 ## Deploy as a separate Railway service
 
