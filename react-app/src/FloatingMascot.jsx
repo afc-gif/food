@@ -58,6 +58,51 @@ function makeApronLabel() {
   return texture;
 }
 
+function createShoppingCart(scene) {
+  const cart = new THREE.Group();
+  const frame = makeMaterial("#725227", 0.55);
+  const basket = new THREE.MeshStandardMaterial({
+    color: "#e9c98e",
+    roughness: 0.55,
+    transparent: true,
+    opacity: 0.82,
+  });
+  const base = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.07, 0.42), frame);
+  base.position.set(0, -0.48, 0);
+  cart.add(base);
+
+  const basketFloor = new THREE.Mesh(
+    new THREE.BoxGeometry(0.58, 0.28, 0.38),
+    basket,
+  );
+  basketFloor.position.set(0, -0.3, 0);
+  cart.add(basketFloor);
+
+  for (const side of [-1, 1]) {
+    makeCapsule(cart, frame, [side * 0.29, -0.5, 0.19], [side * 0.29, 0.02, 0.19], 0.025);
+    makeCapsule(cart, frame, [side * 0.29, -0.5, -0.19], [side * 0.29, 0.02, -0.19], 0.025);
+    makeCapsule(cart, frame, [-0.29, 0.01, side * 0.19], [0.29, 0.01, side * 0.19], 0.025);
+    makeSphere(cart, frame, [side * 0.23, -0.63, 0.06], [0.1, 0.1, 0.055]);
+  }
+  makeCapsule(cart, frame, [-0.29, -0.48, 0.19], [0.29, -0.48, 0.19], 0.025);
+  makeCapsule(cart, frame, [-0.29, -0.48, -0.19], [0.29, -0.48, -0.19], 0.025);
+  makeCapsule(cart, frame, [0.28, -0.47, 0], [0.48, 0.3, 0], 0.035);
+  makeCapsule(cart, frame, [0.48, 0.3, -0.08], [0.48, 0.3, 0.08], 0.045);
+
+  const treats = ["#d77b4a", "#7d9b61", "#f0d071"].map((color, index) => {
+    const treat = makeSphere(
+      cart,
+      makeMaterial(color, 0.65),
+      [-0.15 + index * 0.15, -0.15, 0.02],
+      [0.12, 0.13, 0.12],
+    );
+    return treat;
+  });
+  cart.position.set(-2.7, -0.16, 0.35);
+  scene.add(cart);
+  return { cart, treats };
+}
+
 function createCharacter(scene) {
   const materials = {
     skin: makeMaterial("#e9b181"),
@@ -79,6 +124,7 @@ function createCharacter(scene) {
   };
   const character = new THREE.Group();
   scene.add(character);
+  const shoppingCart = createShoppingCart(scene);
 
   const floorShadow = new THREE.Mesh(
     new THREE.CircleGeometry(0.72, 32),
@@ -197,23 +243,31 @@ function createCharacter(scene) {
 
   return {
     character,
+    cart: shoppingCart.cart,
     eyes,
     floorShadow,
     head,
     legs,
     mouths: { happy: smile, idle: neutral, tired },
     pointingArm,
+    treats: shoppingCart.treats,
   };
 }
 
-export default function FloatingMascot({ mood }) {
+export default function FloatingMascot({
+  mood,
+  cartCount = 0,
+  cartVisible = false,
+  checkoutCelebrating = false,
+  cartFeedbackKey = null,
+}) {
   const containerRef = useRef(null);
-  const moodRef = useRef(mood);
+  const stateRef = useRef({ mood, cartCount, cartVisible, checkoutCelebrating });
   const [renderError, setRenderError] = useState(false);
 
   useEffect(() => {
-    moodRef.current = mood;
-  }, [mood]);
+    stateRef.current = { mood, cartCount, cartVisible, checkoutCelebrating };
+  }, [mood, cartCount, cartVisible, checkoutCelebrating]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -307,13 +361,32 @@ export default function FloatingMascot({ mood }) {
         frameId = window.requestAnimationFrame(render);
         timer.update();
         const time = timer.getElapsed();
-        const currentMood = moodRef.current;
+        const { mood: currentMood, cartVisible: isCartVisible, checkoutCelebrating: isCelebrating } =
+          stateRef.current;
         const animatedTime = isReducedMotion ? 0 : time;
 
-        character.character.position.y = Math.sin(animatedTime * 2.2) * (
-          currentMood === "tired" ? 0.015 : currentMood === "happy" ? 0.055 : 0.035
+        const cartTargetX = isCartVisible ? -1.08 : -2.7;
+        character.cart.position.x += (cartTargetX - character.cart.position.x) * (
+          isReducedMotion ? 1 : 0.12
         );
-        character.character.rotation.y = Math.sin(animatedTime * 0.65) * 0.07;
+        character.cart.position.y = -0.16 + (
+          isCelebrating && !isReducedMotion ? Math.abs(Math.sin(time * 16)) * 0.08 : 0
+        );
+        character.treats.forEach((treat, index) => {
+          treat.visible = index < Math.min(stateRef.current.cartCount, character.treats.length);
+        });
+        character.character.position.y = Math.sin(animatedTime * 2.2) * (
+          isCelebrating
+            ? 0.045
+            : currentMood === "tired"
+              ? 0.015
+              : currentMood === "happy"
+                ? 0.055
+                : 0.035
+        );
+        character.character.rotation.y = isCelebrating
+          ? 0.12
+          : Math.sin(animatedTime * 0.65) * 0.07;
         character.head.rotation.y = Math.sin(animatedTime * 0.9) * 0.12;
         character.head.rotation.z = currentMood === "tired"
           ? -0.1
@@ -324,9 +397,11 @@ export default function FloatingMascot({ mood }) {
           ? Math.sin(animatedTime * 8) * 0.06
           : Math.sin(animatedTime * 1.8) * 0.025;
         character.legs.forEach((leg, index) => {
-          leg.rotation.z = currentMood === "tired"
-            ? Math.sin(animatedTime * 0.9) * 0.015
-            : Math.sin(animatedTime * 3 + index * Math.PI) * 0.07;
+          leg.rotation.z = isCelebrating && !isReducedMotion
+            ? Math.sin(time * 16 + index * Math.PI) * 0.38
+            : currentMood === "tired"
+              ? Math.sin(animatedTime * 0.9) * 0.015
+              : Math.sin(animatedTime * 3 + index * Math.PI) * 0.07;
         });
         character.eyes.forEach(({ eye, pupil, side }) => {
           eye.scale.y = currentMood === "tired"
@@ -377,6 +452,14 @@ export default function FloatingMascot({ mood }) {
       className={`floating-mascot-figure mascot-${mood}${renderError ? " mascot-3d-error" : ""}`}
       aria-hidden="true"
     >
+      <span className={`mascot-cart-counter${cartVisible ? " is-visible" : ""}`} key={`count-${cartCount}`}>
+        {cartCount}
+      </span>
+      {cartFeedbackKey !== null && (
+        <span className="mascot-add-feedback" key={`feedback-${cartFeedbackKey}`}>
+          +1
+        </span>
+      )}
       {renderError && <span className="mascot-3d-error-message">3D character unavailable</span>}
     </span>
   );

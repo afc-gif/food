@@ -42,6 +42,39 @@ function formatPrice(price) {
   })}`;
 }
 
+function buildWhatsAppUrl({ order, cart, total, customer }) {
+  const receiptUrl =
+    order?.receipt_url ||
+    (order?.code
+      ? `${window.location.origin}/receipt/${encodeURIComponent(order.code)}`
+      : "");
+  const lines = [
+    "Hello AFC! I'd like to place an order.",
+    "",
+    order?.code ? `Order code: ${order.code}` : "",
+    receiptUrl ? `Receipt: ${receiptUrl}` : "",
+    order?.total !== undefined && order?.total !== null
+      ? `Official total: ${formatPrice(order.total)}`
+      : "",
+    "",
+    "Order:",
+    ...cart.map(
+      (line) =>
+        `${line.quantity} × ${line.item.name} — ${formatPrice(
+          Number(line.item.price || 0) * line.quantity,
+        )}`,
+    ),
+    `Estimated total: ${formatPrice(total)}`,
+    "",
+    `Name: ${customer.name.trim()}`,
+    `Phone: ${customer.phone.trim()}`,
+    `Service: ${customer.service}`,
+    customer.note.trim() ? `Note: ${customer.note.trim()}` : "",
+  ].filter(Boolean);
+
+  return `https://wa.me/2348143190700?text=${encodeURIComponent(lines.join("\n"))}`;
+}
+
 function readSavedCart() {
   try {
     const savedCart = JSON.parse(localStorage.getItem(CART_STORAGE_KEY) || "[]");
@@ -185,7 +218,9 @@ export default function App() {
   const [mascotReaction, setMascotReaction] = useState({
     mood: "idle",
     sequence: 0,
+    action: "",
   });
+  const [cartAnnouncement, setCartAnnouncement] = useState("");
   const [mascotHelpOpen, setMascotHelpOpen] = useState(false);
   const mascotHelpCloseRef = useRef(null);
   const mascotHelpDialogRef = useRef(null);
@@ -196,6 +231,8 @@ export default function App() {
   const [checkoutError, setCheckoutError] = useState("");
   const [checkoutStatus, setCheckoutStatus] = useState("idle");
   const [confirmation, setConfirmation] = useState("");
+  const [checkoutCelebrating, setCheckoutCelebrating] = useState(false);
+  const [whatsappRedirectUrl, setWhatsappRedirectUrl] = useState("");
   const [customer, setCustomer] = useState({
     name: "",
     phone: "",
@@ -273,12 +310,28 @@ export default function App() {
 
     const timeout = window.setTimeout(() => {
       setMascotReaction((current) => (current.mood === "happy"
-        ? { ...current, mood: "idle" }
+        ? { ...current, mood: "idle", action: "" }
         : current));
     }, 2400);
 
     return () => window.clearTimeout(timeout);
   }, [mascotReaction.mood, mascotReaction.sequence]);
+
+  useEffect(() => {
+    if (!whatsappRedirectUrl) return undefined;
+
+    const timeout = window.setTimeout(() => {
+      try {
+        localStorage.removeItem(CART_STORAGE_KEY);
+      } catch (storageError) {
+        console.warn("Completed menu cart could not be cleared from this browser.", storageError);
+      }
+      setCart([]);
+      window.location.assign(whatsappRedirectUrl);
+    }, 1350);
+
+    return () => window.clearTimeout(timeout);
+  }, [whatsappRedirectUrl]);
 
   useEffect(() => {
     const dialog = mascotHelpDialogRef.current;
@@ -364,11 +417,12 @@ export default function App() {
     0,
   );
 
-  const reactMascot = (message) => {
+  const reactMascot = (message, action = "") => {
     setMascotReaction((current) => ({
       mood: "happy",
       message: "",
       lastAction: message,
+      action,
       sequence: current.sequence + 1,
     }));
   };
@@ -384,6 +438,12 @@ export default function App() {
         : Number(item.stock);
     if ((currentLine?.quantity || 0) >= stockLimit) return;
 
+    const nextItemCount = cartItemCount + 1;
+    setCartAnnouncement(
+      `${item.name} added to your cart. ${nextItemCount} ${
+        nextItemCount === 1 ? "item" : "items"
+      } in your cart.`,
+    );
     setCart((currentCart) => {
       const currentLine = currentCart.find(
         (line) => String(line.item.id) === String(item.id),
@@ -399,7 +459,7 @@ export default function App() {
           )
         : [...currentCart, { item, quantity: 1 }];
     });
-    reactMascot(`Yum! ${item.name} is in your bag.`);
+    reactMascot(`Yum! ${item.name} is in my cart.`, "add");
   };
 
   const changeQuantity = (itemId, difference) => {
@@ -432,7 +492,12 @@ export default function App() {
     setActiveCategory(categoryId);
     const categoryName =
       categories.find((category) => String(category.id) === categoryId)?.name;
-    reactMascot(categoryName ? `Great choice! Let's see ${categoryName}.` : "Great choice!");
+    reactMascot(
+      categoryName
+        ? `Great choice! I'll bring my cart for ${categoryName}.`
+        : "All set! I'll bring my cart.",
+      categoryId === "all" ? "" : "category",
+    );
     window.setTimeout(() => {
       document
         .getElementById("menu-results")
@@ -443,7 +508,7 @@ export default function App() {
   const browseCategories = () => {
     setSearchQuery("");
     setActiveCategory("all");
-    reactMascot("Take your pick! There's something delicious here.");
+    reactMascot("Take your pick! I'll be right here with my cart.", "");
     window.setTimeout(() => {
       document
         .getElementById("categories")
@@ -463,35 +528,48 @@ export default function App() {
 
   const submitOrder = async (event) => {
     event.preventDefault();
-    if (!cart.length || checkoutStatus === "submitting") return;
+    if (!cart.length || checkoutStatus === "submitting" || checkoutStatus === "redirecting") return;
 
     setCheckoutStatus("submitting");
     setCheckoutError("");
     try {
-      const order = await fetchJson("/api/orders", {
-        method: "POST",
-        body: JSON.stringify({
-          channel: "web",
-          customer_name: customer.name.trim(),
-          customer_phone: customer.phone.trim(),
-          service: customer.service,
-          note: customer.note.trim(),
-          items: cart.map((line) => ({
-            menu_item_id: line.item.id,
-            quantity: line.quantity,
-          })),
-        }),
-      });
+      const orderCart = cart;
+      const orderTotal = cartTotal;
+      let order = null;
+      try {
+        order = await fetchJson("/api/orders", {
+          method: "POST",
+          body: JSON.stringify({
+            channel: "web",
+            customer_name: customer.name.trim(),
+            customer_phone: customer.phone.trim(),
+            service: customer.service,
+            note: customer.note.trim(),
+            send_to_kitchen: false,
+            items: orderCart.map((line) => ({
+              menu_item_id: line.item.id,
+              quantity: line.quantity,
+            })),
+          }),
+        });
+      } catch (orderError) {
+        console.warn("Order could not be saved before WhatsApp checkout.", orderError);
+      }
 
-      setCart([]);
+      const redirectUrl = buildWhatsAppUrl({
+        order,
+        cart: orderCart,
+        total: orderTotal,
+        customer,
+      });
       setCartOpen(false);
-      setCheckoutStatus("idle");
-      setConfirmation(
-        `Order received${order?.id ? ` · Order #${order.id}` : ""}. Thank you!`,
-      );
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    } catch (orderError) {
-      setCheckoutError(orderError.message || "We couldn't place your order. Please try again.");
+      setCheckoutStatus("redirecting");
+      setCheckoutCelebrating(true);
+      reactMascot("Hooray! Your order is on its way!", "checkout");
+      setWhatsappRedirectUrl(redirectUrl);
+    } catch (checkoutFailure) {
+      console.error("WhatsApp checkout could not be prepared.", checkoutFailure);
+      setCheckoutError("We couldn't prepare your WhatsApp order. Please try again.");
       setCheckoutStatus("error");
     }
   };
@@ -736,29 +814,45 @@ export default function App() {
         <span>Made fresh with love at Acie Fraiche Café.</span>
       </footer>
 
-      {!cartOpen && (
-        <button
-          className={`floating-mascot mascot-${mascotReaction.mood}${mascotHelpOpen ? " mascot-help-open" : ""}`}
-          type="button"
-          aria-label="AFC helper. Tap to see how to order."
-          aria-haspopup="dialog"
-          aria-expanded={mascotHelpOpen}
-          aria-controls="mascot-help-dialog"
-          onClick={() => {
-            reactMascot("Happy to help! Here's how to order.");
-            setMascotHelpOpen(true);
-          }}
-        >
-          <span className="mascot-speech" aria-hidden="true">
-            {mascotReaction.mood === "happy"
+      <button
+        className={`floating-mascot${cartOpen ? " is-in-cart" : ""}${checkoutCelebrating ? " is-celebrating-checkout" : ""} mascot-${mascotReaction.mood}${mascotHelpOpen ? " mascot-help-open" : ""}`}
+        type="button"
+        aria-label={`Open shopping cart, ${cartItemCount} ${cartItemCount === 1 ? "item" : "items"}`}
+        aria-expanded={cartOpen}
+        aria-controls="shopping-cart"
+        onClick={() => {
+          setMascotHelpOpen(false);
+          setCartOpen(true);
+          if (cartItemCount) reactMascot("Let's see what we've picked!", "cart");
+        }}
+      >
+        <span className="mascot-speech" aria-hidden="true">
+          {checkoutCelebrating
+            ? "Hooray! Your order is on its way!"
+            : mascotReaction.mood === "happy"
               ? mascotReaction.lastAction
               : mascotReaction.mood === "tired"
-                ? "Need a hand? Tap me!"
-                : "Tap me if you need help"}
-          </span>
-          <FloatingMascot mood={mascotReaction.mood} />
-        </button>
-      )}
+                ? "Tap me to see your cart."
+                : cartItemCount
+                  ? `I have ${cartItemCount} tasty ${cartItemCount === 1 ? "pick" : "picks"} for you!`
+                  : "Tap me to see your cart"}
+        </span>
+        <FloatingMascot
+          mood={checkoutCelebrating ? "happy" : mascotReaction.mood}
+          cartCount={cartItemCount}
+          cartVisible={
+            activeCategory !== "all" ||
+            cartItemCount > 0 ||
+            cartOpen ||
+            checkoutCelebrating
+          }
+          checkoutCelebrating={checkoutCelebrating}
+          cartFeedbackKey={mascotReaction.action === "add" ? mascotReaction.sequence : null}
+        />
+        <span className="visually-hidden" aria-live="polite" aria-atomic="true">
+          {cartAnnouncement}
+        </span>
+      </button>
 
       <dialog
         id="mascot-help-dialog"
@@ -814,7 +908,7 @@ export default function App() {
         </section>
       </dialog>
 
-      {cartItemCount > 0 && !cartOpen && (
+      {cartItemCount > 0 && !cartOpen && !checkoutCelebrating && (
         <button
           className="floating-cart"
           type="button"
@@ -839,6 +933,7 @@ export default function App() {
         }}
       >
         <aside
+          id="shopping-cart"
           className="cart-drawer"
           role="dialog"
           aria-modal="true"
@@ -931,10 +1026,15 @@ export default function App() {
                 <button
                   className="checkout-button"
                   type="submit"
-                  disabled={checkoutStatus === "submitting"}
+                  disabled={checkoutStatus === "submitting" || checkoutStatus === "redirecting"}
+                  aria-live="polite"
                 >
-                  {checkoutStatus === "submitting" ? "Sending your order…" : "Place my order"}
-                  {checkoutStatus !== "submitting" && <span aria-hidden="true">→</span>}
+                  {checkoutStatus === "submitting"
+                    ? "Preparing your order…"
+                    : checkoutStatus === "redirecting"
+                      ? "Opening WhatsApp…"
+                      : "Checkout with WhatsApp"}
+                  {checkoutStatus === "idle" && <span aria-hidden="true">→</span>}
                 </button>
                 <p className="checkout-footnote">
                   Your final total is confirmed by our kitchen when your order is received.
@@ -946,6 +1046,16 @@ export default function App() {
               <span className="empty-bag" aria-hidden="true">♡</span>
               <h3>Your bag is waiting for something delicious.</h3>
               <p>Pick a favourite from the menu and it will appear here.</p>
+              <button
+                className="cart-help-button"
+                type="button"
+                onClick={() => {
+                  setCartOpen(false);
+                  setMascotHelpOpen(true);
+                }}
+              >
+                Need a hand? See how to order
+              </button>
               <button type="button" onClick={() => setCartOpen(false)}>
                 Back to the menu
               </button>

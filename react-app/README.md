@@ -16,12 +16,14 @@ need direct cross-origin access locally. The React preview uses the existing
 `/assets/logo2.png` brand logo and proxies that asset from Laravel.
 
 The preview includes category browsing, a locally persisted shopping cart, and
-checkout through Laravel's existing `POST /api/orders` endpoint. Laravel
-validates item availability and calculates the final order total.
+WhatsApp checkout. It attempts to save orders through Laravel's existing
+`POST /api/orders` endpoint first, but still opens WhatsApp with the full
+itemized order if the API is unavailable.
 
-Customers can search dishes and tap the Three.js AFC mascot for a short
-ordering guide. The 3D character is generated in the app, reacts to menu
-selections, and becomes sleepy after the customer has been idle for a while.
+Customers can search dishes and tap the Three.js AFC mascot to open the cart.
+The mascot brings out a shopping cart when a category is selected, celebrates
+each item added, and runs off with the order before WhatsApp opens. The empty
+cart also links to the ordering guide.
 
 The category area currently uses a temporary Unsplash chef photo in its
 background at `public/images/temporary-chef.jpg`; replace that file when the
