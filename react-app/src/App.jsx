@@ -220,10 +220,12 @@ export default function App() {
     sequence: 0,
     action: "",
   });
+  const [dishCarouselIndex, setDishCarouselIndex] = useState(0);
   const [cartAnnouncement, setCartAnnouncement] = useState("");
   const [mascotHelpOpen, setMascotHelpOpen] = useState(false);
   const mascotHelpCloseRef = useRef(null);
   const mascotHelpDialogRef = useRef(null);
+  const dishCarouselRef = useRef(null);
   const [cart, setCart] = useState(readSavedCart);
   const [cartOpen, setCartOpen] = useState(false);
   const [status, setStatus] = useState("loading");
@@ -334,6 +336,11 @@ export default function App() {
   }, [whatsappRedirectUrl]);
 
   useEffect(() => {
+    setDishCarouselIndex(0);
+    if (dishCarouselRef.current) dishCarouselRef.current.scrollLeft = 0;
+  }, [activeCategory, searchQuery]);
+
+  useEffect(() => {
     const dialog = mascotHelpDialogRef.current;
     if (!dialog) return undefined;
 
@@ -379,6 +386,10 @@ export default function App() {
   }, [activeCategory, categories, menuItems, searchQuery]);
 
   const groupedItems = useMemo(() => {
+    if (searchQuery.trim()) {
+      return [{ id: "search-results", name: "Search results", items: visibleItems }];
+    }
+
     if (activeCategory !== "all") {
       const category = categories.find(
         (entry) => String(entry.id) === activeCategory,
@@ -409,7 +420,7 @@ export default function App() {
     }
 
     return groups;
-  }, [activeCategory, categories, visibleItems]);
+  }, [activeCategory, categories, searchQuery, visibleItems]);
 
   const cartItemCount = cart.reduce((total, line) => total + line.quantity, 0);
   const cartTotal = cart.reduce(
@@ -514,6 +525,30 @@ export default function App() {
         .getElementById("categories")
         ?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 60);
+  };
+
+  const moveDishCarousel = (direction) => {
+    const carousel = dishCarouselRef.current;
+    if (!carousel) return;
+    const cards = carousel.querySelectorAll(".menu-card-reveal");
+    const targetIndex = Math.max(
+      0,
+      Math.min(dishCarouselIndex + direction, cards.length - 1),
+    );
+    const targetLeft = cards[targetIndex].offsetLeft - cards[0].offsetLeft;
+    carousel.scrollTo({ left: targetLeft, behavior: "smooth" });
+  };
+
+  const updateDishCarouselIndex = (event) => {
+    const carousel = event.currentTarget;
+    const cards = carousel.querySelectorAll(".menu-card-reveal");
+    if (cards.length < 2) {
+      setDishCarouselIndex(0);
+      return;
+    }
+
+    const cardStep = cards[1].offsetLeft - cards[0].offsetLeft;
+    if (cardStep > 0) setDishCarouselIndex(Math.round(carousel.scrollLeft / cardStep));
   };
 
   const updateSearchQuery = (query) => {
@@ -693,22 +728,13 @@ export default function App() {
           </section>
         ) : (
           <>
-            {!searchQuery.trim() && (
+            {!searchQuery.trim() && activeCategory === "all" && (
               <section className="categories-section" id="categories" aria-labelledby="categories-title">
               <div className="section-heading">
                 <div>
                   <p className="eyebrow">Find your favourite</p>
                   <h2 id="categories-title">What are you craving?</h2>
                 </div>
-                {activeCategory !== "all" && (
-                  <button
-                    className="text-button"
-                    type="button"
-                    onClick={() => selectCategory("all")}
-                  >
-                    View all categories <span aria-hidden="true">↗</span>
-                  </button>
-                )}
               </div>
 
               {status === "loading" ? (
@@ -750,41 +776,73 @@ export default function App() {
               </section>
             )}
 
-            <section className="menu-section" id="menu-results" aria-live="polite">
+            {activeCategory === "all" && !searchQuery.trim() ? (
+              <section className="menu-invitation" aria-labelledby="menu-invitation-title">
+                <span className="menu-invitation-sparkle" aria-hidden="true">✦</span>
+                <p className="eyebrow">A little something for every craving</p>
+                <h2 id="menu-invitation-title">Pick a category to explore</h2>
+                <p>Choose what sounds good and we’ll bring the menu right to you.</p>
+              </section>
+            ) : (
+            <section
+              className={`menu-section${activeCategory !== "all" ? " is-category-open" : " is-search-open"}`}
+              id="menu-results"
+              aria-live="polite"
+            >
               <div className="section-heading menu-section-heading">
                 <div>
-                  <p className="eyebrow">
-                    {searchQuery.trim()
-                      ? `Matches for "${searchQuery.trim()}"`
-                      : activeCategory === "all"
-                        ? "Made fresh for you"
-                        : "A delicious choice"}
-                  </p>
-                  <h2>
-                    {searchQuery.trim()
-                      ? "Search results"
-                      : activeCategory === "all"
-                        ? "Explore our menu"
-                        : categories.find((category) => String(category.id) === activeCategory)?.name || "Our menu"}
-                  </h2>
+                  {activeCategory !== "all" ? (
+                    <>
+                      <p className="eyebrow">Made fresh for your craving</p>
+                      <h2>
+                        {categories.find((category) => String(category.id) === activeCategory)?.name || "Our menu"}
+                      </h2>
+                    </>
+                  ) : (
+                    <>
+                      <p className="eyebrow">Matches for “{searchQuery.trim()}”</p>
+                      <h2>Let’s find your favourite</h2>
+                    </>
+                  )}
                 </div>
                 <span className="item-count">
                   {visibleItems.length} {visibleItems.length === 1 ? "dish" : "dishes"}
                 </span>
               </div>
 
+              {activeCategory !== "all" && (
+                <div className="category-view-toolbar">
+                  <button
+                    className="category-back-button"
+                    type="button"
+                    onClick={browseCategories}
+                  >
+                    <span aria-hidden="true">←</span> All categories
+                  </button>
+                  <span className="category-view-prompt">Swipe, browse, and pick a favourite</span>
+                </div>
+              )}
+
               {status === "loading" ? (
                 <div className="empty-state">Loading fresh favourites…</div>
               ) : groupedItems.length ? (
-                <div className="menu-groups" key={activeCategory}>
+                <div className={`menu-groups${activeCategory !== "all" ? " is-focused-category" : ""}`} key={`${activeCategory}-${searchQuery}`}>
                   {groupedItems.map((group, groupIndex) => (
                     <section
-                      className="menu-group"
+                      className={`menu-group${activeCategory !== "all" ? " is-focused-category-group" : ""}`}
                       id={`category-${group.id}`}
                       key={group.id}
                       style={{ "--reveal-index": groupIndex }}
                     >
-                      {activeCategory === "all" && group.id !== "other" && (
+                      {activeCategory === "all" && searchQuery.trim() && (
+                        <div className="menu-group-heading">
+                          <h3>Search results</h3>
+                          <button type="button" onClick={browseCategories}>
+                            Browse categories <span aria-hidden="true">↗</span>
+                          </button>
+                        </div>
+                      )}
+                      {activeCategory === "all" && !searchQuery.trim() && group.id !== "other" && (
                         <div className="menu-group-heading">
                           <h3>{group.name}</h3>
                           <button
@@ -796,7 +854,13 @@ export default function App() {
                           </button>
                         </div>
                       )}
-                      <div className="menu-grid">
+                      <div
+                        className={`menu-grid${activeCategory !== "all" ? " menu-carousel" : ""}`}
+                        ref={activeCategory !== "all" ? dishCarouselRef : undefined}
+                        onScroll={activeCategory !== "all" ? updateDishCarouselIndex : undefined}
+                        role={activeCategory !== "all" ? "region" : undefined}
+                        aria-label={activeCategory !== "all" ? `${group.name} dishes` : undefined}
+                      >
                         {group.items.map((item, index) => (
                           <div
                             className="menu-card-reveal"
@@ -807,6 +871,40 @@ export default function App() {
                           </div>
                         ))}
                       </div>
+                      {activeCategory !== "all" && group.items.length > 1 && (
+                        <div className="dish-carousel-controls">
+                          <span className="dish-carousel-count" aria-live="polite">
+                            {String(Math.min(dishCarouselIndex + 1, group.items.length)).padStart(2, "0")}
+                            <span aria-hidden="true"> / </span>
+                            {String(group.items.length).padStart(2, "0")}
+                          </span>
+                          <div className="dish-carousel-progress" aria-hidden="true">
+                            <span
+                              style={{
+                                transform: `scaleX(${(dishCarouselIndex + 1) / group.items.length})`,
+                              }}
+                            />
+                          </div>
+                          <div className="dish-carousel-buttons">
+                            <button
+                              type="button"
+                              aria-label="Previous dishes"
+                              disabled={dishCarouselIndex === 0}
+                              onClick={() => moveDishCarousel(-1)}
+                            >
+                              ←
+                            </button>
+                            <button
+                              type="button"
+                              aria-label="Next dishes"
+                              disabled={dishCarouselIndex >= group.items.length - 1}
+                              onClick={() => moveDishCarousel(1)}
+                            >
+                              →
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </section>
                   ))}
                 </div>
@@ -818,6 +916,7 @@ export default function App() {
                 </div>
               )}
             </section>
+            )}
           </>
         )}
       </main>
