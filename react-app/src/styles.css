@@ -1121,7 +1121,7 @@ p {
 
 .menu-card-image-wrap {
   position: relative;
-  height: clamp(145px, 16vw, 184px);
+  height: clamp(128px, 13vw, 164px);
   overflow: hidden;
   background: #e7ece5;
 }
@@ -1161,9 +1161,9 @@ p {
 
 .menu-card-content {
   display: flex;
-  min-height: 142px;
+  min-height: 128px;
   flex-direction: column;
-  padding: 14px;
+  padding: 12px;
 }
 
 .menu-card-heading {
@@ -1862,14 +1862,14 @@ p {
   }
 
   .menu-card-image-wrap {
-    height: clamp(140px, 20vw, 174px);
+    height: clamp(124px, 17vw, 154px);
   }
 
 }
 
 @media (max-width: 760px) {
   .hero {
-    grid-template-columns: minmax(0, 1fr) 190px;
+    grid-template-columns: minmax(0, 1fr) clamp(160px, 24vw, 190px);
     gap: 18px;
     padding: 30px;
   }
@@ -1879,7 +1879,9 @@ p {
   }
 
   .hero-chef {
-    min-height: 260px;
+    min-height: 0;
+    height: clamp(210px, 31vw, 250px);
+    align-self: center;
   }
 
   .category-grid {
@@ -1965,55 +1967,79 @@ p {
 
   .hero {
     min-height: 0;
-    grid-template-columns: minmax(0, 1fr);
-    align-items: flex-start;
-    gap: 18px;
+    grid-template-columns: minmax(0, 1fr) clamp(86px, 27vw, 112px);
+    grid-template-areas:
+      "eyebrow chef"
+      "title chef"
+      "intro chef"
+      "guide guide";
+    align-items: center;
+    column-gap: 10px;
+    row-gap: 0;
     margin: 14px 0 38px;
-    padding: 23px 20px 20px;
+    padding: 20px 16px 17px;
     border-radius: 19px;
   }
 
+  .hero-content {
+    display: contents;
+    animation: none;
+  }
+
   .hero .eyebrow {
+    grid-area: eyebrow;
+    align-self: end;
     margin-bottom: 9px;
   }
 
   .hero h1 {
-    max-width: 540px;
-    margin-bottom: 11px;
-    font-size: clamp(34px, 9vw, 43px);
+    grid-area: title;
+    max-width: 100%;
+    align-self: center;
+    margin-bottom: 8px;
+    font-size: clamp(30px, 8.5vw, 37px);
+    line-height: 1.03;
   }
 
   .intro-copy {
-    max-width: 440px;
-    margin-bottom: 13px;
-    font-size: 12.5px;
-    line-height: 1.55;
+    grid-area: intro;
+    max-width: 100%;
+    align-self: start;
+    margin-bottom: 9px;
+    font-size: 11.5px;
+    line-height: 1.48;
   }
 
   .hero-chef {
-    width: min(100%, 210px);
-    height: 144px;
-    min-height: 144px;
-    justify-self: start;
+    grid-area: chef;
+    width: 100%;
+    height: clamp(138px, 41vw, 170px);
+    min-height: 0;
+    max-height: 180px;
+    align-self: center;
+    justify-self: stretch;
+    margin-top: 6px;
     border-width: 3px;
-    border-radius: 76px 76px 17px 17px;
+    border-radius: 48% 48% 15px 15px;
   }
 
   .hero-chef img {
-    object-position: center 24%;
+    object-position: center 20%;
   }
 
   .hero-chef figcaption {
-    right: 8px;
-    bottom: 8px;
-    left: 8px;
-    padding: 8px;
-    font-size: 10px;
+    right: 4px;
+    bottom: 5px;
+    left: 4px;
+    gap: 4px;
+    padding: 6px 4px;
+    font-size: 8px;
   }
 
   .menu-guide {
+    grid-area: guide;
     gap: 6px;
-    margin-top: 12px;
+    margin-top: 7px;
   }
 
   .menu-guide-message {
@@ -2162,9 +2188,9 @@ p {
   }
 
   .category-card {
-    min-height: 142px;
-    gap: 6px;
-    padding: 10px 8px 9px;
+    min-height: 122px;
+    gap: 5px;
+    padding: 8px 7px;
     border-color: rgba(188, 142, 63, 0.2);
     border-radius: 15px;
     background: rgba(255, 254, 250, 0.88);
@@ -2172,8 +2198,8 @@ p {
   }
 
   .category-card-image {
-    width: 56px;
-    height: 56px;
+    width: 48px;
+    height: 48px;
   }
 
   .category-card-copy {
@@ -2230,14 +2256,15 @@ p {
   }
 
   .menu-card {
-    display: flex;
+    display: grid;
     min-height: 0;
-    flex-direction: column;
+    grid-template-columns: clamp(92px, 31%, 116px) minmax(0, 1fr);
     border-radius: 15px;
   }
 
   .menu-card-image-wrap {
-    height: 142px;
+    height: 100%;
+    min-height: 112px;
   }
 
   .menu-image {
@@ -2247,30 +2274,32 @@ p {
 
   .menu-card-content {
     min-height: 0;
-    padding: 12px;
+    padding: 10px;
   }
 
   .menu-card-heading {
-    display: flex;
-    gap: 12px;
+    flex-direction: column;
+    gap: 3px;
   }
 
   .menu-card-heading h3 {
-    font-size: 15px;
+    font-size: 14px;
   }
 
   .menu-card-heading strong {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   .menu-description {
-    margin: 7px 0 9px;
-    font-size: 10.5px;
+    margin: 5px 0 7px;
+    font-size: 9.5px;
+    line-height: 1.4;
   }
 
   .menu-card-footer {
-    gap: 6px;
-    padding-top: 8px;
+    align-items: flex-end;
+    gap: 4px;
+    padding-top: 6px;
   }
 
   .stock-label {
@@ -2278,10 +2307,10 @@ p {
   }
 
   .add-button {
-    min-height: 33px;
-    gap: 5px;
-    padding: 0 9px;
-    font-size: 9px;
+    min-height: 30px;
+    gap: 4px;
+    padding: 0 7px;
+    font-size: 8px;
   }
 
   .floating-cart {
@@ -2377,7 +2406,21 @@ p {
   }
 
   .hero h1 {
-    font-size: 34px;
+    font-size: 30px;
+  }
+
+  .hero {
+    grid-template-columns: minmax(0, 1fr) 82px;
+    column-gap: 7px;
+  }
+
+  .hero-chef {
+    height: 132px;
+    max-height: 132px;
+  }
+
+  .hero-chef figcaption {
+    display: none;
   }
 
   .category-grid {
@@ -2385,7 +2428,7 @@ p {
   }
 
   .category-card {
-    min-height: 86px;
+    min-height: 76px;
     flex-direction: row;
     justify-content: flex-start;
     gap: 12px;
@@ -2394,8 +2437,8 @@ p {
   }
 
   .category-card-image {
-    width: 52px;
-    height: 52px;
+    width: 46px;
+    height: 46px;
   }
 
   .category-card-copy {
@@ -2413,8 +2456,12 @@ p {
     transform: translateY(-50%);
   }
 
+  .menu-card {
+    grid-template-columns: 86px minmax(0, 1fr);
+  }
+
   .menu-card-image-wrap {
-    height: 126px;
+    min-height: 104px;
   }
 
   .add-button {
