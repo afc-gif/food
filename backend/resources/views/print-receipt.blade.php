@@ -176,21 +176,124 @@
             background: #f5f5f5;
         }
         @media print {
-            body {
-                background: white;
+            @page {
+                size: auto;
+                margin: 3mm;
+            }
+            html, body {
+                width: 100%;
+                margin: 0;
                 padding: 0;
+                background: #fff;
+                color: #000;
+                font-size: 10pt;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
             .receipt-container {
-                max-width: 100%;
+                width: 100%;
+                max-width: 80mm;
+                margin: 0 auto;
+                padding: 3mm;
+                background: #fff;
                 box-shadow: none;
                 border-radius: 0;
             }
-            .actions {
-                display: none;
+            .receipt-header {
+                border-color: #000;
+                padding-bottom: 2mm;
+                margin-bottom: 3mm;
             }
+            .receipt-logo {
+                width: 14mm;
+                height: 14mm;
+            }
+            .receipt-header h1 { font-size: 14pt; }
+            .receipt-header p,
+            .order-meta-label,
+            .payment-method,
+            .receipt-footer { color: #000 !important; }
+            .order-meta {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 2mm;
+                padding: 2mm 0;
+                margin-bottom: 3mm;
+                border-color: #000;
+            }
+            .order-meta-col { min-width: 0; }
+            .order-meta-value {
+                font-size: 10pt;
+                overflow-wrap: anywhere;
+            }
+            .order-meta-label { font-size: 9pt; }
+            .items-section {
+                margin-bottom: 3mm;
+                padding-bottom: 3mm;
+                border-color: #000;
+            }
+            .item-row {
+                align-items: flex-start;
+                gap: 2mm;
+                margin-bottom: 2mm;
+                font-size: 10pt;
+                break-inside: avoid;
+            }
+            .item-name {
+                min-width: 0;
+                overflow-wrap: anywhere;
+            }
+            .item-qty {
+                min-width: 7mm;
+                color: #000 !important;
+            }
+            .item-price {
+                min-width: 18mm;
+                white-space: nowrap;
+            }
+            .totals-section {
+                border-color: #000;
+                padding-bottom: 3mm;
+                margin-bottom: 3mm;
+            }
+            .total-row {
+                gap: 2mm;
+                margin-bottom: 1.5mm;
+                font-size: 10pt;
+                break-inside: avoid;
+            }
+            .total-row span:last-child {
+                text-align: right;
+                white-space: nowrap;
+            }
+            .total-row.final { font-size: 12pt; }
+            .customer-section,
+            .kitchen-note {
+                padding: 2mm;
+                margin-bottom: 3mm;
+                color: #000 !important;
+                background: #fff !important;
+                border: 1px solid #000;
+                border-radius: 0;
+                overflow-wrap: anywhere;
+            }
+            .customer-section strong,
+            .kitchen-note strong { color: #000 !important; }
+            .payment-method {
+                margin-bottom: 3mm;
+                font-size: 10pt;
+            }
+            .receipt-footer {
+                padding-top: 3mm;
+                border-color: #000;
+                font-size: 9pt;
+            }
+            .actions { display: none; }
             * {
                 box-shadow: none !important;
-                border-color: #0f0b05 !important;
+                text-shadow: none !important;
+                color: #000 !important;
+                border-color: #000 !important;
             }
         }
     </style>
