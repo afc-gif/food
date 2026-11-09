@@ -20,12 +20,13 @@ WhatsApp checkout. It attempts to save orders through Laravel's existing
 `POST /api/orders` endpoint first, but still opens WhatsApp with the full
 itemized order if the API is unavailable.
 
-Customers can search dishes and tap the Three.js AFC mascot to open the cart.
-The mascot brings out a shopping cart when a category is selected, celebrates
-each item added, and runs off with the order before WhatsApp opens. The empty
-cart also links to the ordering guide.
+Customers can search dishes and use the floating AFC customer-care portrait for
+menu, cart, and checkout guidance. The assistant uses the existing chef portrait,
+stays closed unless a customer opens it, and closes whenever the cart opens so
+it does not compete with ordering controls. The menu, cart, Laravel API, and
+WhatsApp checkout remain independent of the assistant.
 
-The hero features the café chef portrait at `public/images/chef.jpeg`.
+The hero and assistant reuse the café chef portrait at `public/images/chef.jpeg`.
 
 ## Deploy as a separate Railway service
 
