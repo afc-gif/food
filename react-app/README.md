@@ -15,10 +15,12 @@ Vite proxies `/api` calls to Laravel during development, so the browser does not
 need direct cross-origin access locally. The React preview uses the existing
 `/assets/logo2.png` brand logo and proxies that asset from Laravel.
 
-The preview includes category browsing, a locally persisted shopping cart, and
-WhatsApp checkout. It attempts to save orders through Laravel's existing
-`POST /api/orders` endpoint first, but still opens WhatsApp with the full
-itemized order if the API is unavailable.
+The preview includes category browsing with a responsive, swipeable dish gallery,
+a locally persisted shopping cart, and WhatsApp checkout. Opening a category
+gallery or the bag adds a browser-history entry so the device Back action closes
+the overlay and returns customers to the menu. It attempts to save orders
+through Laravel's existing `POST /api/orders` endpoint first, but still opens
+WhatsApp with the full itemized order if the API is unavailable.
 
 Customers can search dishes and use the floating AFC customer-care portrait for
 menu, cart, and checkout guidance. The assistant uses the existing chef portrait,

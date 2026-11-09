@@ -109,13 +109,13 @@ function CategoryCard({ category, imageUrl, count, selected, onSelect }) {
             AF
           </span>
         )}
-        <span className="category-card-count">
-          {count} {count === 1 ? "dish" : "dishes"}
-        </span>
       </span>
       <span className="category-card-copy">
         <strong>{category.name}</strong>
         <span>{category.description || "Fresh from our kitchen"}</span>
+        <span className="category-card-count">
+          {count} {count === 1 ? "dish" : "dishes"}
+        </span>
       </span>
       <span className="category-card-arrow" aria-hidden="true">
         ↗
@@ -124,7 +124,7 @@ function CategoryCard({ category, imageUrl, count, selected, onSelect }) {
   );
 }
 
-function MenuCard({ item, onAdd }) {
+function MenuCard({ item, onAdd, gallery = false }) {
   const soldOut = item.is_sold_out || item.stock === 0;
   const stockLabel =
     item.stock !== null && item.stock !== undefined && item.stock !== ""
@@ -132,7 +132,7 @@ function MenuCard({ item, onAdd }) {
       : "";
 
   return (
-    <article className="menu-card">
+    <article className={`menu-card${gallery ? " menu-card-gallery" : ""}`}>
       <div className="menu-card-image-wrap">
         {item.image_url ? (
           <img
@@ -215,6 +215,7 @@ export default function App() {
   const [categories, setCategories] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [activeCategory, setActiveCategory] = useState("all");
+  const [galleryOpen, setGalleryOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [customerCareMessage, setCustomerCareMessage] = useState(CUSTOMER_CARE_WELCOME);
   const [customerCareOpen, setCustomerCareOpen] = useState(false);
@@ -223,6 +224,13 @@ export default function App() {
   const customerCareLauncherRef = useRef(null);
   const customerCarePanelRef = useRef(null);
   const dishCarouselRef = useRef(null);
+  const dishGalleryDialogRef = useRef(null);
+  const cartDialogRef = useRef(null);
+  const categoryTriggerRef = useRef(null);
+  const cartTriggerRef = useRef(null);
+  const modalHistoryRef = useRef(false);
+  const modalTypeRef = useRef(null);
+  const restoreFocusRef = useRef(null);
   const [cart, setCart] = useState(readSavedCart);
   const [cartOpen, setCartOpen] = useState(false);
   const [status, setStatus] = useState("loading");
@@ -279,21 +287,6 @@ export default function App() {
   }, [cart]);
 
   useEffect(() => {
-    if (!cartOpen) return undefined;
-
-    const handleKeyDown = (event) => {
-      if (event.key === "Escape") setCartOpen(false);
-    };
-    document.body.classList.add("cart-is-open");
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      document.body.classList.remove("cart-is-open");
-      window.removeEventListener("keydown", handleKeyDown);
-    };
-  }, [cartOpen]);
-
-  useEffect(() => {
     if (!whatsappRedirectUrl) return undefined;
 
     const timeout = window.setTimeout(() => {
@@ -315,8 +308,80 @@ export default function App() {
   }, [activeCategory, searchQuery]);
 
   useEffect(() => {
-    if (cartOpen) setCustomerCareOpen(false);
+    const handlePopState = () => {
+      if (!modalHistoryRef.current) return;
+      const closingModal = modalTypeRef.current;
+      modalHistoryRef.current = false;
+      modalTypeRef.current = null;
+      restoreFocusRef.current = closingModal;
+      setGalleryOpen(false);
+      setCartOpen(false);
+      setActiveCategory("all");
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, []);
+
+  useEffect(() => {
+    document.body.classList.toggle("cart-is-open", cartOpen);
+    document.body.classList.toggle("gallery-is-open", galleryOpen);
+    if (!cartOpen && !galleryOpen) return undefined;
+
+    if (cartOpen || galleryOpen) setCustomerCareOpen(false);
+    const handleKeyDown = (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      if (modalHistoryRef.current) {
+        window.history.back();
+      } else {
+        dismissOverlay();
+        setGalleryOpen(false);
+        setActiveCategory("all");
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.classList.remove("cart-is-open", "gallery-is-open");
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [cartOpen, galleryOpen]);
+
+  useEffect(() => {
+    if (galleryOpen) {
+      dishGalleryDialogRef.current?.focus();
+      dishCarouselRef.current?.scrollTo({ left: 0 });
+    }
+  }, [galleryOpen, activeCategory]);
+
+  useEffect(() => {
+    if (cartOpen) cartDialogRef.current?.focus();
   }, [cartOpen]);
+
+  useEffect(() => {
+    if (cartOpen || galleryOpen || !restoreFocusRef.current) return;
+    const closingModal = restoreFocusRef.current;
+    restoreFocusRef.current = null;
+    window.setTimeout(() => {
+      if (closingModal === "gallery") {
+        const categoryTrigger = categoryTriggerRef.current;
+        const focusTarget =
+          categoryTrigger?.isConnected && !categoryTrigger.closest("[inert]")
+            ? categoryTrigger
+            : document.querySelector(".category-card");
+        focusTarget?.focus();
+      }
+      if (closingModal === "cart") {
+        const cartTrigger = cartTriggerRef.current;
+        const focusTarget =
+          cartTrigger?.isConnected && !cartTrigger.closest("[inert]")
+            ? cartTrigger
+            : document.querySelector(".header-cart-button");
+        focusTarget?.focus();
+      }
+    }, 0);
+  }, [cartOpen, galleryOpen]);
 
   useEffect(() => {
     if (!customerCareOpen) return undefined;
@@ -341,6 +406,17 @@ export default function App() {
         return counts;
       }, {}),
     [menuItems],
+  );
+
+  const galleryItems = useMemo(
+    () =>
+      menuItems.filter(
+        (item) => String(item.category_id ?? "") === activeCategory,
+      ),
+    [activeCategory, menuItems],
+  );
+  const galleryCategory = categories.find(
+    (category) => String(category.id) === activeCategory,
   );
 
   const visibleItems = useMemo(() => {
@@ -500,9 +576,48 @@ export default function App() {
     );
   };
 
-  const selectCategory = (categoryId) => {
+  const openOverlay = (type) => {
+    if (!modalHistoryRef.current) {
+      const currentState =
+        window.history.state && typeof window.history.state === "object"
+          ? window.history.state
+          : {};
+      window.history.pushState(
+        { ...currentState, afcMenuOverlay: true },
+        "",
+        window.location.href,
+      );
+      modalHistoryRef.current = true;
+    }
+
+    modalTypeRef.current = type;
+    if (type === "gallery") {
+      setCartOpen(false);
+      setGalleryOpen(true);
+    } else {
+      setGalleryOpen(false);
+      setCartOpen(true);
+    }
+  };
+
+  const dismissOverlay = () => {
+    if (modalHistoryRef.current) {
+      window.history.back();
+      return;
+    }
+
+    modalTypeRef.current = null;
+    setGalleryOpen(false);
+    setCartOpen(false);
+    setActiveCategory("all");
+  };
+
+  const selectCategory = (categoryId, event) => {
+    categoryTriggerRef.current = event?.currentTarget || null;
     setSearchQuery("");
     setActiveCategory(categoryId);
+    setDishCarouselIndex(0);
+    openOverlay("gallery");
     const categoryName =
       categories.find((category) => String(category.id) === categoryId)?.name;
     setCustomerCareMessage(
@@ -510,14 +625,10 @@ export default function App() {
         ? `Great choice. Have a look at ${categoryName}.`
         : "Have a look through all our favourites.",
     );
-    window.setTimeout(() => {
-      document
-        .getElementById("menu-results")
-        ?.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 60);
   };
 
   const browseCategories = () => {
+    dismissOverlay();
     setSearchQuery("");
     setActiveCategory("all");
     setCustomerCareMessage("Take your time. I’m here if you need a hand.");
@@ -531,25 +642,45 @@ export default function App() {
   const moveDishCarousel = (direction) => {
     const carousel = dishCarouselRef.current;
     if (!carousel) return;
-    const cards = carousel.querySelectorAll(".menu-card-reveal");
+    const cards = carousel.querySelectorAll(".dish-gallery-slide");
     const targetIndex = Math.max(
       0,
       Math.min(dishCarouselIndex + direction, cards.length - 1),
     );
-    const targetLeft = cards[targetIndex].offsetLeft - cards[0].offsetLeft;
-    carousel.scrollTo({ left: targetLeft, behavior: "smooth" });
+    const targetLeft =
+      cards[targetIndex].offsetLeft +
+      cards[targetIndex].offsetWidth / 2 -
+      carousel.clientWidth / 2;
+    carousel.scrollTo({
+      left: targetLeft,
+      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+        ? "auto"
+        : "smooth",
+    });
   };
 
   const updateDishCarouselIndex = (event) => {
     const carousel = event.currentTarget;
-    const cards = carousel.querySelectorAll(".menu-card-reveal");
+    const cards = carousel.querySelectorAll(".dish-gallery-slide");
     if (cards.length < 2) {
-      setDishCarouselIndex(0);
+      setDishCarouselIndex((currentIndex) => (currentIndex === 0 ? currentIndex : 0));
       return;
     }
 
-    const cardStep = cards[1].offsetLeft - cards[0].offsetLeft;
-    if (cardStep > 0) setDishCarouselIndex(Math.round(carousel.scrollLeft / cardStep));
+    const carouselCenter = carousel.scrollLeft + carousel.clientWidth / 2;
+    let nearestIndex = 0;
+    let nearestDistance = Number.POSITIVE_INFINITY;
+    cards.forEach((card, index) => {
+      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
+      const distance = Math.abs(carouselCenter - cardCenter);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestIndex = index;
+      }
+    });
+    setDishCarouselIndex((currentIndex) =>
+      currentIndex === nearestIndex ? currentIndex : nearestIndex,
+    );
   };
 
   const updateSearchQuery = (query) => {
@@ -557,7 +688,9 @@ export default function App() {
     if (query.trim()) setActiveCategory("all");
   };
 
-  const openCart = () => {
+  const openCart = (event) => {
+    cartTriggerRef.current =
+      galleryOpen ? categoryTriggerRef.current : event?.currentTarget || document.activeElement;
     setCustomerCareMessage(
       cartItemCount
         ? `Your bag has ${cartItemCount} ${
@@ -566,7 +699,7 @@ export default function App() {
         : "Your bag is empty. I can help you find something tasty.",
     );
     setCustomerCareOpen(false);
-    setCartOpen(true);
+    openOverlay("cart");
   };
 
   const submitOrder = async (event) => {
@@ -606,7 +739,7 @@ export default function App() {
         total: orderTotal,
         customer,
       });
-      setCartOpen(false);
+      dismissOverlay();
       setCheckoutStatus("redirecting");
       setCustomerCareMessage("Opening WhatsApp to send your order.");
       setWhatsappRedirectUrl(redirectUrl);
@@ -620,7 +753,7 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <header className="site-header">
+      <header className="site-header" inert={galleryOpen}>
         <a className="brand" href="#" aria-label="Acie Fraiche home">
           <img
             className="brand-logo"
@@ -652,7 +785,7 @@ export default function App() {
         </div>
       </header>
 
-      <main>
+      <main inert={galleryOpen}>
         <section className="hero" aria-labelledby="page-title">
           <div className="hero-content">
             <p className="eyebrow"><span /> Good food, good mood</p>
@@ -775,7 +908,7 @@ export default function App() {
                           }
                           count={itemCountByCategory[String(category.id)] || 0}
                           selected={activeCategory === String(category.id)}
-                          onSelect={() => selectCategory(String(category.id))}
+                          onSelect={(event) => selectCategory(String(category.id), event)}
                         />
                       </div>
                     ))}
@@ -785,7 +918,7 @@ export default function App() {
               </section>
             )}
 
-            {activeCategory === "all" && !searchQuery.trim() ? (
+            {!searchQuery.trim() ? (
               <section className="menu-invitation" aria-labelledby="menu-invitation-title">
                 <span className="menu-invitation-sparkle" aria-hidden="true">✦</span>
                 <p className="eyebrow">A little something for every craving</p>
@@ -794,81 +927,38 @@ export default function App() {
               </section>
             ) : (
             <section
-              className={`menu-section${activeCategory !== "all" ? " is-category-open" : " is-search-open"}`}
+              className="menu-section is-search-open"
               id="menu-results"
               aria-live="polite"
             >
               <div className="section-heading menu-section-heading">
                 <div>
-                  {activeCategory !== "all" ? (
-                    <>
-                      <p className="eyebrow">Made fresh for your craving</p>
-                      <h2>
-                        {categories.find((category) => String(category.id) === activeCategory)?.name || "Our menu"}
-                      </h2>
-                    </>
-                  ) : (
-                    <>
-                      <p className="eyebrow">Matches for “{searchQuery.trim()}”</p>
-                      <h2>Let’s find your favourite</h2>
-                    </>
-                  )}
+                  <p className="eyebrow">Matches for “{searchQuery.trim()}”</p>
+                  <h2>Let’s find your favourite</h2>
                 </div>
                 <span className="item-count">
                   {visibleItems.length} {visibleItems.length === 1 ? "dish" : "dishes"}
                 </span>
               </div>
 
-              {activeCategory !== "all" && (
-                <div className="category-view-toolbar">
-                  <button
-                    className="category-back-button"
-                    type="button"
-                    onClick={browseCategories}
-                  >
-                    <span aria-hidden="true">←</span> All categories
-                  </button>
-                  <span className="category-view-prompt">Swipe, browse, and pick a favourite</span>
-                </div>
-              )}
-
               {status === "loading" ? (
                 <div className="empty-state">Loading fresh favourites…</div>
               ) : groupedItems.length ? (
-                <div className={`menu-groups${activeCategory !== "all" ? " is-focused-category" : ""}`} key={`${activeCategory}-${searchQuery}`}>
+                <div className="menu-groups" key={searchQuery}>
                   {groupedItems.map((group, groupIndex) => (
                     <section
-                      className={`menu-group${activeCategory !== "all" ? " is-focused-category-group" : ""}`}
-                      id={`category-${group.id}`}
+                      className="menu-group"
                       key={group.id}
                       style={{ "--reveal-index": groupIndex }}
                     >
-                      {activeCategory === "all" && searchQuery.trim() && (
-                        <div className="menu-group-heading">
-                          <h3>Search results</h3>
-                          <button type="button" onClick={browseCategories}>
-                            Browse categories <span aria-hidden="true">↗</span>
-                          </button>
-                        </div>
-                      )}
-                      {activeCategory === "all" && !searchQuery.trim() && group.id !== "other" && (
-                        <div className="menu-group-heading">
-                          <h3>{group.name}</h3>
-                          <button
-                            type="button"
-                            onClick={() => selectCategory(group.id)}
-                            aria-label={`View all ${group.name}`}
-                          >
-                            View category <span aria-hidden="true">↗</span>
-                          </button>
-                        </div>
-                      )}
+                      <div className="menu-group-heading">
+                        <h3>Search results</h3>
+                        <button type="button" onClick={browseCategories}>
+                          Browse categories <span aria-hidden="true">↗</span>
+                        </button>
+                      </div>
                       <div
-                        className={`menu-grid${activeCategory !== "all" ? " menu-carousel" : ""}`}
-                        ref={activeCategory !== "all" ? dishCarouselRef : undefined}
-                        onScroll={activeCategory !== "all" ? updateDishCarouselIndex : undefined}
-                        role={activeCategory !== "all" ? "region" : undefined}
-                        aria-label={activeCategory !== "all" ? `${group.name} dishes` : undefined}
+                        className="menu-grid"
                       >
                         {group.items.map((item, index) => (
                           <div
@@ -880,40 +970,6 @@ export default function App() {
                           </div>
                         ))}
                       </div>
-                      {activeCategory !== "all" && group.items.length > 1 && (
-                        <div className="dish-carousel-controls">
-                          <span className="dish-carousel-count" aria-live="polite">
-                            {String(Math.min(dishCarouselIndex + 1, group.items.length)).padStart(2, "0")}
-                            <span aria-hidden="true"> / </span>
-                            {String(group.items.length).padStart(2, "0")}
-                          </span>
-                          <div className="dish-carousel-progress" aria-hidden="true">
-                            <span
-                              style={{
-                                transform: `scaleX(${(dishCarouselIndex + 1) / group.items.length})`,
-                              }}
-                            />
-                          </div>
-                          <div className="dish-carousel-buttons">
-                            <button
-                              type="button"
-                              aria-label="Previous dishes"
-                              disabled={dishCarouselIndex === 0}
-                              onClick={() => moveDishCarousel(-1)}
-                            >
-                              ←
-                            </button>
-                            <button
-                              type="button"
-                              aria-label="Next dishes"
-                              disabled={dishCarouselIndex >= group.items.length - 1}
-                              onClick={() => moveDishCarousel(1)}
-                            >
-                              →
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </section>
                   ))}
                 </div>
@@ -930,10 +986,122 @@ export default function App() {
         )}
       </main>
 
-      <footer className="site-footer">
+      <footer className="site-footer" inert={galleryOpen}>
         <img src="/brand/logo2.png" alt="" width="44" height="44" loading="lazy" />
         <span>Made fresh with love at Acie Fraiche Café.</span>
       </footer>
+
+      {galleryOpen && activeCategory !== "all" && (
+        <div
+          className="dish-gallery-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) dismissOverlay();
+          }}
+        >
+          <section
+            ref={dishGalleryDialogRef}
+            className="dish-gallery-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="dish-gallery-title"
+            tabIndex="-1"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <header className="dish-gallery-header">
+              <div>
+                <p className="eyebrow">Fresh from our kitchen</p>
+                <h2 id="dish-gallery-title">{galleryCategory?.name || "Our menu"}</h2>
+                <p className="dish-gallery-subtitle">
+                  {galleryItems.length
+                    ? `${galleryItems.length} ${galleryItems.length === 1 ? "favourite" : "favourites"} to explore`
+                    : "We’re preparing this category’s menu."}
+                </p>
+              </div>
+              <div className="dish-gallery-header-actions">
+                {cartItemCount > 0 && (
+                  <button className="dish-gallery-bag" type="button" onClick={openCart}>
+                    Bag <span>{cartItemCount}</span>
+                  </button>
+                )}
+                <button
+                  className="dish-gallery-close"
+                  type="button"
+                  onClick={dismissOverlay}
+                  aria-label="Close dish gallery"
+                >
+                  ×
+                </button>
+              </div>
+            </header>
+
+            {status === "loading" ? (
+              <div className="empty-state">Setting the table…</div>
+            ) : galleryItems.length ? (
+              <>
+                <div className="dish-gallery-stage">
+                  <div
+                    ref={dishCarouselRef}
+                    className="dish-gallery-track"
+                    onScroll={updateDishCarouselIndex}
+                    role="region"
+                    aria-label={`${galleryCategory?.name || "Category"} dishes`}
+                    tabIndex="0"
+                  >
+                    {galleryItems.map((item, index) => {
+                      const distance = index - dishCarouselIndex;
+                      const positionClass =
+                        distance === 0
+                          ? "is-current"
+                          : distance === -1
+                            ? "is-previous"
+                            : distance === 1
+                              ? "is-next"
+                              : "";
+                      return (
+                        <div
+                          className={`dish-gallery-slide ${positionClass}`}
+                          key={item.id}
+                          aria-current={index === dishCarouselIndex ? "true" : undefined}
+                        >
+                          <MenuCard item={item} onAdd={addToCart} gallery />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="dish-gallery-controls">
+                  <button
+                    type="button"
+                    aria-label="Previous dish"
+                    disabled={dishCarouselIndex === 0}
+                    onClick={() => moveDishCarousel(-1)}
+                  >
+                    ←
+                  </button>
+                  <span className="dish-gallery-count" aria-live="polite">
+                    {String(dishCarouselIndex + 1).padStart(2, "0")}
+                    <span aria-hidden="true"> / </span>
+                    {String(galleryItems.length).padStart(2, "0")}
+                  </span>
+                  <button
+                    type="button"
+                    aria-label="Next dish"
+                    disabled={dishCarouselIndex >= galleryItems.length - 1}
+                    onClick={() => moveDishCarousel(1)}
+                  >
+                    →
+                  </button>
+                </div>
+                <p className="dish-gallery-hint">Swipe left or right to explore</p>
+              </>
+            ) : (
+              <div className="dish-gallery-empty">
+                No dishes are available in this category right now.
+              </div>
+            )}
+          </section>
+        </div>
+      )}
 
       {customerCareOpen && (
         <section
@@ -960,6 +1128,7 @@ export default function App() {
 
       <div
         className={`customer-care-widget${cartItemCount > 0 && !cartOpen ? " has-floating-cart" : ""}${cartOpen ? " is-cart-open" : ""}`}
+        inert={galleryOpen}
       >
         <button
           ref={customerCareLauncherRef}
@@ -983,6 +1152,7 @@ export default function App() {
         <button
           className="floating-cart"
           type="button"
+          inert={galleryOpen}
           onClick={openCart}
           aria-label={`View ${cartItemCount} items in your cart`}
         >
@@ -1000,7 +1170,7 @@ export default function App() {
         className={`cart-overlay${cartOpen ? " is-open" : ""}`}
         aria-hidden={!cartOpen}
         onMouseDown={(event) => {
-          if (event.target === event.currentTarget) setCartOpen(false);
+          if (event.target === event.currentTarget) dismissOverlay();
         }}
       >
         <aside
@@ -1010,6 +1180,8 @@ export default function App() {
           aria-modal="true"
           aria-labelledby="cart-title"
           inert={!cartOpen}
+          ref={cartDialogRef}
+          tabIndex="-1"
         >
           <div className="cart-drawer-header">
             <div>
@@ -1019,7 +1191,7 @@ export default function App() {
             <button
               className="cart-close"
               type="button"
-              onClick={() => setCartOpen(false)}
+              onClick={dismissOverlay}
               aria-label="Close cart"
             >
               ×
@@ -1043,7 +1215,7 @@ export default function App() {
                 className="cart-help-button"
                 type="button"
                 onClick={() => {
-                  setCartOpen(false);
+                  dismissOverlay();
                   setCustomerCareMessage(
                     "Review your bag, enter your name and phone, then send your order with WhatsApp.",
                   );
@@ -1135,14 +1307,14 @@ export default function App() {
                 className="cart-help-button"
                 type="button"
                 onClick={() => {
-                  setCartOpen(false);
+                  dismissOverlay();
                   setCustomerCareMessage("Your bag is empty. I can help you find something tasty.");
                   setCustomerCareOpen(true);
                 }}
               >
                 Need a hand? See how to order
               </button>
-              <button type="button" onClick={() => setCartOpen(false)}>
+              <button type="button" onClick={dismissOverlay}>
                 Back to the menu
               </button>
             </div>
