@@ -1,10 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Models\Category;
-use App\Models\MenuItem;
 use App\Models\Order;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Route;
 
 // Serve static assets directly
@@ -62,26 +59,7 @@ Route::get('/sitemap.xml', function () {
     return response($xml, 200, ['Content-Type' => 'application/xml']);
 });
 
-Route::get('/', function () {
-    try {
-        $categories = Category::orderBy('sort_order')->orderBy('name')->get();
-        $menuItems = MenuItem::with('category')
-            ->where('is_active', true)
-            ->orderBy('is_sold_out', 'asc')
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
-        $featured = $menuItems->take(3);
-    } catch (QueryException $e) {
-        // When migrations haven't run yet, keep the site up with empty data.
-        report($e);
-        $categories = collect();
-        $menuItems = collect();
-        $featured = collect();
-    }
-
-    return view('home', compact('categories', 'menuItems', 'featured'));
-})->name('home');
+Route::view('/', 'maintenance')->name('home');
 
 Route::get('/receipt/{order:code}', function (Order $order) {
     return view('print-receipt', [
