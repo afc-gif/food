@@ -1155,8 +1155,14 @@ export default function App() {
       <footer className="site-footer" inert={galleryOpen}>
         <div className="site-footer-grid">
           <div className="site-footer-brand">
-            <img src="/brand/logo2.png" alt="" width="48" height="48" loading="lazy" />
-            <p>Made fresh with love at Acie Fraiche Café.</p>
+            <div className="site-footer-brand-lockup">
+              <img src="/brand/logo2.png" alt="" width="48" height="48" loading="lazy" />
+              <span>
+                <strong>Acie Fraiche</strong>
+                <small>CAFE</small>
+              </span>
+            </div>
+            <p>Good food, warm moments, made fresh with love.</p>
           </div>
           <section className="site-footer-section" aria-labelledby="footer-visit">
             <h2 id="footer-visit">Visit us</h2>
@@ -1171,18 +1177,17 @@ export default function App() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              Get directions
+              Get directions <span aria-hidden="true">↗</span>
             </a>
           </section>
           <section className="site-footer-section" aria-labelledby="footer-contact">
-            <h2 id="footer-contact">Contact &amp; hours</h2>
+            <h2 id="footer-contact">Say hello</h2>
             <p>
               <a href="tel:+2348143190700">+234 814 319 0700</a>
               <br />
-              <a href="https://wa.me/2348143190700">WhatsApp us</a>
-              <br />
               <a href="mailto:support@afc.com.ng">support@afc.com.ng</a>
             </p>
+            <h3 className="site-footer-subheading">Opening hours</h3>
             <p>
               Mon–Sat: 8am–10pm
               <br />
@@ -1190,25 +1195,54 @@ export default function App() {
             </p>
           </section>
           <section className="site-footer-section" aria-labelledby="footer-social">
-            <h2 id="footer-social">Follow along</h2>
+            <h2 id="footer-social">Follow the good stuff</h2>
             <p>Chef drops, new pairings, and weekly tastings.</p>
             <div className="site-footer-socials">
               <a
                 href="https://www.instagram.com/afc.ng/"
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="Follow Acie Fraiche Cafe on Instagram"
+                title="Instagram"
               >
-                Instagram
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <rect x="3" y="3" width="18" height="18" rx="5" />
+                  <circle cx="12" cy="12" r="4" />
+                  <circle className="site-footer-icon-fill" cx="17.5" cy="6.5" r="1.2" />
+                </svg>
               </a>
               <a
                 href="https://www.tiktok.com/@acie_fraiche_cafe"
                 target="_blank"
                 rel="noopener noreferrer"
+                aria-label="Follow Acie Fraiche Cafe on TikTok"
+                title="TikTok"
               >
-                TikTok
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path
+                    className="site-footer-icon-fill"
+                    d="M16.75 3c.34 2.16 1.58 3.54 3.75 3.75v3.21a7.12 7.12 0 0 1-3.75-1.1v5.95c0 3.15-2.12 5.19-5.23 5.19-2.88 0-5.02-2.02-5.02-4.72 0-2.83 2.22-4.81 5.32-4.81.29 0 .56.02.82.06v3.31a3.2 3.2 0 0 0-.82-.11c-1.17 0-1.93.6-1.93 1.55 0 .9.7 1.52 1.68 1.52 1.1 0 1.82-.67 1.82-2.01V3h3.36Z"
+                  />
+                </svg>
+              </a>
+              <a
+                href="https://wa.me/2348143190700"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Chat with Acie Fraiche Cafe on WhatsApp"
+                title="WhatsApp"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M20.5 11.7a8.4 8.4 0 0 1-12.4 7.4L3 20.5l1.5-4.9a8.4 8.4 0 1 1 16-3.9Z" />
+                  <path d="M9 8.2c.2-.4.4-.4.7-.4h.4c.2 0 .3.1.4.4l.7 1.6c.1.2.1.4-.1.6l-.5.6c-.2.2-.2.3-.1.5.4.7.9 1.2 1.6 1.6.2.1.4.1.5-.1l.7-.8c.2-.2.3-.2.6-.1l1.5.7c.3.1.4.2.4.4 0 .3-.2 1-.6 1.3-.4.4-1 .6-1.6.6-.5 0-1.2-.2-2-.5a7.6 7.6 0 0 1-3.4-3c-.7-1-.9-1.8-.9-2.4 0-.6.3-1.1.6-1.4Z" />
+                </svg>
               </a>
             </div>
           </section>
+        </div>
+        <div className="site-footer-bottom">
+          <span>Acie Fraiche Café</span>
+          <span>Good food. Good company. Always fresh.</span>
         </div>
       </footer>
 
