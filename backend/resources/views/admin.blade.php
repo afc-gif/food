@@ -157,7 +157,7 @@
         .menu-actions .btn-ghost { min-height:40px; }
         #menuForm { padding:18px; border:1px solid var(--af-line); border-radius:18px; background:rgba(255,255,255,0.78); }
         .admin-expenses-grid { display: grid; gap: 20px; grid-template-columns: 320px 1fr; align-items: start; margin-top: 20px; }
-        @media (max-width: 960px) {
+        @media (max-width: 1200px) {
             .admin-expenses-grid { grid-template-columns: 1fr; }
             body { grid-template-columns: 1fr; }
             body.sidebar-is-open { overflow: hidden; }
@@ -788,7 +788,7 @@
         const sidebar = document.getElementById('sidebar');
         const toggleSidebar = document.getElementById('toggleSidebar');
         const sidebarBackdrop = document.getElementById('sidebarBackdrop');
-        const mobileSidebar = window.matchMedia('(max-width: 960px)');
+        const mobileSidebar = window.matchMedia('(max-width: 1200px)');
         const navBtns = Array.from(document.querySelectorAll('.nav-btn'));
         const panels = Array.from(document.querySelectorAll('.panel'));
 
