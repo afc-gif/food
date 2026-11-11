@@ -394,6 +394,16 @@
             if (posCartTotal) posCartTotal.textContent = '₦' + grand.toLocaleString();
         }
 
+        function escapePosHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, (character) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;',
+            })[character]);
+        }
+
         function renderPosCart() {
             if (!posCartList || !posCartTotal) return;
             if (!posCart.length) {
@@ -409,9 +419,9 @@
                 return `
                     <div class="item">
                         <div>
-                            <strong>${item.name}</strong>
+                            <strong>${escapePosHtml(item.name)}</strong>
                             <div style="display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;">
-                                <span class="pill">Barcode: ${item.barcode || 'n/a'}</span>
+                                <span class="pill">Barcode: ${escapePosHtml(item.barcode || 'n/a')}</span>
                                 <span class="pill">₦${Number(item.price).toLocaleString()} × ${item.qty}</span>
                                 <span class="pill">Line: ₦${line.toLocaleString()}</span>
                             </div>
@@ -426,6 +436,62 @@
             }).join('');
             posCartTotal.textContent = '₦' + total.toLocaleString();
             renderTotals();
+        }
+
+        function promptPosVariationChoice(name, options, callback) {
+            const choices = Array.isArray(options)
+                ? options.filter(option => typeof option === 'string' && option.trim())
+                : [];
+            if (!choices.length) return;
+
+            const backdrop = document.createElement('div');
+            backdrop.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;backdrop-filter:blur(3px);';
+            const card = document.createElement('div');
+            card.style.cssText = 'background:#ffffff;border-radius:20px;padding:28px 24px;max-width:400px;width:100%;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);font-family:inherit;text-align:left;box-sizing:border-box;color:#111827;';
+            card.innerHTML = `
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+                    <div>
+                        <h3 style="margin:0;font-size:20px;font-weight:800;color:#111827;">Choose an option</h3>
+                        <p style="margin:4px 0 0;font-size:14px;color:#6b7280;">For <strong class="af-pos-variation-name"></strong></p>
+                    </div>
+                    <button type="button" class="af-pos-variation-cancel" aria-label="Close choices" style="background:#f3f4f6;border:none;border-radius:50%;width:32px;height:32px;font-size:18px;color:#4b5563;cursor:pointer;">&times;</button>
+                </div>
+                <div style="margin:20px 0 24px;">
+                    <label for="afPosVariationSelectInput" style="display:block;font-size:13px;font-weight:700;color:#374151;margin-bottom:8px;">Required choice:</label>
+                    <select id="afPosVariationSelectInput" style="width:100%;padding:14px 16px;border-radius:12px;border:2px solid #d1d5db;background:#fff;font-size:16px;font-weight:600;color:#111827;box-sizing:border-box;">
+                        <option value="" disabled selected>Choose one option</option>
+                    </select>
+                </div>
+                <div style="display:flex;gap:12px;">
+                    <button type="button" class="af-pos-variation-cancel" style="flex:1;padding:12px;border-radius:12px;border:1px solid #d1d5db;background:#fff;font-size:15px;font-weight:600;color:#4b5563;cursor:pointer;">Cancel</button>
+                    <button type="button" class="af-pos-variation-confirm" style="flex:2;padding:12px;border-radius:12px;border:none;background:#856128;font-size:15px;font-weight:700;color:#fff;cursor:pointer;opacity:0.5;" disabled>Add to Order</button>
+                </div>
+            `;
+            card.querySelector('.af-pos-variation-name').textContent = name;
+            const select = card.querySelector('#afPosVariationSelectInput');
+            choices.forEach(choice => {
+                const option = document.createElement('option');
+                option.value = choice;
+                option.textContent = choice;
+                select.appendChild(option);
+            });
+            backdrop.appendChild(card);
+            document.body.appendChild(backdrop);
+            const confirm = card.querySelector('.af-pos-variation-confirm');
+            const close = () => backdrop.remove();
+            select.addEventListener('change', () => {
+                confirm.disabled = !select.value;
+                confirm.style.opacity = select.value ? '1' : '0.5';
+            });
+            confirm.addEventListener('click', () => {
+                if (!select.value) return;
+                const choice = select.value;
+                close();
+                callback(choice);
+            });
+            card.querySelectorAll('.af-pos-variation-cancel').forEach(button => {
+                button.addEventListener('click', close);
+            });
         }
 
         function promptPosSideChoice(name, sidesRaw, callback) {
@@ -505,7 +571,17 @@
             });
         }
 
-        function addToPosCart(item, chosenSide = null) {
+        function addToPosCart(item, chosenSide = null, chosenVariation = null) {
+            const variationOptions = Array.isArray(item.variation_options)
+                ? item.variation_options
+                : [];
+            if (variationOptions.length && !chosenVariation) {
+                promptPosVariationChoice(item.name, variationOptions, (choice) => {
+                    addToPosCart(item, chosenSide, choice);
+                });
+                return;
+            }
+
             let sides = item.sides;
             const lowerName = (item.name || '').toLowerCase();
             if (!sides && (lowerName.includes('catfish') || (lowerName.includes('pepper') && lowerName.includes('soup')))) {
@@ -515,14 +591,14 @@
             if (sides && (!Array.isArray(sides) || sides.length > 0) && !chosenSide) {
                 promptPosSideChoice(item.name, sides, (side) => {
                     if (side) {
-                        addToPosCart(item, side);
+                        addToPosCart(item, side, chosenVariation);
                     }
                 });
                 return;
             }
 
-            const displayName = chosenSide ? `${item.name} (${chosenSide})` : item.name;
-            const existing = posCart.find((i) => i.id === item.id && (i.sideChoice || '') === (chosenSide || ''));
+            const displayName = `${item.name}${chosenSide ? ` (${chosenSide})` : ''}${chosenVariation ? ` — ${chosenVariation}` : ''}`;
+            const existing = posCart.find((i) => i.id === item.id && (i.sideChoice || '') === (chosenSide || '') && (i.variationChoice || '') === (chosenVariation || ''));
             if (existing) {
                 existing.qty += 1;
             } else {
@@ -534,6 +610,7 @@
                     barcode: item.barcode,
                     qty: 1,
                     sideChoice: chosenSide || null,
+                    variationChoice: chosenVariation || null,
                 });
             }
             renderPosCart();
@@ -723,6 +800,7 @@
                     quantity: item.qty,
                     price: item.price,
                     side_choice: item.sideChoice || null,
+                    variation_choice: item.variationChoice || null,
                 })),
                 payment: {
                     amount: computeGrandTotal(),

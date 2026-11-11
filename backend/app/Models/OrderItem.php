@@ -14,6 +14,7 @@ class OrderItem extends Model
         'menu_item_id',
         'name',
         'side_choice',
+        'variation_choice',
         'quantity',
         'unit_price',
         'total',

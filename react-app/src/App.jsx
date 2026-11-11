@@ -43,6 +43,10 @@ function formatPrice(price) {
   })}`;
 }
 
+function getCartLineKey(line) {
+  return `${line.item.id}::${line.variation_choice || ""}`;
+}
+
 function buildWhatsAppUrl({ order, cart, total, customer }) {
   const receiptUrl =
     order?.receipt_url ||
@@ -61,7 +65,7 @@ function buildWhatsAppUrl({ order, cart, total, customer }) {
     "Order:",
     ...cart.map(
       (line) =>
-        `${line.quantity} × ${line.item.name} — ${formatPrice(
+        `${line.quantity} × ${line.item.name}${line.variation_choice ? ` (${line.variation_choice})` : ""} — ${formatPrice(
           Number(line.item.price || 0) * line.quantity,
         )}`,
     ),
@@ -126,6 +130,8 @@ function CategoryCard({ category, imageUrl, count, selected, onSelect }) {
 
 function MenuCard({ item, onAdd, gallery = false }) {
   const soldOut = item.is_sold_out || item.stock === 0;
+  const hasVariationOptions =
+    Array.isArray(item.variation_options) && item.variation_options.length > 0;
   const stockLabel =
     item.stock !== null && item.stock !== undefined && item.stock !== ""
       ? `${item.stock} ${item.stock_unit || "left"}`
@@ -155,15 +161,18 @@ function MenuCard({ item, onAdd, gallery = false }) {
         </div>
         {item.description && <p className="menu-description">{item.description}</p>}
         <div className="menu-card-footer">
-          <span className="stock-label">{stockLabel}</span>
+          <span className="stock-label">
+            {hasVariationOptions ? "Choose an option" : stockLabel}
+          </span>
           <button
             className="add-button"
             type="button"
             disabled={soldOut}
-            onClick={() => onAdd(item)}
+            onClick={(event) => onAdd(item, event.currentTarget)}
             aria-label={`Add ${item.name} to cart`}
           >
-            <span aria-hidden="true">+</span> Add to cart
+            <span aria-hidden="true">{hasVariationOptions ? "✦" : "+"}</span>
+            {hasVariationOptions ? "Choose option" : "Add to cart"}
           </button>
         </div>
       </div>
@@ -172,6 +181,7 @@ function MenuCard({ item, onAdd, gallery = false }) {
 }
 
 function CartLine({ line, onChangeQuantity, onRemove }) {
+  const lineKey = getCartLineKey(line);
   return (
     <li className="cart-line">
       {line.item.image_url ? (
@@ -181,33 +191,142 @@ function CartLine({ line, onChangeQuantity, onRemove }) {
       )}
       <div className="cart-line-info">
         <strong>{line.item.name}</strong>
+        {line.variation_choice && (
+          <span className="cart-line-variation">Choice: {line.variation_choice}</span>
+        )}
         <span>{formatPrice(line.item.price)}</span>
         <button
           className="remove-line"
           type="button"
-          onClick={() => onRemove(line.item.id)}
+          onClick={() => onRemove(lineKey)}
         >
           Remove
         </button>
       </div>
-      <div className="quantity-control" aria-label={`Quantity of ${line.item.name}`}>
+      <div className="quantity-control" aria-label={`Quantity of ${line.item.name}${line.variation_choice ? `, ${line.variation_choice}` : ""}`}>
         <button
           type="button"
-          aria-label={`Remove one ${line.item.name}`}
-          onClick={() => onChangeQuantity(line.item.id, -1)}
+          aria-label={`Remove one ${line.item.name}${line.variation_choice ? `, ${line.variation_choice}` : ""}`}
+          onClick={() => onChangeQuantity(lineKey, -1)}
         >
           −
         </button>
         <span aria-live="polite">{line.quantity}</span>
         <button
           type="button"
-          aria-label={`Add one ${line.item.name}`}
-          onClick={() => onChangeQuantity(line.item.id, 1)}
+          aria-label={`Add one ${line.item.name}${line.variation_choice ? `, ${line.variation_choice}` : ""}`}
+          onClick={() => onChangeQuantity(lineKey, 1)}
         >
           +
         </button>
       </div>
     </li>
+  );
+}
+
+function VariationPicker({ item, selectedChoice, dialogRef, onSelect, onClose, onConfirm }) {
+  const options = item.variation_options || [];
+
+  return (
+    <div
+      className="variation-picker-overlay"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        ref={dialogRef}
+        className="variation-picker-dialog"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="variation-picker-title"
+        tabIndex="-1"
+        onKeyDown={(event) => {
+          if (event.key !== "Tab") return;
+          const focusable = event.currentTarget.querySelectorAll(
+            'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])',
+          );
+          if (!focusable.length) {
+            event.preventDefault();
+            return;
+          }
+
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          if (
+            event.shiftKey &&
+            (document.activeElement === first ||
+              document.activeElement === event.currentTarget)
+          ) {
+            event.preventDefault();
+            last.focus();
+          } else if (
+            !event.shiftKey &&
+            (document.activeElement === last ||
+              document.activeElement === event.currentTarget)
+          ) {
+            event.preventDefault();
+            first.focus();
+          }
+        }}
+      >
+        <div className="variation-picker-handle" aria-hidden="true" />
+        <header className="variation-picker-header">
+          <div>
+            <p className="eyebrow"><span aria-hidden="true">✦</span> Make it yours</p>
+            <h2 id="variation-picker-title">Choose your favourite</h2>
+            <p>{item.name} · Select one option</p>
+          </div>
+          <button
+            className="variation-picker-close"
+            type="button"
+            onClick={onClose}
+            aria-label="Close choices"
+          >
+            ×
+          </button>
+        </header>
+
+        <div className="variation-picker-options" role="group" aria-label={`Choose one option for ${item.name}`}>
+          {options.map((option, index) => {
+            const selected = selectedChoice === option;
+            return (
+              <button
+                className={`variation-option${selected ? " is-selected" : ""}`}
+                key={`${item.id}-${option}`}
+                type="button"
+                aria-pressed={selected}
+                onClick={() => onSelect(option)}
+                style={{ "--option-index": index }}
+              >
+                <span className="variation-option-icon" aria-hidden="true">
+                  {selected ? "✓" : "✦"}
+                </span>
+                <span>{option}</span>
+                <span className="variation-option-check" aria-hidden="true">
+                  {selected ? "Selected" : "Choose"}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <footer className="variation-picker-footer">
+          <div className="variation-picker-price">
+            <span>{selectedChoice || "Choose an option to continue"}</span>
+            {selectedChoice && <strong>{formatPrice(item.price)}</strong>}
+          </div>
+          <button
+            className="variation-picker-add"
+            type="button"
+            disabled={!selectedChoice}
+            onClick={onConfirm}
+          >
+            Add to bag <span aria-hidden="true">→</span>
+          </button>
+        </footer>
+      </section>
+    </div>
   );
 }
 
@@ -228,11 +347,14 @@ export default function App() {
   const cartDialogRef = useRef(null);
   const categoryTriggerRef = useRef(null);
   const cartTriggerRef = useRef(null);
+  const variationPickerRef = useRef(null);
+  const variationTriggerRef = useRef(null);
   const modalHistoryRef = useRef(false);
   const modalTypeRef = useRef(null);
   const restoreFocusRef = useRef(null);
   const [cart, setCart] = useState(readSavedCart);
   const [cartOpen, setCartOpen] = useState(false);
+  const [variationPicker, setVariationPicker] = useState(null);
   const [status, setStatus] = useState("loading");
   const [error, setError] = useState("");
   const [checkoutError, setCheckoutError] = useState("");
@@ -314,6 +436,7 @@ export default function App() {
       modalHistoryRef.current = false;
       modalTypeRef.current = null;
       restoreFocusRef.current = closingModal;
+      setVariationPicker(null);
       setGalleryOpen(false);
       setCartOpen(false);
       setActiveCategory("all");
@@ -326,12 +449,17 @@ export default function App() {
   useEffect(() => {
     document.body.classList.toggle("cart-is-open", cartOpen);
     document.body.classList.toggle("gallery-is-open", galleryOpen);
-    if (!cartOpen && !galleryOpen) return undefined;
-
-    if (cartOpen || galleryOpen) setCustomerCareOpen(false);
+    document.body.classList.toggle("variation-picker-is-open", Boolean(variationPicker));
+    const hasMenuOverlay = cartOpen || galleryOpen;
+    if (hasMenuOverlay) setCustomerCareOpen(false);
     const handleKeyDown = (event) => {
       if (event.key !== "Escape") return;
       event.preventDefault();
+      if (variationPicker) {
+        event.stopImmediatePropagation();
+        closeVariationPicker();
+        return;
+      }
       if (modalHistoryRef.current) {
         window.history.back();
       } else {
@@ -340,13 +468,27 @@ export default function App() {
         setActiveCategory("all");
       }
     };
-    window.addEventListener("keydown", handleKeyDown);
+    if (hasMenuOverlay) window.addEventListener("keydown", handleKeyDown);
 
     return () => {
       document.body.classList.remove("cart-is-open", "gallery-is-open");
-      window.removeEventListener("keydown", handleKeyDown);
+      document.body.classList.remove("variation-picker-is-open");
+      if (hasMenuOverlay) window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [cartOpen, galleryOpen]);
+  }, [cartOpen, galleryOpen, variationPicker]);
+
+  useEffect(() => {
+    if (!variationPicker) return undefined;
+    variationPickerRef.current?.focus();
+    const handleKeyDown = (event) => {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      closeVariationPicker();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [variationPicker]);
 
   useEffect(() => {
     if (galleryOpen) {
@@ -485,53 +627,79 @@ export default function App() {
     0,
   );
 
-  const addToCart = (item) => {
+  const addToCart = (item, trigger = null, variationChoice = null) => {
+    const variationOptions = Array.isArray(item.variation_options)
+      ? item.variation_options
+      : [];
+    if (variationOptions.length && !variationChoice) {
+      variationTriggerRef.current = trigger || document.activeElement;
+      setVariationPicker({ item, selectedChoice: "" });
+      return;
+    }
+
     setConfirmation("");
-    const currentLine = cart.find(
-      (line) => String(line.item.id) === String(item.id),
-    );
+    const candidateLine = { item, variation_choice: variationChoice };
     const stockLimit =
       item.stock === null || item.stock === undefined
         ? Number.POSITIVE_INFINITY
         : Number(item.stock);
-    if ((currentLine?.quantity || 0) >= stockLimit) return;
+    const itemQuantity = cart
+      .filter((line) => String(line.item.id) === String(item.id))
+      .reduce((total, line) => total + line.quantity, 0);
+    if (itemQuantity >= stockLimit) return;
 
     const nextItemCount = cartItemCount + 1;
+    const choiceAnnouncement = variationChoice ? ` (${variationChoice})` : "";
     setCartAnnouncement(
-      `${item.name} added to your cart. ${nextItemCount} ${
+      `${item.name}${choiceAnnouncement} added to your cart. ${nextItemCount} ${
         nextItemCount === 1 ? "item" : "items"
       } in your cart.`,
     );
     setCart((currentCart) => {
-      const currentLine = currentCart.find(
-        (line) => String(line.item.id) === String(item.id),
-      );
-      const currentQuantity = currentLine?.quantity || 0;
-      if (currentQuantity >= stockLimit) return currentCart;
+      const currentLine = currentCart.find((line) => getCartLineKey(line) === getCartLineKey(candidateLine));
+      const currentItemQuantity = currentCart
+        .filter((line) => String(line.item.id) === String(item.id))
+        .reduce((total, line) => total + line.quantity, 0);
+      if (currentItemQuantity >= stockLimit) return currentCart;
 
       return currentLine
         ? currentCart.map((line) =>
-            String(line.item.id) === String(item.id)
+            getCartLineKey(line) === getCartLineKey(candidateLine)
               ? { ...line, item, quantity: line.quantity + 1 }
               : line,
           )
-        : [...currentCart, { item, quantity: 1 }];
+        : [...currentCart, { item, quantity: 1, variation_choice: variationChoice }];
     });
     setCustomerCareMessage(
-      `Added ${item.name}. Your bag now has ${cartItemCount + 1} ${
+      `Added ${item.name}${choiceAnnouncement}. Your bag now has ${cartItemCount + 1} ${
         cartItemCount === 0 ? "item" : "items"
       }.`,
     );
+    if (variationPicker) closeVariationPicker();
   };
 
-  const changeQuantity = (itemId, difference) => {
-    const line = cart.find((entry) => String(entry.item.id) === String(itemId));
+  const closeVariationPicker = () => {
+    setVariationPicker(null);
+    window.requestAnimationFrame(() => variationTriggerRef.current?.focus());
+  };
+
+  const confirmVariationChoice = () => {
+    if (!variationPicker?.selectedChoice) return;
+    const { item, selectedChoice } = variationPicker;
+    addToCart(item, null, selectedChoice);
+  };
+
+  const changeQuantity = (lineKey, difference) => {
+    const line = cart.find((entry) => getCartLineKey(entry) === lineKey);
     if (!line) return;
     const stockLimit =
       line.item.stock === null || line.item.stock === undefined
         ? Number.POSITIVE_INFINITY
         : Number(line.item.stock);
-    const nextQuantity = Math.min(line.quantity + difference, stockLimit);
+    const otherItemQuantity = cart
+      .filter((entry) => String(entry.item.id) === String(line.item.id) && getCartLineKey(entry) !== lineKey)
+      .reduce((total, entry) => total + entry.quantity, 0);
+    const nextQuantity = Math.min(line.quantity + difference, stockLimit - otherItemQuantity);
     if (nextQuantity < 1 || nextQuantity === line.quantity) return;
 
     const nextItemCount = cartItemCount + nextQuantity - line.quantity;
@@ -543,13 +711,15 @@ export default function App() {
     setCart((currentCart) =>
       currentCart
         .map((line) => {
-          if (String(line.item.id) !== String(itemId)) return line;
+          if (getCartLineKey(line) !== lineKey) return line;
           const currentNextQuantity = line.quantity + difference;
           if (currentNextQuantity < 1) return line;
           const currentStockLimit =
             line.item.stock === null || line.item.stock === undefined
               ? Number.POSITIVE_INFINITY
-              : Number(line.item.stock);
+              : Math.max(0, Number(line.item.stock) - currentCart
+                .filter((entry) => String(entry.item.id) === String(line.item.id) && getCartLineKey(entry) !== lineKey)
+                .reduce((total, entry) => total + entry.quantity, 0));
           return {
             ...line,
             quantity: Math.min(currentNextQuantity, currentStockLimit),
@@ -558,9 +728,9 @@ export default function App() {
     );
   };
 
-  const removeFromCart = (itemId) => {
+  const removeFromCart = (lineKey) => {
     const removedLine = cart.find(
-      (line) => String(line.item.id) === String(itemId),
+      (line) => getCartLineKey(line) === lineKey,
     );
     if (!removedLine) return;
     const nextItemCount = cartItemCount - removedLine.quantity;
@@ -572,7 +742,7 @@ export default function App() {
         : "Your bag is empty. I can help you find something tasty.",
     );
     setCart((currentCart) =>
-      currentCart.filter((line) => String(line.item.id) !== String(itemId)),
+      currentCart.filter((line) => getCartLineKey(line) !== lineKey),
     );
   };
 
@@ -712,26 +882,22 @@ export default function App() {
     try {
       const orderCart = cart;
       const orderTotal = cartTotal;
-      let order = null;
-      try {
-        order = await fetchJson("/api/orders", {
-          method: "POST",
-          body: JSON.stringify({
-            channel: "web",
-            customer_name: customer.name.trim(),
-            customer_phone: customer.phone.trim(),
-            service: customer.service,
-            note: customer.note.trim(),
-            send_to_kitchen: false,
-            items: orderCart.map((line) => ({
-              menu_item_id: line.item.id,
-              quantity: line.quantity,
-            })),
-          }),
-        });
-      } catch (orderError) {
-        console.warn("Order could not be saved before WhatsApp checkout.", orderError);
-      }
+      const order = await fetchJson("/api/orders", {
+        method: "POST",
+        body: JSON.stringify({
+          channel: "web",
+          customer_name: customer.name.trim(),
+          customer_phone: customer.phone.trim(),
+          service: customer.service,
+          note: customer.note.trim(),
+          send_to_kitchen: false,
+          items: orderCart.map((line) => ({
+            menu_item_id: line.item.id,
+            quantity: line.quantity,
+            variation_choice: line.variation_choice || null,
+          })),
+        }),
+      });
 
       const redirectUrl = buildWhatsAppUrl({
         order,
@@ -991,6 +1157,19 @@ export default function App() {
         <span>Made fresh with love at Acie Fraiche Café.</span>
       </footer>
 
+      {variationPicker && (
+        <VariationPicker
+          item={variationPicker.item}
+          selectedChoice={variationPicker.selectedChoice}
+          dialogRef={variationPickerRef}
+          onSelect={(selectedChoice) =>
+            setVariationPicker((current) => ({ ...current, selectedChoice }))
+          }
+          onClose={closeVariationPicker}
+          onConfirm={confirmVariationChoice}
+        />
+      )}
+
       {galleryOpen && activeCategory !== "all" && (
         <div
           className="dish-gallery-overlay"
@@ -1203,7 +1382,7 @@ export default function App() {
               <ul className="cart-lines">
                 {cart.map((line) => (
                   <CartLine
-                    key={line.item.id}
+                    key={getCartLineKey(line)}
                     line={line}
                     onChangeQuantity={changeQuantity}
                     onRemove={removeFromCart}
