@@ -38,6 +38,7 @@ Route::middleware(['web', 'auth', 'active', 'role:admin'])->group(function () {
 });
 
 Route::middleware(['web', 'auth', 'active', 'role:admin|manager'])->group(function () {
+    Route::post('/manager/orders', [OrderController::class, 'storeForManager']);
     Route::post('/menu-items/{menuItem}/toggle-sold-out', [MenuItemController::class, 'toggleSoldOut']);
     Route::put('/menu-items/{menuItem}/stock', [MenuItemController::class, 'updateStock']);
     Route::get('/inventory-adjustments', [MenuItemController::class, 'adjustments']);
