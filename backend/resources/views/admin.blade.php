@@ -140,6 +140,7 @@
         .menu-card-title { margin:0; font-size:16px; }
         .menu-tags { display:flex; gap:6px; flex-wrap:wrap; }
         .menu-pill { border: 1px solid var(--af-line); border-radius: 999px; padding: 4px 10px; font-size:12px; color: rgba(0,0,0,0.7); background:#fff; }
+        .visually-hidden { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
         .menu-pill.sold { border-color:#fca5a5; color:#b91c1c; background:#fef2f2; }
         .menu-pill.active { border-color:#bbf7d0; color:#166534; background:#f0fdf4; }
         .menu-meta { font-size:13px; color: rgba(0,0,0,0.7); }
@@ -291,7 +292,12 @@
             <section class="panel" data-section="menu">
                 <div class="card">
                     <h2>Menu Items</h2>
-                    <p class="muted">Add items and toggle sold-out.</p>
+                    <p class="muted">Search items by name, description, category, or barcode to manage them.</p>
+                    <div class="row" style="align-items:center; margin:12px 0;">
+                        <label for="menuSearchInput" class="visually-hidden">Search menu items</label>
+                        <input id="menuSearchInput" type="search" placeholder="Search menu items..." autocomplete="off" style="max-width:480px;" />
+                        <span id="menuSearchCount" class="muted" role="status" aria-live="polite"></span>
+                    </div>
                     <div class="grid-2">
                         <div class="list" id="menuList"></div>
                         <form id="menuForm">
@@ -755,6 +761,8 @@
         const categorySubmitBtn = document.getElementById('categorySubmitBtn');
         const categoryCancelEditBtn = document.getElementById('categoryCancelEditBtn');
         const menuList = document.getElementById('menuList');
+        const menuSearchInput = document.getElementById('menuSearchInput');
+        const menuSearchCount = document.getElementById('menuSearchCount');
         const menuForm = document.getElementById('menuForm');
         const menuEditId = document.getElementById('menuEditId');
         const menuSubmitBtn = document.getElementById('menuSubmitBtn');
@@ -1074,7 +1082,17 @@
 
         function renderMenu(items) {
             menuItemsCache = items;
-            const cards = items.map(item => {
+            const query = menuSearchInput.value.trim().toLocaleLowerCase();
+            const filteredItems = query
+                ? items.filter(item => [
+                    item.name,
+                    item.description,
+                    item.category?.name,
+                    item.barcode,
+                ].some(value => String(value || '').toLocaleLowerCase().includes(query)))
+                : items;
+
+            const cards = filteredItems.map(item => {
                 const safeBarcode = escapeAttr(item.barcode || '');
                 const safeName = escapeAttr(item.name || '');
                 if (item.barcode) {
@@ -1112,9 +1130,16 @@
                     </div>
                 `;
             });
-            menuList.innerHTML = cards.join('');
+            menuList.innerHTML = cards.length
+                ? cards.join('')
+                : `<div class="muted">${query ? 'No menu items match your search.' : 'No menu items found.'}</div>`;
+            menuSearchCount.textContent = query
+                ? `${filteredItems.length} of ${items.length} items`
+                : `${items.length} items`;
             statItems.textContent = items.length;
         }
+
+        menuSearchInput.addEventListener('input', () => renderMenu(menuItemsCache));
 
         function resetMenuForm() {
             menuForm.reset();
