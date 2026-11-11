@@ -34,10 +34,11 @@
             min-height: 100vh;
             transition: grid-template-columns 0.2s ease;
         }
-        body.collapsed { grid-template-columns: 72px 1fr; }
+        body.collapsed { grid-template-columns: 0 minmax(0, 1fr); }
         .sidebar {
             position: sticky;
             top: 0;
+            min-width: 0;
             height: 100vh;
             padding: 18px;
             border-right: 1px solid var(--af-line);
@@ -49,13 +50,20 @@
             gap: 12px;
             transition: width 0.2s ease, transform 0.2s ease, padding 0.2s ease;
         }
-        .sidebar.collapsed { width: 72px; padding: 12px; }
+        .sidebar.collapsed {
+            width: 260px;
+            padding: 18px;
+            overflow: hidden;
+            transform: translate3d(calc(-100% - 48px), 0, 0);
+            visibility: hidden;
+            pointer-events: none;
+            transition: transform 0.2s ease, visibility 0s linear 0.2s;
+        }
         .brand {
             display: flex; align-items: center; gap: 12px; padding: 10px; border-radius: 12px;
             border: 1px solid var(--af-line); background: #fff; box-shadow: 0 10px 24px rgba(0,0,0,0.06);
             transition: opacity 0.2s ease;
         }
-        .sidebar.collapsed .brand { opacity: 0; pointer-events: none; height: 0; padding: 0; margin: 0; }
         .brand img { width: 48px; height: 48px; border-radius: 12px; object-fit: contain; }
         .brand-title { margin: 0; font-family: 'Playfair Display', Georgia, serif; font-size: 20px; }
         .muted { color: rgba(0,0,0,0.64); font-size: 14px; margin: 2px 0 0; }
@@ -89,7 +97,6 @@
         }
         .nav-btn.active { background: var(--af-brown); color: #fff; box-shadow: var(--af-shadow); }
         .nav-label { white-space: nowrap; }
-        .sidebar.collapsed .nav-label { display: none; }
         .sidebar-backdrop { display: none; }
         main { padding: 22px; display: grid; gap: 18px; }
         .hero {
@@ -1052,6 +1059,8 @@
             setMobileSidebarOpen(false);
             const collapsed = document.body.classList.contains('collapsed');
             sidebar.classList.toggle('collapsed', collapsed);
+            sidebar.inert = collapsed;
+            sidebar.setAttribute('aria-hidden', String(collapsed));
             toggleSidebar.setAttribute('aria-expanded', String(!collapsed));
             toggleSidebar.setAttribute('aria-label', collapsed ? 'Expand navigation menu' : 'Collapse navigation menu');
         }
@@ -1065,6 +1074,8 @@
             const collapsed = !sidebar.classList.contains('collapsed');
             document.body.classList.toggle('collapsed', collapsed);
             sidebar.classList.toggle('collapsed', collapsed);
+            sidebar.inert = collapsed;
+            sidebar.setAttribute('aria-hidden', String(collapsed));
             toggleSidebar.setAttribute('aria-expanded', String(!collapsed));
             toggleSidebar.setAttribute('aria-label', collapsed ? 'Expand navigation menu' : 'Collapse navigation menu');
         });
