@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminMenuPdfController;
 use App\Http\Controllers\ProfileController;
 use App\Models\Order;
 use Illuminate\Support\Facades\Route;
@@ -70,6 +71,9 @@ Route::get('/receipt/{order:code}', function (Order $order) {
 
 Route::middleware('auth')->group(function () {
     Route::view('/admin', 'admin')->middleware(['active', 'role:admin'])->name('admin');
+    Route::get('/admin/menu.pdf', AdminMenuPdfController::class)
+        ->middleware(['active', 'role:admin'])
+        ->name('admin.menu.pdf');
     Route::view('/manager', 'manager')->middleware(['active', 'role:admin|manager'])->name('manager');
     Route::view('/pos', 'pos')->middleware(['active', 'role:admin|pos'])->name('pos');
     Route::view('/staff', 'staff')->middleware(['active', 'role:admin|staff'])->name('staff');

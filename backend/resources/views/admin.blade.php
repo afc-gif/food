@@ -219,6 +219,7 @@
                     <div class="row" style="gap:10px; flex-wrap:wrap;">
                         <button class="btn-primary" onclick="switchTab('menu')">Manage Menu</button>
                         <button class="btn-ghost" onclick="switchTab('categories')">Manage Categories</button>
+                        <a href="{{ route('admin.menu.pdf') }}" class="btn-ghost" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">Download Current Menu PDF</a>
                         <button class="btn-ghost" onclick="switchTab('orders')">View Orders</button>
                         <button class="btn-ghost" onclick="switchTab('pos')">Open POS</button>
                         <a href="{{ route('inventory') }}" class="btn-ghost" target="_blank" style="text-decoration:none; display:inline-flex; align-items:center; gap:6px;">📦 Store Inventory</a>
