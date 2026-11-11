@@ -148,29 +148,57 @@
         .menu-search-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; margin: 18px 0; }
         .menu-search-toolbar input { min-height: 48px; border-radius: 14px; }
         .menu-search-count { color: rgba(0,0,0,0.58); font-size: 13px; font-weight: 700; white-space: nowrap; }
-        .menu-browser-heading { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
-        .menu-browser-heading h3 { margin: 0; font-size: 18px; }
-        .menu-browser-heading span { color: rgba(0,0,0,0.58); font-size: 13px; }
         .menu-management-layout { grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.8fr); gap: 22px; }
-        #menuList { max-height: none; overflow: visible; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 18px; }
+        .menu-preview-shell { display: grid; grid-template-rows: minmax(0, 1fr) auto; gap: 12px; height: min(800px, calc(100vh - 270px)); min-height: 420px; padding: 14px; border: 1px solid var(--af-line); border-radius: 18px; background: rgba(255,255,255,0.58); }
+        #menuList { min-height: 0; max-height: none; overflow: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 10px; padding: 2px; }
+        .menu-preview-card { min-width: 0; display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: 10px; padding: 10px; border: 1px solid var(--af-line); border-radius: 14px; background: #fff; }
+        .menu-preview-thumb { width: 42px; height: 42px; object-fit: cover; border-radius: 10px; border: 1px solid var(--af-line); background: var(--af-cream); }
+        .menu-preview-copy { min-width: 0; }
+        .menu-preview-copy h4 { overflow: hidden; margin: 0 0 4px; font-size: 13px; line-height: 1.35; text-overflow: ellipsis; white-space: nowrap; }
+        .menu-preview-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; font-size: 11px; }
+        .menu-preview-price { font-weight: 800; color: var(--af-brown); }
+        .menu-preview-category { overflow: hidden; max-width: 100%; color: rgba(0,0,0,0.58); text-overflow: ellipsis; white-space: nowrap; }
+        .menu-preview-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+        .menu-preview-actions .btn-ghost { min-height: 32px; padding: 5px 10px; font-size: 12px; }
+        .menu-preview-footer { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 10px; border-top: 1px solid var(--af-line); }
+        .menu-preview-footer p { margin: 0; color: rgba(0,0,0,0.58); font-size: 12px; }
+        .menu-preview-footer .btn-primary { min-height: 42px; white-space: nowrap; }
+        .menu-full-list { display: grid; align-content: start; gap: 20px; min-height: 0; overflow: auto; padding: 2px 6px 24px 2px; }
         .menu-category-group { grid-column: 1 / -1; display: grid; gap: 12px; min-width: 0; }
-        .menu-category-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--af-line); border-radius: 14px; background: linear-gradient(110deg, #fff, #f8efdc); }
-        .menu-category-heading h3 { margin: 0; font-size: 17px; }
+        .menu-category-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 10px 14px; border: 1px solid var(--af-line); border-radius: 14px; background: linear-gradient(110deg, #fff, #f8efdc); }
+        .menu-category-heading h3 { margin: 0; font-size: 16px; }
         .menu-category-count { color: rgba(0,0,0,0.58); font-size: 12px; font-weight: 700; white-space: nowrap; }
-        .menu-category-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 12px; }
+        .menu-category-items { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 10px; }
         .menu-category-empty { grid-column: 1 / -1; margin: 0; padding: 12px 14px; border: 1px dashed var(--af-line); border-radius: 12px; color: rgba(0,0,0,0.56); font-size: 13px; }
-        .menu-card { min-width: 0; border: 1px solid var(--af-line); border-radius: 18px; padding: 16px; background: #fff; box-shadow: 0 10px 24px rgba(0,0,0,0.045); display: grid; gap: 13px; transition: box-shadow 0.18s ease, transform 0.18s ease; }
-        .menu-card:hover { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(47,32,8,0.1); }
-        .menu-card-head { display:grid; gap:12px; }
-        .menu-card-title { margin:0 0 8px; font-size:17px; line-height:1.35; }
+        .menu-card { min-width: 0; border: 1px solid var(--af-line); border-radius: 14px; padding: 12px; background: #fff; box-shadow: 0 6px 16px rgba(0,0,0,0.035); display: grid; gap: 8px; transition: box-shadow 0.18s ease, transform 0.18s ease; }
+        .menu-card:hover { transform: translateY(-1px); box-shadow: 0 10px 22px rgba(47,32,8,0.08); }
+        .menu-card-head { display:grid; gap:8px; }
+        .menu-card-head > div:first-child { align-items: flex-start !important; }
+        .menu-card .thumb { width: 42px; height: 42px; border-radius: 9px; }
+        .menu-card-title { margin:0 0 6px; font-size:14px; line-height:1.35; }
         .menu-tags { display:flex; gap:6px; flex-wrap:wrap; }
-        .menu-pill { border: 1px solid var(--af-line); border-radius: 999px; padding: 4px 10px; font-size:12px; color: rgba(0,0,0,0.7); background:#fff; }
+        .menu-pill { border: 1px solid var(--af-line); border-radius: 999px; padding: 3px 8px; font-size:11px; color: rgba(0,0,0,0.7); background:#fff; }
         .visually-hidden { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
         .menu-pill.sold { border-color:#fca5a5; color:#b91c1c; background:#fef2f2; }
         .menu-pill.active { border-color:#bbf7d0; color:#166534; background:#f0fdf4; }
-        .menu-meta { font-size:13px; color: rgba(0,0,0,0.7); }
-        .menu-actions { display:flex; gap:8px; flex-wrap:wrap; padding-top:10px; border-top:1px solid var(--af-line); }
-        .menu-actions .btn-ghost { min-height:40px; }
+        .menu-meta { display: -webkit-box; overflow: hidden; margin: 0; font-size:12px; line-height:1.4; color: rgba(0,0,0,0.7); -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+        .menu-actions { display:flex; gap:6px; flex-wrap:wrap; padding-top:8px; border-top:1px solid var(--af-line); }
+        .menu-actions .btn-ghost { min-height:34px; padding:6px 9px; font-size:11px; }
+        .menu-dialog { width: min(1440px, calc(100vw - 24px)); max-width: none; max-height: calc(100dvh - 24px); margin: auto; padding: 0; overflow: hidden; border: 1px solid var(--af-line); border-radius: 20px; background: var(--af-cream); color: var(--af-ink); box-shadow: 0 24px 80px rgba(0,0,0,0.24); }
+        .menu-dialog::backdrop { background: rgba(18,14,8,0.62); backdrop-filter: blur(3px); }
+        .menu-dialog--full { height: calc(100dvh - 24px); }
+        .menu-dialog-shell { display: grid; grid-template-rows: auto auto minmax(0, 1fr); height: 100%; padding: 18px clamp(14px, 2vw, 28px) 0; }
+        .menu-dialog-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding-bottom: 12px; }
+        .menu-dialog-header h2 { margin: 0; font-family: 'Playfair Display', Georgia, serif; font-size: clamp(22px, 2.5vw, 30px); }
+        .menu-dialog-header p { margin: 4px 0 0; color: rgba(0,0,0,0.58); font-size: 13px; }
+        .menu-dialog-header .btn-ghost { flex: 0 0 auto; min-height: 42px; }
+        .menu-dialog-tools { display: flex; align-items: center; gap: 12px; padding-bottom: 14px; }
+        .menu-dialog-tools input { flex: 1; min-width: 0; min-height: 46px; }
+        .menu-dialog-tools .menu-search-count { min-width: 86px; text-align: right; }
+        .menu-edit-dialog { width: min(720px, calc(100vw - 24px)); }
+        .menu-edit-dialog-shell { display: grid; grid-template-rows: auto minmax(0, 1fr); max-height: calc(100dvh - 24px); padding: 16px; }
+        .menu-edit-dialog-body { min-height: 0; overflow: auto; }
+        .menu-edit-dialog-body #menuForm { max-height: calc(100dvh - 115px); margin: 0; overflow: auto; }
         #menuForm { padding:18px; border:1px solid var(--af-line); border-radius:18px; background:rgba(255,255,255,0.78); }
         .admin-expenses-grid { display: grid; gap: 20px; grid-template-columns: 320px 1fr; align-items: start; margin-top: 20px; }
         @media (max-width: 1200px) {
@@ -184,7 +212,7 @@
             .sidebar-backdrop.open { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 0.2s ease, visibility 0s; }
             .hamburger { z-index: 41; }
             .menu-management-layout { grid-template-columns: minmax(0, 1fr); }
-            #menuList { max-height: none; overflow: visible; }
+            .menu-preview-shell { height: min(800px, calc(100vh - 260px)); }
             .menu-category-items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (max-width: 640px) {
@@ -192,8 +220,16 @@
             .menu-management-card { padding: 16px; }
             .menu-search-toolbar { grid-template-columns: minmax(0, 1fr); }
             .menu-search-count { min-height: 18px; }
+            .menu-preview-shell { height: min(560px, calc(100dvh - 260px)); min-height: 340px; padding: 10px; }
             #menuList, .menu-category-items { grid-template-columns: minmax(0, 1fr); }
-            .menu-card { padding: 14px; }
+            .menu-dialog { width: calc(100vw - 12px); max-height: calc(100dvh - 12px); border-radius: 14px; }
+            .menu-dialog--full { height: calc(100dvh - 12px); }
+            .menu-dialog-shell { padding: 12px 10px 0; }
+            .menu-dialog-tools { align-items: stretch; flex-wrap: wrap; gap: 8px; }
+            .menu-dialog-tools .menu-search-count { min-width: 0; text-align: left; }
+            .menu-edit-dialog-shell { padding: 10px; }
+            .menu-edit-dialog-body #menuForm { max-height: calc(100dvh - 90px); }
+            .menu-card { padding: 10px; }
             .menu-card-head > div:first-child { align-items: flex-start !important; }
             .menu-actions > button { flex: 1 1 120px; }
         }
@@ -346,16 +382,19 @@
                         <input id="menuSearchInput" type="search" placeholder="Search menu items..." autocomplete="off" />
                         <span id="menuSearchCount" class="menu-search-count" role="status" aria-live="polite"></span>
                     </div>
-                    <div class="menu-browser-heading">
-                        <h3>All categories</h3>
-                        <span>Items are grouped by category. Edit an item to move it.</span>
-                    </div>
                     <div class="grid-2 menu-management-layout">
-                        <div class="list" id="menuList"></div>
+                        <div class="menu-preview-shell">
+                            <div class="list" id="menuList"></div>
+                            <div class="menu-preview-footer">
+                                <p id="menuPreviewHint">Browse the full menu by category.</p>
+                                <button class="btn-primary" type="button" id="openAllMenuBtn">View all menu</button>
+                            </div>
+                        </div>
+                        <div id="menuFormHome">
                         <form id="menuForm">
                             <div>
-                                <h3 style="margin:0 0 4px;">Add or edit a menu item</h3>
-                                <p class="muted" style="font-size:13px;">Select Edit on an item to update its details or change its category here.</p>
+                                <h3 style="margin:0 0 4px;">Add a menu item</h3>
+                                <p class="muted" style="font-size:13px;">To edit or move an existing item, open View all menu and select Edit.</p>
                             </div>
                             <input type="hidden" name="menu_item_id" id="menuEditId" />
                             <label>Name</label>
@@ -384,6 +423,7 @@
                                 <button class="btn-ghost" type="button" id="menuCancelEditBtn" style="display:none;">Cancel</button>
                             </div>
                         </form>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -798,6 +838,38 @@
         </div>
     </main>
 
+    <dialog id="allMenuDialog" class="menu-dialog menu-dialog--full" aria-labelledby="allMenuTitle">
+        <div class="menu-dialog-shell">
+            <header class="menu-dialog-header">
+                <div>
+                    <h2 id="allMenuTitle">All menu items</h2>
+                    <p>Browse every category. Edit any item to update its details or move it.</p>
+                </div>
+                <button class="btn-ghost" type="button" data-close-menu-dialog="all">Close</button>
+            </header>
+            <div class="menu-dialog-tools">
+                <label for="allMenuSearchInput" class="visually-hidden">Search all menu items</label>
+                <input id="allMenuSearchInput" type="search" placeholder="Search by item, category, description, or barcode..." autocomplete="off" />
+                <span id="allMenuSearchCount" class="menu-search-count" role="status" aria-live="polite"></span>
+                <button class="btn-primary" type="button" id="addMenuFromAllBtn">Add menu item</button>
+            </div>
+            <div class="menu-full-list" id="allMenuList"></div>
+        </div>
+    </dialog>
+
+    <dialog id="menuEditDialog" class="menu-dialog menu-edit-dialog" aria-labelledby="menuEditDialogTitle">
+        <div class="menu-edit-dialog-shell">
+            <header class="menu-dialog-header">
+                <div>
+                    <h2 id="menuEditDialogTitle">Edit menu item</h2>
+                    <p>Update item details or move it to another category.</p>
+                </div>
+                <button class="btn-ghost" type="button" data-close-menu-dialog="edit">Close</button>
+            </header>
+            <div class="menu-edit-dialog-body" id="menuEditDialogBody"></div>
+        </div>
+    </dialog>
+
     <script>
     (function () {
         try {
@@ -821,7 +893,18 @@
         const menuList = document.getElementById('menuList');
         const menuSearchInput = document.getElementById('menuSearchInput');
         const menuSearchCount = document.getElementById('menuSearchCount');
+        const menuPreviewHint = document.getElementById('menuPreviewHint');
+        const openAllMenuBtn = document.getElementById('openAllMenuBtn');
+        const addMenuFromAllBtn = document.getElementById('addMenuFromAllBtn');
+        const allMenuDialog = document.getElementById('allMenuDialog');
+        const allMenuList = document.getElementById('allMenuList');
+        const allMenuSearchInput = document.getElementById('allMenuSearchInput');
+        const allMenuSearchCount = document.getElementById('allMenuSearchCount');
+        const menuEditDialog = document.getElementById('menuEditDialog');
+        const menuEditDialogBody = document.getElementById('menuEditDialogBody');
+        const menuEditDialogTitle = document.getElementById('menuEditDialogTitle');
         const menuForm = document.getElementById('menuForm');
+        const menuFormHome = document.getElementById('menuFormHome');
         const menuEditId = document.getElementById('menuEditId');
         const menuSubmitBtn = document.getElementById('menuSubmitBtn');
         const menuCancelEditBtn = document.getElementById('menuCancelEditBtn');
@@ -1176,55 +1259,94 @@
 
         function renderMenu(items) {
             menuItemsCache = items;
-            const query = menuSearchInput.value.trim().toLocaleLowerCase();
-            const filteredItems = query
-                ? items.filter(item => [
-                    item.name,
-                    item.description,
-                    item.category?.name,
-                    item.barcode,
-                ].some(value => String(value || '').toLocaleLowerCase().includes(query)))
-                : items;
+            const query = (allMenuDialog.open ? allMenuSearchInput.value : menuSearchInput.value).trim().toLocaleLowerCase();
+            const filteredItems = filterMenuItems(items, query);
+            const previewItems = filteredItems.slice(0, 8);
 
-            const renderMenuCard = item => {
-                const safeBarcode = escapeAttr(item.barcode || '');
-                const safeName = escapeAttr(item.name || '');
-                if (item.barcode) {
-                    barcodeCache[item.barcode] = item;
-                }
+            menuList.innerHTML = previewItems.length
+                ? previewItems.map(item => renderMenuCard(item, true)).join('')
+                : `<div class="muted">${query ? 'No menu items match your search.' : 'No menu items found.'}</div>`;
+            menuSearchCount.textContent = query
+                ? `${filteredItems.length} match${filteredItems.length === 1 ? '' : 'es'}`
+                : `${items.length} items`;
+            menuPreviewHint.textContent = filteredItems.length > previewItems.length
+                ? `Showing ${previewItems.length} of ${filteredItems.length} matching items`
+                : `Showing all ${filteredItems.length} matching items`;
+            allMenuList.innerHTML = renderGroupedMenu(filteredItems, query);
+            allMenuSearchCount.textContent = query
+                ? `${filteredItems.length} of ${items.length} items`
+                : `${items.length} items · ${categoriesCache.length} categories`;
+            statItems.textContent = items.length;
+        }
+
+        function filterMenuItems(items, query) {
+            if (!query) return items;
+            return items.filter(item => [
+                item.name,
+                item.description,
+                item.category?.name,
+                item.barcode,
+            ].some(value => String(value || '').toLocaleLowerCase().includes(query)));
+        }
+
+        function renderMenuCard(item, compact = false) {
+            const safeBarcode = escapeAttr(item.barcode || '');
+            const safeName = escapeAttr(item.name || '');
+            if (item.barcode) barcodeCache[item.barcode] = item;
+
+            if (compact) {
                 return `
-                    <div class="menu-card">
-                        <div class="menu-card-head">
-                            <div style="display:flex; gap:10px; align-items:center;">
-                                ${item.image_url ? `<img class="thumb" src="${escapeAttr(item.image_url)}" alt="${safeName}">` : ''}
-                                <div>
-                                    <p class="menu-card-title">${safeName}</p>
-                                    <div class="menu-tags">
-                                        <span class="menu-pill">₦${Number(item.price).toLocaleString()}</span>
-                                        <span class="menu-pill">${item.category && item.category.name ? escapeAttr(item.category.name) : 'Uncategorized'}</span>
-                                        ${item.sides && Array.isArray(item.sides) && item.sides.length ? `<span class="menu-pill" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;">Sides: ${escapeAttr(item.sides.join(', '))}</span>` : ''}
-                                        <span class="menu-pill">${item.stock === null || item.stock === undefined ? 'Stock not tracked' : `${Number(item.stock).toLocaleString()} ${formatStockUnit(item.stock, item.stock_unit)} left`}</span>
-                                        <span class="menu-pill ${item.is_sold_out ? 'sold' : 'active'}">${item.is_sold_out ? 'Sold Out' : 'Available'}</span>
-                                    </div>
+                    <article class="menu-preview-card">
+                        ${item.image_url ? `<img class="menu-preview-thumb" src="${escapeAttr(item.image_url)}" alt="" loading="lazy">` : '<span class="menu-preview-thumb" aria-hidden="true"></span>'}
+                        <div class="menu-preview-copy">
+                            <h4 title="${safeName}">${safeName}</h4>
+                            <div class="menu-preview-meta">
+                                <span class="menu-preview-price">₦${Number(item.price).toLocaleString()}</span>
+                                <span class="menu-preview-category">${escapeAttr(item.category?.name || 'Uncategorized')}</span>
+                            </div>
+                            <div class="menu-preview-actions">
+                                <span class="menu-pill ${item.is_sold_out ? 'sold' : 'active'}">${item.is_sold_out ? 'Sold out' : 'Available'}</span>
+                                <button class="btn-ghost" type="button" onclick="editMenuItem(${item.id})">Edit</button>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            }
+
+            return `
+                <article class="menu-card">
+                    <div class="menu-card-head">
+                        <div style="display:flex; gap:9px; align-items:flex-start;">
+                            ${item.image_url ? `<img class="thumb" src="${escapeAttr(item.image_url)}" alt="${safeName}" loading="lazy">` : ''}
+                            <div>
+                                <p class="menu-card-title">${safeName}</p>
+                                <div class="menu-tags">
+                                    <span class="menu-pill">₦${Number(item.price).toLocaleString()}</span>
+                                    <span class="menu-pill">${escapeAttr(item.category?.name || 'Uncategorized')}</span>
+                                    ${item.sides && Array.isArray(item.sides) && item.sides.length ? `<span class="menu-pill">Sides: ${escapeAttr(item.sides.join(', '))}</span>` : ''}
+                                    <span class="menu-pill">${item.stock === null || item.stock === undefined ? 'Stock not tracked' : `${Number(item.stock).toLocaleString()} ${formatStockUnit(item.stock, item.stock_unit)} left`}</span>
+                                    <span class="menu-pill ${item.is_sold_out ? 'sold' : 'active'}">${item.is_sold_out ? 'Sold Out' : 'Available'}</span>
                                 </div>
                             </div>
-                            <div class="menu-tags">
-                                <span class="menu-pill">Barcode: ${safeBarcode || 'Not set'}</span>
-                                <button class="btn-ghost" ${item.barcode ? '' : 'disabled'} data-action="copy" data-barcode="${safeBarcode}">Copy</button>
-                                <button class="btn-ghost" ${item.barcode ? '' : 'disabled'} data-action="download" data-barcode="${safeBarcode}" data-name="${safeName}">Download</button>
-                                <button class="btn-ghost" onclick="regenBarcode(${item.id}, this)">Regenerate</button>
-                            </div>
                         </div>
-                        <p class="menu-meta">${escapeAttr(item.description || 'No description yet.')}</p>
-                        <div class="menu-actions">
-                            <button class="btn-ghost" onclick="toggleSoldOut(${item.id}, this)">${item.is_sold_out ? 'Mark Available' : 'Mark Sold Out'}</button>
-                            <button class="btn-ghost" onclick="editMenuItem(${item.id})">Edit</button>
-                            <button class="btn-ghost" onclick="deleteMenuItem(${item.id}, this)">Delete</button>
+                        <div class="menu-tags">
+                            <span class="menu-pill">Barcode: ${safeBarcode || 'Not set'}</span>
+                            <button class="btn-ghost" type="button" ${item.barcode ? '' : 'disabled'} data-action="copy" data-barcode="${safeBarcode}">Copy</button>
+                            <button class="btn-ghost" type="button" ${item.barcode ? '' : 'disabled'} data-action="download" data-barcode="${safeBarcode}" data-name="${safeName}">Download</button>
+                            <button class="btn-ghost" type="button" onclick="regenBarcode(${item.id}, this)">Regenerate</button>
                         </div>
                     </div>
-                `;
-            };
+                    <p class="menu-meta">${escapeAttr(item.description || 'No description yet.')}</p>
+                    <div class="menu-actions">
+                        <button class="btn-ghost" type="button" onclick="toggleSoldOut(${item.id}, this)">${item.is_sold_out ? 'Mark Available' : 'Mark Sold Out'}</button>
+                        <button class="btn-ghost" type="button" onclick="editMenuItem(${item.id})">Edit</button>
+                        <button class="btn-ghost" type="button" onclick="deleteMenuItem(${item.id}, this)">Delete</button>
+                    </div>
+                </article>
+            `;
+        }
 
+        function renderGroupedMenu(items, query) {
             const groupsById = new Map();
             const groupsByName = new Map();
             const groups = categoriesCache.map(category => {
@@ -1234,7 +1356,7 @@
                 return group;
             });
             let uncategorizedGroup = null;
-            filteredItems.forEach(item => {
+            items.forEach(item => {
                 const itemCategory = item.category || null;
                 const categoryId = item.category_id ?? itemCategory?.id;
                 const categoryName = String(itemCategory?.name || '').toLocaleLowerCase();
@@ -1260,28 +1382,29 @@
             });
 
             const visibleGroups = query ? groups.filter(group => group.items.length) : groups;
-            menuList.innerHTML = filteredItems.length
-                ? visibleGroups.map(group => `
-                    <section class="menu-category-group">
-                        <div class="menu-category-heading">
-                            <h3>${escapeAttr(group.category.name || 'Uncategorized')}</h3>
-                            <span class="menu-category-count">${group.items.length} ${group.items.length === 1 ? 'item' : 'items'}</span>
-                        </div>
-                        <div class="menu-category-items">
-                            ${group.items.length
-                                ? group.items.map(renderMenuCard).join('')
-                                : '<p class="menu-category-empty">No menu items in this category yet.</p>'}
-                        </div>
-                    </section>
-                `).join('')
-                : `<div class="muted">${query ? 'No menu items match your search.' : 'No menu items found.'}</div>`;
-            menuSearchCount.textContent = query
-                ? `${filteredItems.length} of ${items.length} items`
-                : `${items.length} items`;
-            statItems.textContent = items.length;
+            if (!items.length) return `<div class="muted">${query ? 'No menu items match your search.' : 'No menu items found.'}</div>`;
+            return visibleGroups.map(group => `
+                <section class="menu-category-group">
+                    <div class="menu-category-heading">
+                        <h3>${escapeAttr(group.category.name || 'Uncategorized')}</h3>
+                        <span class="menu-category-count">${group.items.length} ${group.items.length === 1 ? 'item' : 'items'}</span>
+                    </div>
+                    <div class="menu-category-items">
+                        ${group.items.length
+                            ? group.items.map(item => renderMenuCard(item)).join('')
+                            : '<p class="menu-category-empty">No menu items in this category yet.</p>'}
+                    </div>
+                </section>
+            `).join('');
         }
-
-        menuSearchInput.addEventListener('input', () => renderMenu(menuItemsCache));
+        menuSearchInput.addEventListener('input', () => {
+            allMenuSearchInput.value = menuSearchInput.value;
+            renderMenu(menuItemsCache);
+        });
+        allMenuSearchInput.addEventListener('input', () => {
+            menuSearchInput.value = allMenuSearchInput.value;
+            renderMenu(menuItemsCache);
+        });
 
         function resetMenuForm() {
             menuForm.reset();
@@ -1289,6 +1412,55 @@
             menuSubmitBtn.textContent = 'Add Menu Item';
             menuCancelEditBtn.style.display = 'none';
         }
+
+        let menuEditorReturnFocus = null;
+
+        function openMenuEditor(title) {
+            menuEditorReturnFocus = document.activeElement;
+            menuEditDialogTitle.textContent = title;
+            menuEditDialogBody.appendChild(menuForm);
+            menuEditDialog.showModal();
+            menuForm.elements.name.focus();
+        }
+
+        function closeMenuEditor() {
+            if (menuEditDialog.open) menuEditDialog.close();
+        }
+
+        menuEditDialog.addEventListener('close', () => {
+            menuFormHome.appendChild(menuForm);
+            resetMenuForm();
+            if (menuEditorReturnFocus?.isConnected) menuEditorReturnFocus.focus();
+            menuEditorReturnFocus = null;
+        });
+
+        openAllMenuBtn.addEventListener('click', () => {
+            allMenuSearchInput.value = menuSearchInput.value;
+            renderMenu(menuItemsCache);
+            allMenuDialog.showModal();
+            allMenuSearchInput.focus();
+        });
+        allMenuDialog.addEventListener('close', () => {
+            menuSearchInput.value = allMenuSearchInput.value;
+            renderMenu(menuItemsCache);
+            openAllMenuBtn.focus();
+        });
+        document.querySelectorAll('[data-close-menu-dialog]').forEach(button => {
+            button.addEventListener('click', () => {
+                if (button.dataset.closeMenuDialog === 'all') allMenuDialog.close();
+                if (button.dataset.closeMenuDialog === 'edit') closeMenuEditor();
+            });
+        });
+        allMenuDialog.addEventListener('click', event => {
+            if (event.target === allMenuDialog) allMenuDialog.close();
+        });
+        menuEditDialog.addEventListener('click', event => {
+            if (event.target === menuEditDialog) closeMenuEditor();
+        });
+        addMenuFromAllBtn.addEventListener('click', () => {
+            resetMenuForm();
+            openMenuEditor('Add menu item');
+        });
 
         window.editMenuItem = (id) => {
             const item = menuItemsCache.find(menuItem => Number(menuItem.id) === Number(id));
@@ -1311,8 +1483,7 @@
             menuForm.elements.image.value = '';
             menuSubmitBtn.textContent = 'Save Menu Item';
             menuCancelEditBtn.style.display = '';
-            menuForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            menuForm.elements.name.focus();
+            openMenuEditor(`Edit ${item.name || 'menu item'}`);
         };
 
         function renderKitchenStatus(status) {
@@ -1327,8 +1498,8 @@
             return `<span class="pill" style="background:#fff; border-color:var(--af-line);">${eta}${at}</span>`;
         }
 
-        if (menuList) {
-            menuList.addEventListener('click', (e) => {
+        [menuList, allMenuList].forEach(list => {
+            list.addEventListener('click', (e) => {
                 const btn = e.target.closest('button[data-action]');
                 if (!btn) return;
                 const { action, barcode = '', name = '' } = btn.dataset;
@@ -1339,7 +1510,7 @@
                     printBarcode(barcode, name);
                 }
             });
-        }
+        });
 
         function renderOrderStatus(status) {
             const map = {
@@ -2373,7 +2544,10 @@
                 saved = true;
                 await Promise.all([loadMenu(), loadCategories()]);
             });
-            if (saved) resetMenuForm();
+            if (saved) {
+                resetMenuForm();
+                if (menuEditDialog.open) closeMenuEditor();
+            }
         });
 
         menuCancelEditBtn.addEventListener('click', resetMenuForm);
