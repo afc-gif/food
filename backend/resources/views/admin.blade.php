@@ -90,6 +90,7 @@
         .nav-btn.active { background: var(--af-brown); color: #fff; box-shadow: var(--af-shadow); }
         .nav-label { white-space: nowrap; }
         .sidebar.collapsed .nav-label { display: none; }
+        .sidebar-backdrop { display: none; }
         main { padding: 22px; display: grid; gap: 18px; }
         .hero {
             background: linear-gradient(135deg, rgba(204,153,51,0.2), rgba(255,255,255,0.9));
@@ -131,33 +132,63 @@
         th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--af-line); }
         th { color: rgba(0,0,0,0.6); font-weight: 700; background: #fdf8ef; }
         tr:last-child td { border-bottom: none; }
-        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 14px; }
+        .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(340px, 100%), 1fr)); gap: 18px; align-items: start; }
         .frame-wrap { border: 1px solid var(--af-line); border-radius: 14px; overflow: hidden; box-shadow: var(--af-shadow); background: #fff; }
         iframe { width: 100%; height: 70vh; border: none; }
         /* Admin menu cards */
-        .menu-card { border: 1px solid var(--af-line); border-radius: 16px; padding: 12px; background: #fff; box-shadow: 0 10px 24px rgba(0,0,0,0.04); display: grid; gap: 8px; }
-        .menu-card-head { display:flex; justify-content:space-between; gap:8px; align-items:flex-start; flex-wrap:wrap; }
-        .menu-card-title { margin:0; font-size:16px; }
+        .menu-management-card { padding: clamp(18px, 2.5vw, 30px); }
+        .menu-management-card > h2 { font-size: clamp(24px, 3vw, 32px); }
+        .menu-search-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; margin: 18px 0; }
+        .menu-search-toolbar input { min-height: 48px; border-radius: 14px; }
+        .menu-search-count { color: rgba(0,0,0,0.58); font-size: 13px; font-weight: 700; white-space: nowrap; }
+        .menu-management-layout { grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.8fr); gap: 22px; }
+        #menuList { max-height: min(74vh, 980px); grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 12px; }
+        .menu-card { min-width: 0; border: 1px solid var(--af-line); border-radius: 18px; padding: 16px; background: #fff; box-shadow: 0 10px 24px rgba(0,0,0,0.045); display: grid; gap: 13px; transition: box-shadow 0.18s ease, transform 0.18s ease; }
+        .menu-card:hover { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(47,32,8,0.1); }
+        .menu-card-head { display:grid; gap:12px; }
+        .menu-card-title { margin:0 0 8px; font-size:17px; line-height:1.35; }
         .menu-tags { display:flex; gap:6px; flex-wrap:wrap; }
         .menu-pill { border: 1px solid var(--af-line); border-radius: 999px; padding: 4px 10px; font-size:12px; color: rgba(0,0,0,0.7); background:#fff; }
         .visually-hidden { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
         .menu-pill.sold { border-color:#fca5a5; color:#b91c1c; background:#fef2f2; }
         .menu-pill.active { border-color:#bbf7d0; color:#166534; background:#f0fdf4; }
         .menu-meta { font-size:13px; color: rgba(0,0,0,0.7); }
-        .menu-actions { display:flex; gap:6px; flex-wrap:wrap; }
+        .menu-actions { display:flex; gap:8px; flex-wrap:wrap; padding-top:10px; border-top:1px solid var(--af-line); }
+        .menu-actions .btn-ghost { min-height:40px; }
+        #menuForm { padding:18px; border:1px solid var(--af-line); border-radius:18px; background:rgba(255,255,255,0.78); }
         .admin-expenses-grid { display: grid; gap: 20px; grid-template-columns: 320px 1fr; align-items: start; margin-top: 20px; }
         @media (max-width: 960px) {
             .admin-expenses-grid { grid-template-columns: 1fr; }
             body { grid-template-columns: 1fr; }
-            .sidebar { position: fixed; left: 0; top: 0; width: 260px; transform: translateX(-110%); z-index: 20; }
+            body.sidebar-is-open { overflow: hidden; }
+            .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: min(300px, calc(100vw - 56px)); height: 100vh; height: 100dvh; overflow-y: auto; overscroll-behavior: contain; transform: translateX(-105%); z-index: 40; }
             .sidebar.open { transform: translateX(0); }
-            .sidebar.collapsed { width: 260px; padding: 18px; }
+            .sidebar.collapsed { width: min(300px, calc(100vw - 56px)); padding: 18px; }
+            .sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 39; border: 0; border-radius: 0; padding: 0; background: rgba(18,14,8,0.48); opacity: 0; visibility: hidden; transition: opacity 0.2s ease, visibility 0.2s ease; }
+            .sidebar-backdrop.open { opacity: 1; visibility: visible; }
+            .hamburger { z-index: 41; }
+            .menu-management-layout { grid-template-columns: minmax(0, 1fr); }
+            #menuList { max-height: none; }
+        }
+        @media (max-width: 640px) {
+            main { min-width: 0; padding: 72px 14px 20px; }
+            .menu-management-card { padding: 16px; }
+            .menu-search-toolbar { grid-template-columns: minmax(0, 1fr); }
+            .menu-search-count { min-height: 18px; }
+            #menuList { grid-template-columns: minmax(0, 1fr); }
+            .menu-card { padding: 14px; }
+            .menu-card-head > div:first-child { align-items: flex-start !important; }
+            .menu-actions > button { flex: 1 1 120px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .sidebar, .sidebar-backdrop, .menu-card { transition: none; }
         }
     </style>
 </head>
     <body>
-    <button class="hamburger" id="toggleSidebar">☰</button>
-    <aside class="sidebar" id="sidebar">
+    <button class="hamburger" id="toggleSidebar" type="button" aria-controls="sidebar" aria-expanded="false" aria-label="Open navigation menu">☰</button>
+    <button class="sidebar-backdrop" id="sidebarBackdrop" type="button" aria-label="Close navigation menu" tabindex="-1"></button>
+    <aside class="sidebar" id="sidebar" aria-label="Admin navigation">
         <div class="brand">
             <img src="/assets/logo2.png" alt="Acie Fraiche Logo">
             <div>
@@ -290,17 +321,21 @@
             </section>
 
             <section class="panel" data-section="menu">
-                <div class="card">
+                <div class="card menu-management-card">
                     <h2>Menu Items</h2>
                     <p class="muted">Search items by name, description, category, or barcode to manage them.</p>
-                    <div class="row" style="align-items:center; margin:12px 0;">
+                    <div class="menu-search-toolbar">
                         <label for="menuSearchInput" class="visually-hidden">Search menu items</label>
-                        <input id="menuSearchInput" type="search" placeholder="Search menu items..." autocomplete="off" style="max-width:480px;" />
-                        <span id="menuSearchCount" class="muted" role="status" aria-live="polite"></span>
+                        <input id="menuSearchInput" type="search" placeholder="Search menu items..." autocomplete="off" />
+                        <span id="menuSearchCount" class="menu-search-count" role="status" aria-live="polite"></span>
                     </div>
-                    <div class="grid-2">
+                    <div class="grid-2 menu-management-layout">
                         <div class="list" id="menuList"></div>
                         <form id="menuForm">
+                            <div>
+                                <h3 style="margin:0 0 4px;">Add or edit a menu item</h3>
+                                <p class="muted" style="font-size:13px;">Select Edit on an item to update its details here.</p>
+                            </div>
                             <input type="hidden" name="menu_item_id" id="menuEditId" />
                             <label>Name</label>
                             <input name="name" placeholder="Item name" required />
@@ -752,6 +787,8 @@
 
         const sidebar = document.getElementById('sidebar');
         const toggleSidebar = document.getElementById('toggleSidebar');
+        const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+        const mobileSidebar = window.matchMedia('(max-width: 960px)');
         const navBtns = Array.from(document.querySelectorAll('.nav-btn'));
         const panels = Array.from(document.querySelectorAll('.panel'));
 
@@ -994,18 +1031,50 @@
             }
         };
 
-        if (toggleSidebar) {
-            toggleSidebar.addEventListener('click', () => {
-                const isMobile = window.innerWidth <= 960;
-                if (isMobile) {
-                    sidebar.classList.toggle('open');
-                } else {
-                    document.body.classList.toggle('collapsed');
-                    sidebar.classList.toggle('collapsed');
-                }
-                toggleSidebar.setAttribute('aria-expanded', sidebar.classList.contains('open') ? 'true' : 'false');
-            });
+        function setMobileSidebarOpen(open) {
+            sidebar.classList.toggle('open', open);
+            sidebarBackdrop.classList.toggle('open', open);
+            document.body.classList.toggle('sidebar-is-open', open);
+            toggleSidebar.setAttribute('aria-expanded', String(open));
+            toggleSidebar.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
         }
+
+        function syncSidebarForViewport() {
+            if (mobileSidebar.matches) {
+                document.body.classList.remove('collapsed');
+                sidebar.classList.remove('collapsed');
+                setMobileSidebarOpen(sidebar.classList.contains('open'));
+                return;
+            }
+
+            setMobileSidebarOpen(false);
+            const collapsed = document.body.classList.contains('collapsed');
+            sidebar.classList.toggle('collapsed', collapsed);
+            toggleSidebar.setAttribute('aria-expanded', String(!collapsed));
+            toggleSidebar.setAttribute('aria-label', collapsed ? 'Expand navigation menu' : 'Collapse navigation menu');
+        }
+
+        toggleSidebar.addEventListener('click', () => {
+            if (mobileSidebar.matches) {
+                setMobileSidebarOpen(!sidebar.classList.contains('open'));
+                return;
+            }
+
+            const collapsed = !sidebar.classList.contains('collapsed');
+            document.body.classList.toggle('collapsed', collapsed);
+            sidebar.classList.toggle('collapsed', collapsed);
+            toggleSidebar.setAttribute('aria-expanded', String(!collapsed));
+            toggleSidebar.setAttribute('aria-label', collapsed ? 'Expand navigation menu' : 'Collapse navigation menu');
+        });
+        sidebarBackdrop.addEventListener('click', () => setMobileSidebarOpen(false));
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && mobileSidebar.matches && sidebar.classList.contains('open')) {
+                setMobileSidebarOpen(false);
+                toggleSidebar.focus();
+            }
+        });
+        mobileSidebar.addEventListener('change', syncSidebarForViewport);
+        syncSidebarForViewport();
 
         function switchTab(tab) {
             navBtns.forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
@@ -1016,10 +1085,7 @@
             if (tab === 'expenses') {
                 loadAdminExpenses();
             }
-            if (window.innerWidth <= 960) {
-                sidebar.classList.remove('open');
-                toggleSidebar.setAttribute('aria-expanded', 'false');
-            }
+            if (mobileSidebar.matches) setMobileSidebarOpen(false);
         }
         navBtns.forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
 
