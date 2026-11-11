@@ -50,6 +50,7 @@ class MenuItemController extends Controller
             'barcode' => 'nullable|string|max:32|unique:menu_items,barcode',
             'description' => 'nullable|string',
             'sides' => 'nullable',
+            'variation_options' => 'nullable',
             'price' => 'required|numeric|min:0',
             'is_sold_out' => 'boolean',
             'stock' => 'nullable|integer|min:0',
@@ -70,6 +71,7 @@ class MenuItemController extends Controller
                 }
             }
         }
+        $data['variation_options'] = $this->normalizeVariationOptions($data['variation_options'] ?? null);
 
         if ($request->hasFile('image')) {
             try {
@@ -111,6 +113,7 @@ class MenuItemController extends Controller
             'barcode' => 'nullable|string|max:32|unique:menu_items,barcode,' . $menuItem->id,
             'description' => 'nullable|string',
             'sides' => 'nullable',
+            'variation_options' => 'nullable',
             'price' => 'nullable|numeric|min:0',
             'is_sold_out' => 'boolean',
             'stock' => 'nullable|integer|min:0',
@@ -130,6 +133,9 @@ class MenuItemController extends Controller
                     $data['sides'] = array_values(array_filter(array_map('trim', explode(',', $data['sides']))));
                 }
             }
+        }
+        if (array_key_exists('variation_options', $data)) {
+            $data['variation_options'] = $this->normalizeVariationOptions($data['variation_options']);
         }
 
         // Ensure every item keeps a barcode even if the incoming payload omitted it.
@@ -173,6 +179,48 @@ class MenuItemController extends Controller
         $this->broadcastMenuItem($menuItem);
 
         return response()->json($menuItem);
+    }
+
+    private function normalizeVariationOptions(mixed $value): ?array
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        if (is_string($value)) {
+            $decoded = json_decode($value, true);
+            $value = is_array($decoded) ? $decoded : preg_split('/\R/u', $value);
+        }
+
+        if (! is_array($value) || count($value) > 12) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'variation_options' => ['Enter up to 12 choices, one per line.'],
+            ]);
+        }
+
+        $options = [];
+        foreach ($value as $option) {
+            if (! is_string($option) || mb_strlen(trim($option)) > 100) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'variation_options' => ['Each choice must be 100 characters or fewer.'],
+                ]);
+            }
+
+            $option = trim($option);
+            if ($option === '') {
+                continue;
+            }
+
+            if (in_array(mb_strtolower($option), array_map('mb_strtolower', $options), true)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'variation_options' => ['Choices must be unique.'],
+                ]);
+            }
+
+            $options[] = $option;
+        }
+
+        return $options ?: null;
     }
 
     public function regenerateBarcode(MenuItem $menuItem)

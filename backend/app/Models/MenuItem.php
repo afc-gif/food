@@ -17,6 +17,7 @@ class MenuItem extends Model
         'barcode',
         'description',
         'sides',
+        'variation_options',
         'price',
         'is_sold_out',
         'stock',
@@ -32,6 +33,7 @@ class MenuItem extends Model
         'price' => 'decimal:2',
         'stock' => 'integer',
         'sides' => 'array',
+        'variation_options' => 'array',
     ];
 
     public function getSidesAttribute($value): ?array

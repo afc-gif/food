@@ -71,6 +71,7 @@ class OrderController extends Controller
                 'items.*.quantity' => 'required|integer|min:1',
                 'items.*.price' => 'nullable|numeric|min:0',
                 'items.*.side_choice' => 'nullable|string|max:100',
+                'items.*.variation_choice' => 'nullable|string|max:100',
                 'payment' => 'nullable|array',
                 'payment.amount' => 'required_with:payment|numeric|min:0',
                 'payment.method' => 'required_with:payment|string|max:50',
@@ -138,23 +139,45 @@ class OrderController extends Controller
                     }
                 }
 
-                // Process individual item lines (preserving distinct side_choice selections)
+                // Preserve distinct side and required variation selections as separate order lines.
                 foreach ($data['items'] as $itemInput) {
                     $menuItem = $menuItems->get($itemInput['menu_item_id']);
                     $price = $menuItem->price;
                     $quantity = (int) $itemInput['quantity'];
                     $lineTotal = $price * $quantity;
                     $sideChoice = ! empty($itemInput['side_choice']) ? trim($itemInput['side_choice']) : null;
+                    $variationChoice = ! empty($itemInput['variation_choice']) ? trim($itemInput['variation_choice']) : null;
+                    $variationOptions = $menuItem->variation_options ?? [];
+
+                    if ($variationOptions) {
+                        $matchedChoice = collect($variationOptions)->first(
+                            fn ($option) => mb_strtolower($option) === mb_strtolower($variationChoice ?? '')
+                        );
+                        if (! $matchedChoice) {
+                            throw ValidationException::withMessages([
+                                'items' => ["Choose a valid option for {$menuItem->name}."],
+                            ]);
+                        }
+                        $variationChoice = $matchedChoice;
+                    } elseif ($variationChoice !== null) {
+                        throw ValidationException::withMessages([
+                            'items' => ["{$menuItem->name} does not have selectable options."],
+                        ]);
+                    }
 
                     $itemName = $menuItem->name;
                     if ($sideChoice) {
                         $itemName .= " ({$sideChoice})";
+                    }
+                    if ($variationChoice) {
+                        $itemName .= " — {$variationChoice}";
                     }
 
                     $itemsData[] = [
                         'menu_item_id' => $menuItem->id,
                         'name' => $itemName,
                         'side_choice' => $sideChoice,
+                        'variation_choice' => $variationChoice,
                         'quantity' => $quantity,
                         'unit_price' => $price,
                         'total' => $lineTotal,
