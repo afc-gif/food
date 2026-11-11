@@ -265,10 +265,66 @@
             width: 100%; padding: 10px 12px; border: 1px solid var(--af-line);
             border-radius: 10px; font: inherit; background: #fff;
         }
+        .manager-order-field input:focus,
+        .manager-order-field select:focus,
+        .manager-order-field textarea:focus {
+            outline: 2px solid rgba(204,153,51,0.35);
+            border-color: var(--af-gold);
+        }
+        .manager-order-selection {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) auto;
+            align-items: end;
+            gap: 12px;
+        }
+        .manager-order-selection-info {
+            min-height: 42px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--af-ink-soft);
+            font-size: 12px;
+        }
+        .manager-order-quantity {
+            display: grid;
+            grid-template-columns: 38px 72px 38px;
+            gap: 4px;
+            align-items: center;
+        }
+        .manager-order-quantity button,
+        .manager-cart-quantity button {
+            min-height: 38px;
+            border: 1px solid var(--af-line);
+            border-radius: 9px;
+            background: #fff;
+            color: var(--af-brown);
+            font: inherit;
+            font-weight: 800;
+            cursor: pointer;
+        }
+        .manager-order-quantity input {
+            text-align: center;
+            padding: 8px 4px;
+        }
+        .manager-cart-quantity {
+            display: inline-grid;
+            grid-template-columns: 32px 32px 32px;
+            align-items: center;
+            gap: 3px;
+        }
+        .manager-cart-quantity button { min-height: 30px; }
+        .manager-cart-quantity span { text-align: center; font-weight: 800; }
         .manager-order-cart { padding: 0 18px 18px; }
         .manager-order-line {
             display: flex; justify-content: space-between; align-items: center;
             gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--af-line);
+        }
+        @media (max-width: 600px) {
+            .manager-order-grid { grid-template-columns: 1fr; padding: 14px; }
+            .manager-order-selection { grid-template-columns: 1fr; }
+            .manager-order-line { align-items: flex-start; }
+            .manager-order-line > div:last-child { flex-wrap: wrap; justify-content: flex-end; }
         }
 
         #toast {
@@ -526,18 +582,34 @@
                     </select>
                 </div>
                 <div class="manager-order-field">
-                    <label for="managerOrderItem">Menu item</label>
-                    <select id="managerOrderItem" required>
+                    <label for="managerOrderSearch">Find menu items</label>
+                    <input id="managerOrderSearch" type="search" autocomplete="off" placeholder="Search by dish name or category">
+                </div>
+                <div class="manager-order-field">
+                    <label for="managerOrderItem">Choose a menu item</label>
+                    <select id="managerOrderItem">
                         <option value="">Loading available menu items…</option>
                     </select>
                 </div>
-                <div class="manager-order-field">
-                    <label for="managerOrderQuantity">Quantity</label>
-                    <input id="managerOrderQuantity" type="number" min="1" step="1" value="1" required>
-                </div>
-                <div class="manager-order-field" id="managerSideChoiceField" style="display:none;">
-                    <label for="managerSideChoice">Side / option</label>
-                    <select id="managerSideChoice"></select>
+                <div class="manager-order-selection">
+                    <div>
+                        <div id="managerSelectedItemInfo" class="manager-order-selection-info">Choose a dish to see its price and options.</div>
+                        <div class="manager-order-field" id="managerSideChoiceField" style="display:none;">
+                            <label for="managerSideChoice">Choose side / option</label>
+                            <select id="managerSideChoice"></select>
+                        </div>
+                    </div>
+                    <div style="display:flex; align-items:end; gap:10px; flex-wrap:wrap;">
+                        <div class="manager-order-field">
+                            <label for="managerOrderQuantity">Quantity</label>
+                            <div class="manager-order-quantity">
+                                <button type="button" data-picker-quantity="dec" aria-label="Decrease quantity">−</button>
+                                <input id="managerOrderQuantity" type="number" min="1" step="1" value="1" inputmode="numeric">
+                                <button type="button" data-picker-quantity="inc" aria-label="Increase quantity">＋</button>
+                            </div>
+                        </div>
+                        <button class="btn btn-ghost" id="managerAddOrderItem" type="button">＋ Add item</button>
+                    </div>
                 </div>
                 <div class="manager-order-field">
                     <label for="managerPaymentStatus">Payment</label>
@@ -554,9 +626,6 @@
                         <option value="transfer">Transfer</option>
                         <option value="other">Other</option>
                     </select>
-                </div>
-                <div class="manager-order-field" style="align-content:end;">
-                    <button class="btn btn-ghost" id="managerAddOrderItem" type="button">Add item to order</button>
                 </div>
                 <div class="manager-order-field" style="grid-column:1/-1;">
                     <label for="managerOrderNote">Order note (optional)</label>
@@ -703,6 +772,7 @@
     let todayOrders  = [];
     let menuItems    = [];
     let managerOrderCart = [];
+    let managerOrderMenuSignature = '';
     let isStoreOpen  = true;
     let selectedCat  = 'all';
 
@@ -761,14 +831,24 @@
     function renderManagerOrderMenu() {
         const select = document.getElementById('managerOrderItem');
         if (!select) return;
+        const sideSelect = document.getElementById('managerSideChoice');
+        if (document.activeElement === select || document.activeElement === sideSelect) return;
         const currentId = select.value;
+        const searchTerm = document.getElementById('managerOrderSearch').value.trim().toLowerCase();
         const available = menuItems.filter(item =>
-            item.is_active && !item.is_sold_out && item.stock !== 0
+            item.is_active && !item.is_sold_out && item.stock !== 0 &&
+            (!searchTerm || `${item.name} ${item.category?.name || ''}`.toLowerCase().includes(searchTerm))
         );
-        select.innerHTML = '<option value="">Select a dish</option>' + available.map(item =>
-            `<option value="${Number(item.id)}">${esc(item.name)} · ₦${Number(item.price || 0).toLocaleString()}${item.stock !== null ? ` · ${Number(item.stock)} left` : ''}</option>`
+        const signature = JSON.stringify(available.map(item => [
+            item.id, item.name, item.price, item.stock, item.category?.name || '', item.sides,
+        ]));
+        if (signature === managerOrderMenuSignature) return;
+
+        select.innerHTML = `<option value="">${available.length ? 'Select a dish' : 'No available items match your search'}</option>` + available.map(item =>
+            `<option value="${Number(item.id)}">${esc(item.name)} · ₦${Number(item.price || 0).toLocaleString()}${item.stock !== null && item.stock !== undefined ? ` · ${Number(item.stock)} left` : ''}</option>`
         ).join('');
         if (available.some(item => String(item.id) === currentId)) select.value = currentId;
+        managerOrderMenuSignature = signature;
         updateManagerSideChoices();
     }
 
@@ -777,6 +857,10 @@
         const item = menuItems.find(candidate => Number(candidate.id) === itemId);
         const field = document.getElementById('managerSideChoiceField');
         const select = document.getElementById('managerSideChoice');
+        const info = document.getElementById('managerSelectedItemInfo');
+        info.textContent = item
+            ? `₦${Number(item.price || 0).toLocaleString()} each${item.stock !== null && item.stock !== undefined ? ` · ${Number(item.stock)} in stock` : ' · Available'}`
+            : 'Choose a dish to see its price and options.';
         let sides = item?.sides;
         if (typeof sides === 'string') {
             try { sides = JSON.parse(sides); } catch { sides = sides.split(',').map(side => side.trim()).filter(Boolean); }
@@ -794,7 +878,7 @@
             return;
         }
         field.style.display = 'grid';
-        select.required = true;
+        select.required = false;
         select.innerHTML = '<option value="">Choose an option</option>' + sides.map(side =>
             `<option value="${esc(side)}">${esc(side)} (Included)</option>`
         ).join('');
@@ -822,6 +906,11 @@
                 </div>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <strong>₦${(Number(item.price) * item.quantity).toLocaleString()}</strong>
+                    <div class="manager-cart-quantity" aria-label="Quantity for ${esc(item.name)}">
+                        <button type="button" data-cart-quantity="dec" data-order-index="${index}" aria-label="Decrease ${esc(item.name)} quantity">−</button>
+                        <span>${item.quantity}</span>
+                        <button type="button" data-cart-quantity="inc" data-order-index="${index}" aria-label="Increase ${esc(item.name)} quantity">＋</button>
+                    </div>
                     <button class="btn btn-ghost btn-sm" type="button" data-remove-order-item="${index}" aria-label="Remove ${esc(item.name)}">Remove</button>
                 </div>
             </div>
@@ -833,6 +922,8 @@
         document.getElementById('managerOrderQuantity').value = '1';
         document.getElementById('managerPaymentMethodField').style.display = 'none';
         managerOrderCart = [];
+        managerOrderMenuSignature = '';
+        renderManagerOrderMenu();
         updateManagerSideChoices();
         renderManagerOrderCart();
     }
@@ -1202,6 +1293,20 @@
     document.getElementById('storeLockBtn').addEventListener('click', toggleStoreLock);
     document.getElementById('btnRefresh').addEventListener('click', loadAll);
     document.getElementById('managerOrderItem').addEventListener('change', updateManagerSideChoices);
+    document.getElementById('managerOrderItem').addEventListener('blur', renderManagerOrderMenu);
+    document.getElementById('managerSideChoice').addEventListener('blur', renderManagerOrderMenu);
+    document.getElementById('managerOrderSearch').addEventListener('input', () => {
+        managerOrderMenuSignature = '';
+        renderManagerOrderMenu();
+    });
+    document.getElementById('managerOrderSearch').addEventListener('blur', renderManagerOrderMenu);
+    document.querySelectorAll('[data-picker-quantity]').forEach(button => {
+        button.addEventListener('click', () => {
+            const input = document.getElementById('managerOrderQuantity');
+            const quantity = Number(input.value) || 1;
+            input.value = String(Math.max(1, quantity + (button.dataset.pickerQuantity === 'inc' ? 1 : -1)));
+        });
+    });
     document.getElementById('managerPaymentStatus').addEventListener('change', event => {
         document.getElementById('managerPaymentMethodField').style.display =
             event.target.value === 'paid' ? 'grid' : 'none';
@@ -1215,6 +1320,11 @@
             return;
         }
         const sideChoice = document.getElementById('managerSideChoice').value;
+        if (document.getElementById('managerSideChoiceField').style.display !== 'none' && !sideChoice) {
+            toast('Choose a side or option before adding this dish.', true);
+            document.getElementById('managerSideChoice').focus();
+            return;
+        }
         const existing = managerOrderCart.find(line =>
             line.id === item.id && line.side_choice === sideChoice
         );
@@ -1233,9 +1343,29 @@
             quantity,
             side_choice: sideChoice,
         });
+        document.getElementById('managerOrderQuantity').value = '1';
         renderManagerOrderCart();
     });
     document.getElementById('managerOrderCart').addEventListener('click', event => {
+        const quantityButton = event.target.closest('[data-cart-quantity]');
+        if (quantityButton) {
+            const index = Number(quantityButton.dataset.orderIndex);
+            const item = managerOrderCart[index];
+            if (!item) return;
+            const increment = quantityButton.dataset.cartQuantity === 'inc';
+            const availableItem = menuItems.find(candidate => Number(candidate.id) === Number(item.id));
+            const quantityInCart = managerOrderCart
+                .filter(line => Number(line.id) === Number(item.id))
+                .reduce((sum, line) => sum + line.quantity, 0);
+            if (increment && availableItem && availableItem.stock !== null && availableItem.stock !== undefined &&
+                quantityInCart >= Number(availableItem.stock)) {
+                toast(`Only ${availableItem.stock} ${availableItem.stock_unit || 'in stock'} of ${availableItem.name} are available.`, true);
+                return;
+            }
+            item.quantity = Math.max(1, item.quantity + (increment ? 1 : -1));
+            renderManagerOrderCart();
+            return;
+        }
         const removeButton = event.target.closest('[data-remove-order-item]');
         if (!removeButton) return;
         managerOrderCart.splice(Number(removeButton.dataset.removeOrderItem), 1);
