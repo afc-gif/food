@@ -148,8 +148,17 @@
         .menu-search-toolbar { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; margin: 18px 0; }
         .menu-search-toolbar input { min-height: 48px; border-radius: 14px; }
         .menu-search-count { color: rgba(0,0,0,0.58); font-size: 13px; font-weight: 700; white-space: nowrap; }
+        .menu-browser-heading { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin: 4px 0 14px; }
+        .menu-browser-heading h3 { margin: 0; font-size: 18px; }
+        .menu-browser-heading span { color: rgba(0,0,0,0.58); font-size: 13px; }
         .menu-management-layout { grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.8fr); gap: 22px; }
-        #menuList { max-height: min(74vh, 980px); grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 12px; }
+        #menuList { max-height: none; overflow: visible; grid-template-columns: repeat(2, minmax(0, 1fr)); align-content: start; gap: 18px; }
+        .menu-category-group { grid-column: 1 / -1; display: grid; gap: 12px; min-width: 0; }
+        .menu-category-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--af-line); border-radius: 14px; background: linear-gradient(110deg, #fff, #f8efdc); }
+        .menu-category-heading h3 { margin: 0; font-size: 17px; }
+        .menu-category-count { color: rgba(0,0,0,0.58); font-size: 12px; font-weight: 700; white-space: nowrap; }
+        .menu-category-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 12px; }
+        .menu-category-empty { grid-column: 1 / -1; margin: 0; padding: 12px 14px; border: 1px dashed var(--af-line); border-radius: 12px; color: rgba(0,0,0,0.56); font-size: 13px; }
         .menu-card { min-width: 0; border: 1px solid var(--af-line); border-radius: 18px; padding: 16px; background: #fff; box-shadow: 0 10px 24px rgba(0,0,0,0.045); display: grid; gap: 13px; transition: box-shadow 0.18s ease, transform 0.18s ease; }
         .menu-card:hover { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(47,32,8,0.1); }
         .menu-card-head { display:grid; gap:12px; }
@@ -175,14 +184,15 @@
             .sidebar-backdrop.open { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 0.2s ease, visibility 0s; }
             .hamburger { z-index: 41; }
             .menu-management-layout { grid-template-columns: minmax(0, 1fr); }
-            #menuList { max-height: none; }
+            #menuList { max-height: none; overflow: visible; }
+            .menu-category-items { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (max-width: 640px) {
             main { min-width: 0; padding: 72px 14px 20px; }
             .menu-management-card { padding: 16px; }
             .menu-search-toolbar { grid-template-columns: minmax(0, 1fr); }
             .menu-search-count { min-height: 18px; }
-            #menuList { grid-template-columns: minmax(0, 1fr); }
+            #menuList, .menu-category-items { grid-template-columns: minmax(0, 1fr); }
             .menu-card { padding: 14px; }
             .menu-card-head > div:first-child { align-items: flex-start !important; }
             .menu-actions > button { flex: 1 1 120px; }
@@ -330,18 +340,22 @@
             <section class="panel" data-section="menu">
                 <div class="card menu-management-card">
                     <h2>Menu Items</h2>
-                    <p class="muted">Search items by name, description, category, or barcode to manage them.</p>
+                    <p class="muted">Browse every category and its menu items below. Use Edit to update an item or move it to another category.</p>
                     <div class="menu-search-toolbar">
                         <label for="menuSearchInput" class="visually-hidden">Search menu items</label>
                         <input id="menuSearchInput" type="search" placeholder="Search menu items..." autocomplete="off" />
                         <span id="menuSearchCount" class="menu-search-count" role="status" aria-live="polite"></span>
+                    </div>
+                    <div class="menu-browser-heading">
+                        <h3>All categories</h3>
+                        <span>Items are grouped by category. Edit an item to move it.</span>
                     </div>
                     <div class="grid-2 menu-management-layout">
                         <div class="list" id="menuList"></div>
                         <form id="menuForm">
                             <div>
                                 <h3 style="margin:0 0 4px;">Add or edit a menu item</h3>
-                                <p class="muted" style="font-size:13px;">Select Edit on an item to update its details here.</p>
+                                <p class="muted" style="font-size:13px;">Select Edit on an item to update its details or change its category here.</p>
                             </div>
                             <input type="hidden" name="menu_item_id" id="menuEditId" />
                             <label>Name</label>
@@ -359,7 +373,7 @@
                             <input name="stock" type="number" step="1" min="0" placeholder="Leave empty if not tracked" />
                             <label>Stock Unit</label>
                             <input name="stock_unit" maxlength="50" placeholder="e.g. portions, bottles, packs" />
-                            <label>Category</label>
+                            <label>Category (move item)</label>
                             <select name="category_id" id="menuCategorySelect">
                                 <option value="">No category</option>
                             </select>
@@ -1133,6 +1147,7 @@
 
             menuCategorySelect.innerHTML = `<option value="">No category</option>` + categories.map(cat => `<option value="${cat.id}">${escapeAttr(cat.name)}</option>`).join('');
             statCategories.textContent = categories.length;
+            if (menuItemsCache.length) renderMenu(menuItemsCache);
         }
 
         function resetCategoryForm() {
@@ -1171,7 +1186,7 @@
                 ].some(value => String(value || '').toLocaleLowerCase().includes(query)))
                 : items;
 
-            const cards = filteredItems.map(item => {
+            const renderMenuCard = item => {
                 const safeBarcode = escapeAttr(item.barcode || '');
                 const safeName = escapeAttr(item.name || '');
                 if (item.barcode) {
@@ -1208,9 +1223,57 @@
                         </div>
                     </div>
                 `;
+            };
+
+            const groupsById = new Map();
+            const groupsByName = new Map();
+            const groups = categoriesCache.map(category => {
+                const group = { category, items: [] };
+                groupsById.set(String(category.id), group);
+                groupsByName.set(String(category.name || '').toLocaleLowerCase(), group);
+                return group;
             });
-            menuList.innerHTML = cards.length
-                ? cards.join('')
+            let uncategorizedGroup = null;
+            filteredItems.forEach(item => {
+                const itemCategory = item.category || null;
+                const categoryId = item.category_id ?? itemCategory?.id;
+                const categoryName = String(itemCategory?.name || '').toLocaleLowerCase();
+                let group = categoryId != null ? groupsById.get(String(categoryId)) : null;
+                if (!group && categoryName) group = groupsByName.get(categoryName);
+
+                if (!group && (categoryId != null || categoryName)) {
+                    const category = itemCategory || { id: categoryId, name: 'Unlisted category' };
+                    group = { category, items: [] };
+                    groups.push(group);
+                    if (categoryId != null) groupsById.set(String(categoryId), group);
+                    if (categoryName) groupsByName.set(categoryName, group);
+                }
+
+                if (!group) {
+                    if (!uncategorizedGroup) {
+                        uncategorizedGroup = { category: { name: 'Uncategorized' }, items: [] };
+                        groups.push(uncategorizedGroup);
+                    }
+                    group = uncategorizedGroup;
+                }
+                group.items.push(item);
+            });
+
+            const visibleGroups = query ? groups.filter(group => group.items.length) : groups;
+            menuList.innerHTML = filteredItems.length
+                ? visibleGroups.map(group => `
+                    <section class="menu-category-group">
+                        <div class="menu-category-heading">
+                            <h3>${escapeAttr(group.category.name || 'Uncategorized')}</h3>
+                            <span class="menu-category-count">${group.items.length} ${group.items.length === 1 ? 'item' : 'items'}</span>
+                        </div>
+                        <div class="menu-category-items">
+                            ${group.items.length
+                                ? group.items.map(renderMenuCard).join('')
+                                : '<p class="menu-category-empty">No menu items in this category yet.</p>'}
+                        </div>
+                    </section>
+                `).join('')
                 : `<div class="muted">${query ? 'No menu items match your search.' : 'No menu items found.'}</div>`;
             menuSearchCount.textContent = query
                 ? `${filteredItems.length} of ${items.length} items`
