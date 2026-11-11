@@ -1153,8 +1153,63 @@ export default function App() {
       </main>
 
       <footer className="site-footer" inert={galleryOpen}>
-        <img src="/brand/logo2.png" alt="" width="44" height="44" loading="lazy" />
-        <span>Made fresh with love at Acie Fraiche Café.</span>
+        <div className="site-footer-grid">
+          <div className="site-footer-brand">
+            <img src="/brand/logo2.png" alt="" width="48" height="48" loading="lazy" />
+            <p>Made fresh with love at Acie Fraiche Café.</p>
+          </div>
+          <section className="site-footer-section" aria-labelledby="footer-visit">
+            <h2 id="footer-visit">Visit us</h2>
+            <p>
+              <strong>SARS Road</strong>
+              <br />
+              Immediately after the SARS Police Station, you will see a Smart Home
+              Office.
+            </p>
+            <a
+              href="https://www.google.com/maps/search/?api=1&query=SARS+Road+Smart+Home+Office"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Get directions
+            </a>
+          </section>
+          <section className="site-footer-section" aria-labelledby="footer-contact">
+            <h2 id="footer-contact">Contact &amp; hours</h2>
+            <p>
+              <a href="tel:+2348143190700">+234 814 319 0700</a>
+              <br />
+              <a href="https://wa.me/2348143190700">WhatsApp us</a>
+              <br />
+              <a href="mailto:support@afc.com.ng">support@afc.com.ng</a>
+            </p>
+            <p>
+              Mon–Sat: 8am–10pm
+              <br />
+              Sun: 12 noon–10pm
+            </p>
+          </section>
+          <section className="site-footer-section" aria-labelledby="footer-social">
+            <h2 id="footer-social">Follow along</h2>
+            <p>Chef drops, new pairings, and weekly tastings.</p>
+            <div className="site-footer-socials">
+              <a
+                href="https://www.instagram.com/afc.ng/"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Instagram
+              </a>
+              <a
+                href="https://www.tiktok.com/@acie_fraiche_cafe"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                TikTok
+              </a>
+            </div>
+          </section>
+        </div>
       </footer>
 
       {variationPicker && (
