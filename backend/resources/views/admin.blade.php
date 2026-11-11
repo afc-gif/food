@@ -161,11 +161,11 @@
             .admin-expenses-grid { grid-template-columns: 1fr; }
             body { grid-template-columns: 1fr; }
             body.sidebar-is-open { overflow: hidden; }
-            .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: min(300px, calc(100vw - 56px)); height: 100vh; height: 100dvh; overflow-y: auto; overscroll-behavior: contain; transform: translateX(-105%); z-index: 40; }
-            .sidebar.open { transform: translateX(0); }
+            .sidebar { position: fixed; left: 0; top: 0; bottom: 0; width: min(300px, calc(100vw - 56px)); height: 100vh; height: 100dvh; overflow-y: auto; overscroll-behavior: contain; transform: translate3d(calc(-100% - 48px), 0, 0); visibility: hidden; pointer-events: none; transition: transform 0.2s ease, visibility 0s linear 0.2s; z-index: 40; }
+            .sidebar.open { transform: translate3d(0, 0, 0); visibility: visible; pointer-events: auto; transition: transform 0.2s ease, visibility 0s; }
             .sidebar.collapsed { width: min(300px, calc(100vw - 56px)); padding: 18px; }
-            .sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 39; border: 0; border-radius: 0; padding: 0; background: rgba(18,14,8,0.48); opacity: 0; visibility: hidden; transition: opacity 0.2s ease, visibility 0.2s ease; }
-            .sidebar-backdrop.open { opacity: 1; visibility: visible; }
+            .sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 39; border: 0; border-radius: 0; padding: 0; background: rgba(18,14,8,0.48); opacity: 0; visibility: hidden; pointer-events: none; transition: opacity 0.2s ease, visibility 0s linear 0.2s; }
+            .sidebar-backdrop.open { opacity: 1; visibility: visible; pointer-events: auto; transition: opacity 0.2s ease, visibility 0s; }
             .hamburger { z-index: 41; }
             .menu-management-layout { grid-template-columns: minmax(0, 1fr); }
             #menuList { max-height: none; }
@@ -1035,6 +1035,8 @@
             sidebar.classList.toggle('open', open);
             sidebarBackdrop.classList.toggle('open', open);
             document.body.classList.toggle('sidebar-is-open', open);
+            sidebar.inert = mobileSidebar.matches && !open;
+            sidebar.setAttribute('aria-hidden', String(mobileSidebar.matches && !open));
             toggleSidebar.setAttribute('aria-expanded', String(open));
             toggleSidebar.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
         }
