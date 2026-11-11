@@ -51,9 +51,19 @@ class OrderController extends Controller
 
     public function store(Request $request, BusinessHours $businessHours)
     {
+        return $this->createOrder($request, $businessHours);
+    }
+
+    public function storeForManager(Request $request, BusinessHours $businessHours)
+    {
+        return $this->createOrder($request, $businessHours, true);
+    }
+
+    private function createOrder(Request $request, BusinessHours $businessHours, bool $managerOverride = false)
+    {
         try {
             $data = $request->validate([
-                'channel' => 'nullable|string|max:50',
+                'channel' => $managerOverride ? 'nullable|in:pos,web' : 'nullable|string|max:50',
                 'customer_name' => 'nullable|string|max:255',
                 'customer_phone' => 'nullable|string|max:32',
                 'items' => 'required|array|min:1',
@@ -73,7 +83,7 @@ class OrderController extends Controller
                 'time' => 'nullable|string|max:100',
             ]);
 
-            if (($data['channel'] ?? 'pos') === 'web') {
+            if (($data['channel'] ?? 'pos') === 'web' && ! $managerOverride) {
                 $availability = $businessHours->availability();
                 if (! $availability['is_open']) {
                     return response()->json([

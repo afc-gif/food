@@ -25,6 +25,7 @@
             --af-shadow:  0 12px 28px rgba(0,0,0,0.06);
             --radius:     16px;
         }
+
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         body {
             font-family: 'Manrope', system-ui, sans-serif;
@@ -252,6 +253,23 @@
         .expenses-grid {
             padding: 20px; display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
         }
+        .manager-order-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 12px; padding: 18px;
+        }
+        .manager-order-field { display: grid; gap: 6px; }
+        .manager-order-field label { font-size: 12px; font-weight: 700; }
+        .manager-order-field input,
+        .manager-order-field select,
+        .manager-order-field textarea {
+            width: 100%; padding: 10px 12px; border: 1px solid var(--af-line);
+            border-radius: 10px; font: inherit; background: #fff;
+        }
+        .manager-order-cart { padding: 0 18px 18px; }
+        .manager-order-line {
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--af-line);
+        }
 
         #toast {
             position: fixed; right: 20px; bottom: 20px;
@@ -469,8 +487,91 @@
     <!-- Navigation Tabs -->
     <div class="nav-tabs">
         <button class="tab-btn active" data-tab="orders">📋 Today's Orders (<span id="tabOrderCount">0</span>)</button>
+        <button class="tab-btn" data-tab="new-order">＋ Place Customer Order</button>
         <button class="tab-btn" data-tab="dishes">🍲 Dish Availability & Photos</button>
         <button class="tab-btn" data-tab="expenses">💸 Today's Expenses (<span id="tabExpenseTotal">₦0</span>)</button>
+    </div>
+
+    <!-- Manager-created customer orders -->
+    <div class="panel-card" id="tabContentNewOrder" style="display:none;">
+        <div class="panel-head">
+            <div>
+                <h3>Place an Order for a Customer</h3>
+                <span class="muted" style="font-size:12px;">Orders use current menu prices and stock checks, and appear in today's order feed.</span>
+            </div>
+        </div>
+        <form id="managerOrderForm">
+            <div class="manager-order-grid">
+                <div class="manager-order-field">
+                    <label for="managerOrderType">Customer order type</label>
+                    <select id="managerOrderType" required>
+                        <option value="pos">Walk-in customer</option>
+                        <option value="web">Online customer</option>
+                    </select>
+                </div>
+                <div class="manager-order-field">
+                    <label for="managerCustomerName">Customer name</label>
+                    <input id="managerCustomerName" maxlength="255" placeholder="Customer name">
+                </div>
+                <div class="manager-order-field">
+                    <label for="managerCustomerPhone">Customer phone</label>
+                    <input id="managerCustomerPhone" maxlength="32" placeholder="080…">
+                </div>
+                <div class="manager-order-field">
+                    <label for="managerServiceType">Service</label>
+                    <select id="managerServiceType" required>
+                        <option value="Pickup">Pickup</option>
+                        <option value="Delivery">Delivery</option>
+                        <option value="Dine-in">Dine-in</option>
+                    </select>
+                </div>
+                <div class="manager-order-field">
+                    <label for="managerOrderItem">Menu item</label>
+                    <select id="managerOrderItem" required>
+                        <option value="">Loading available menu items…</option>
+                    </select>
+                </div>
+                <div class="manager-order-field">
+                    <label for="managerOrderQuantity">Quantity</label>
+                    <input id="managerOrderQuantity" type="number" min="1" step="1" value="1" required>
+                </div>
+                <div class="manager-order-field" id="managerSideChoiceField" style="display:none;">
+                    <label for="managerSideChoice">Side / option</label>
+                    <select id="managerSideChoice"></select>
+                </div>
+                <div class="manager-order-field">
+                    <label for="managerPaymentStatus">Payment</label>
+                    <select id="managerPaymentStatus">
+                        <option value="pending">Not paid yet</option>
+                        <option value="paid">Paid</option>
+                    </select>
+                </div>
+                <div class="manager-order-field" id="managerPaymentMethodField" style="display:none;">
+                    <label for="managerPaymentMethod">Payment method</label>
+                    <select id="managerPaymentMethod">
+                        <option value="cash">Cash</option>
+                        <option value="card">Card</option>
+                        <option value="transfer">Transfer</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="manager-order-field" style="align-content:end;">
+                    <button class="btn btn-ghost" id="managerAddOrderItem" type="button">Add item to order</button>
+                </div>
+                <div class="manager-order-field" style="grid-column:1/-1;">
+                    <label for="managerOrderNote">Order note (optional)</label>
+                    <textarea id="managerOrderNote" rows="2" maxlength="500" placeholder="Delivery address or kitchen instructions"></textarea>
+                </div>
+            </div>
+            <div class="manager-order-cart">
+                <h4 style="margin-bottom:8px;">Order items</h4>
+                <div id="managerOrderCart" class="muted">No items added yet.</div>
+                <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-top:14px;">
+                    <strong>Order total: <span id="managerOrderTotal">₦0</span></strong>
+                    <button class="btn btn-primary" id="managerSubmitOrder" type="submit">Save Customer Order</button>
+                </div>
+            </div>
+        </form>
     </div>
 
     <!-- Tab 1: Today's Orders -->
@@ -601,6 +702,7 @@
 
     let todayOrders  = [];
     let menuItems    = [];
+    let managerOrderCart = [];
     let isStoreOpen  = true;
     let selectedCat  = 'all';
 
@@ -646,12 +748,143 @@
             renderOrdersFeed();
             renderCategoryChips();
             renderDishesGrid();
+            renderManagerOrderMenu();
             await loadTodayExpenses();
 
             document.getElementById('lastUpdated').textContent =
                 'Last updated ' + new Date().toLocaleTimeString();
         } catch (err) {
             toast(err.message, true);
+        }
+    }
+
+    function renderManagerOrderMenu() {
+        const select = document.getElementById('managerOrderItem');
+        if (!select) return;
+        const currentId = select.value;
+        const available = menuItems.filter(item =>
+            item.is_active && !item.is_sold_out && item.stock !== 0
+        );
+        select.innerHTML = '<option value="">Select a dish</option>' + available.map(item =>
+            `<option value="${Number(item.id)}">${esc(item.name)} · ₦${Number(item.price || 0).toLocaleString()}${item.stock !== null ? ` · ${Number(item.stock)} left` : ''}</option>`
+        ).join('');
+        if (available.some(item => String(item.id) === currentId)) select.value = currentId;
+        updateManagerSideChoices();
+    }
+
+    function updateManagerSideChoices() {
+        const itemId = Number(document.getElementById('managerOrderItem').value);
+        const item = menuItems.find(candidate => Number(candidate.id) === itemId);
+        const field = document.getElementById('managerSideChoiceField');
+        const select = document.getElementById('managerSideChoice');
+        let sides = item?.sides;
+        if (typeof sides === 'string') {
+            try { sides = JSON.parse(sides); } catch { sides = sides.split(',').map(side => side.trim()).filter(Boolean); }
+        }
+        const itemName = (item?.name || '').toLowerCase();
+        if (!Array.isArray(sides) || !sides.length) {
+            sides = itemName.includes('catfish') || (itemName.includes('pepper') && itemName.includes('soup'))
+                ? ['Rice', 'Yam', 'Plantain']
+                : [];
+        }
+        if (!sides.length) {
+            field.style.display = 'none';
+            select.required = false;
+            select.innerHTML = '';
+            return;
+        }
+        field.style.display = 'grid';
+        select.required = true;
+        select.innerHTML = '<option value="">Choose an option</option>' + sides.map(side =>
+            `<option value="${esc(side)}">${esc(side)} (Included)</option>`
+        ).join('');
+    }
+
+    function managerOrderTotal() {
+        return managerOrderCart.reduce((total, item) => total + Number(item.price) * item.quantity, 0);
+    }
+
+    function renderManagerOrderCart() {
+        const wrap = document.getElementById('managerOrderCart');
+        const total = managerOrderTotal();
+        document.getElementById('managerOrderTotal').textContent = '₦' + total.toLocaleString();
+        if (!managerOrderCart.length) {
+            wrap.textContent = 'No items added yet.';
+            wrap.className = 'muted';
+            return;
+        }
+        wrap.className = '';
+        wrap.innerHTML = managerOrderCart.map((item, index) => `
+            <div class="manager-order-line">
+                <div>
+                    <strong>${esc(item.name)}${item.side_choice ? ` · ${esc(item.side_choice)}` : ''}</strong>
+                    <div class="muted" style="font-size:12px;">${item.quantity} × ₦${Number(item.price).toLocaleString()}</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <strong>₦${(Number(item.price) * item.quantity).toLocaleString()}</strong>
+                    <button class="btn btn-ghost btn-sm" type="button" data-remove-order-item="${index}" aria-label="Remove ${esc(item.name)}">Remove</button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function resetManagerOrderForm() {
+        document.getElementById('managerOrderForm').reset();
+        document.getElementById('managerOrderQuantity').value = '1';
+        document.getElementById('managerPaymentMethodField').style.display = 'none';
+        managerOrderCart = [];
+        updateManagerSideChoices();
+        renderManagerOrderCart();
+    }
+
+    async function submitManagerOrder(event) {
+        event.preventDefault();
+        if (!managerOrderCart.length) {
+            toast('Add at least one menu item to the order.', true);
+            return;
+        }
+        const submitButton = document.getElementById('managerSubmitOrder');
+        if (submitButton.disabled) return;
+        submitButton.disabled = true;
+        submitButton.textContent = 'Saving order…';
+
+        const paid = document.getElementById('managerPaymentStatus').value === 'paid';
+        const total = managerOrderTotal();
+        const payload = {
+            channel: document.getElementById('managerOrderType').value,
+            customer_name: document.getElementById('managerCustomerName').value.trim() || null,
+            customer_phone: document.getElementById('managerCustomerPhone').value.trim() || null,
+            service: document.getElementById('managerServiceType').value,
+            note: document.getElementById('managerOrderNote').value.trim() || null,
+            send_to_kitchen: true,
+            items: managerOrderCart.map(item => ({
+                menu_item_id: item.id,
+                quantity: item.quantity,
+                side_choice: item.side_choice || null,
+            })),
+        };
+        if (paid) {
+            payload.payment = {
+                amount: total,
+                method: document.getElementById('managerPaymentMethod').value,
+                reference: `MANAGER-${Date.now()}`,
+            };
+        }
+
+        try {
+            const order = await apiFetch('/manager/orders', {
+                method: 'POST',
+                body: JSON.stringify(payload),
+            });
+            toast(`Order #${order.code} saved and sent to the kitchen.`);
+            resetManagerOrderForm();
+            await loadAll();
+            document.querySelector('.tab-btn[data-tab="orders"]').click();
+        } catch (err) {
+            toast(err.message || 'The order could not be saved. Please try again.', true);
+        } finally {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Save Customer Order';
         }
     }
 
@@ -968,6 +1201,47 @@
     // ── Event Listeners ───────────────────────────
     document.getElementById('storeLockBtn').addEventListener('click', toggleStoreLock);
     document.getElementById('btnRefresh').addEventListener('click', loadAll);
+    document.getElementById('managerOrderItem').addEventListener('change', updateManagerSideChoices);
+    document.getElementById('managerPaymentStatus').addEventListener('change', event => {
+        document.getElementById('managerPaymentMethodField').style.display =
+            event.target.value === 'paid' ? 'grid' : 'none';
+    });
+    document.getElementById('managerAddOrderItem').addEventListener('click', () => {
+        const itemId = Number(document.getElementById('managerOrderItem').value);
+        const item = menuItems.find(candidate => Number(candidate.id) === itemId);
+        const quantity = Number(document.getElementById('managerOrderQuantity').value);
+        if (!item || !Number.isInteger(quantity) || quantity < 1) {
+            toast('Select an available dish and a valid quantity.', true);
+            return;
+        }
+        const sideChoice = document.getElementById('managerSideChoice').value;
+        const existing = managerOrderCart.find(line =>
+            line.id === item.id && line.side_choice === sideChoice
+        );
+        const alreadyAdded = managerOrderCart
+            .filter(line => line.id === item.id)
+            .reduce((sum, line) => sum + line.quantity, 0);
+        if (item.stock !== null && alreadyAdded + quantity > Number(item.stock)) {
+            toast(`Only ${Math.max(0, Number(item.stock) - alreadyAdded)} ${item.stock_unit || 'in stock'} of ${item.name} remain for this order.`, true);
+            return;
+        }
+        if (existing) existing.quantity += quantity;
+        else managerOrderCart.push({
+            id: item.id,
+            name: item.name,
+            price: Number(item.price || 0),
+            quantity,
+            side_choice: sideChoice,
+        });
+        renderManagerOrderCart();
+    });
+    document.getElementById('managerOrderCart').addEventListener('click', event => {
+        const removeButton = event.target.closest('[data-remove-order-item]');
+        if (!removeButton) return;
+        managerOrderCart.splice(Number(removeButton.dataset.removeOrderItem), 1);
+        renderManagerOrderCart();
+    });
+    document.getElementById('managerOrderForm').addEventListener('submit', submitManagerOrder);
 
     // Tab switching
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -976,6 +1250,7 @@
             btn.classList.add('active');
             const tab = btn.dataset.tab;
             document.getElementById('tabContentOrders').style.display = tab === 'orders' ? 'block' : 'none';
+            document.getElementById('tabContentNewOrder').style.display = tab === 'new-order' ? 'block' : 'none';
             document.getElementById('tabContentDishes').style.display = tab === 'dishes' ? 'block' : 'none';
             document.getElementById('tabContentExpenses').style.display = tab === 'expenses' ? 'block' : 'none';
             if (tab === 'expenses') loadTodayExpenses();
