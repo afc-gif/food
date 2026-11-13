@@ -17,12 +17,12 @@ class AuthenticationTest extends TestCase
         $response->assertStatus(200);
     }
 
-    public function test_unauthenticated_redirect_uses_the_canonical_public_domain(): void
+    public function test_unauthenticated_redirect_uses_the_configured_laravel_url(): void
     {
-        config(['app.url' => 'https://afc.com.ng']);
+        config(['app.url' => 'https://food-app-production-e680.up.railway.app']);
 
         $this->get('https://afc.com.ng/admin')
-            ->assertRedirect('https://afc.com.ng/login');
+            ->assertRedirect('https://food-app-production-e680.up.railway.app/login');
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void
