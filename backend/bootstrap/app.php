@@ -13,7 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->redirectGuestsTo('/login');
+        $middleware->redirectGuestsTo(
+            fn () => rtrim(config('app.url'), '/').'/login',
+        );
 
         $middleware->alias([
             'active' => \App\Http\Middleware\EnsureUserIsActive::class,

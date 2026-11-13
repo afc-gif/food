@@ -19,8 +19,10 @@ class AuthenticationTest extends TestCase
 
     public function test_unauthenticated_redirect_uses_a_relative_login_url(): void
     {
+        config(['app.url' => 'https://www.afc.com.ng']);
+
         $this->get('https://afc.com.ng/admin')
-            ->assertRedirect('/login');
+            ->assertRedirect('https://www.afc.com.ng/login');
     }
 
     public function test_users_can_authenticate_using_the_login_screen(): void
