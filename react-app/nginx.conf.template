@@ -41,6 +41,20 @@ server {
         proxy_redirect off;
     }
 
+    # Laravel-rendered pages (login, staff dashboards, auth flows) and their
+    # built assets. Everything else is a React route.
+    location ~ ^/(login|logout|register|forgot-password|reset-password|verify-email|confirm-password|password|email|admin|manager|pos|staff|inventory|kitchen|print|profile|receipt|build|storage|sanctum|up)(/|$) {
+        proxy_pass ${BACKEND_URL};
+        proxy_ssl_server_name on;
+        proxy_set_header Host $proxy_host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header X-Forwarded-Port 443;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        # Keep redirects (e.g. login -> admin) on the public domain.
+        proxy_redirect ${BACKEND_URL}/ /;
+    }
+
     # React client-side routes must resolve to the SPA, not Laravel.
     location / {
         try_files $uri /index.html;
