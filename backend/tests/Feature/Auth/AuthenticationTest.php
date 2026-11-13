@@ -17,6 +17,15 @@ class AuthenticationTest extends TestCase
         $response->assertStatus(200);
     }
 
+    public function test_unauthenticated_redirect_uses_the_public_https_origin_behind_a_proxy(): void
+    {
+        $this->withHeaders([
+            'X-Forwarded-Proto' => 'https',
+            'X-Forwarded-Port' => '443',
+        ])->get('https://afc.com.ng/admin')
+            ->assertRedirect('https://afc.com.ng/login');
+    }
+
     public function test_users_can_authenticate_using_the_login_screen(): void
     {
         $user = User::factory()->create();
