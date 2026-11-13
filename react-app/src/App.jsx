@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
 const CART_STORAGE_KEY = "afc-react-menu-cart";
+const CUSTOMER_CARE_WELCOMED_KEY = "afc-customer-care-welcomed";
 const CUSTOMER_CARE_WELCOME =
-  "Hi! I’m here to help you find a favourite or place an order.";
+  "Welcome to Acie Fraiche! Browse the menu and add your favourites to your bag. I can guide you through checkout and sending your order on WhatsApp.";
 
 async function fetchJson(path, options) {
   const response = await fetch(path, {
@@ -342,6 +343,7 @@ export default function App() {
   const [cartAnnouncement, setCartAnnouncement] = useState("");
   const customerCareLauncherRef = useRef(null);
   const customerCarePanelRef = useRef(null);
+  const customerCareWelcomeCheckedRef = useRef(false);
   const dishCarouselRef = useRef(null);
   const dishGalleryDialogRef = useRef(null);
   const cartDialogRef = useRef(null);
@@ -398,6 +400,21 @@ export default function App() {
 
   useEffect(() => {
     loadMenu();
+  }, []);
+
+  useEffect(() => {
+    if (customerCareWelcomeCheckedRef.current) return;
+    customerCareWelcomeCheckedRef.current = true;
+
+    try {
+      if (!localStorage.getItem(CUSTOMER_CARE_WELCOMED_KEY)) {
+        localStorage.setItem(CUSTOMER_CARE_WELCOMED_KEY, "true");
+        setCustomerCareOpen(true);
+      }
+    } catch (storageError) {
+      console.warn("Customer-care welcome could not be saved in this browser.", storageError);
+      setCustomerCareOpen(true);
+    }
   }, []);
 
   useEffect(() => {
@@ -809,6 +826,12 @@ export default function App() {
     }, 60);
   };
 
+  const showOrderingGuidance = () => {
+    setCustomerCareMessage(
+      "Add dishes to your bag, review the quantities, enter your name and phone number, then choose Checkout with WhatsApp. WhatsApp opens with your order ready—tap Send to complete it. The kitchen confirms your final total.",
+    );
+  };
+
   const moveDishCarousel = (direction) => {
     const carousel = dishCarouselRef.current;
     if (!carousel) return;
@@ -907,7 +930,9 @@ export default function App() {
       });
       dismissOverlay();
       setCheckoutStatus("redirecting");
-      setCustomerCareMessage("Opening WhatsApp to send your order.");
+      setCustomerCareMessage(
+        "Your order is ready. WhatsApp is opening now—review the message and tap Send to complete your order.",
+      );
       setWhatsappRedirectUrl(redirectUrl);
     } catch (checkoutFailure) {
       console.error("WhatsApp checkout could not be prepared.", checkoutFailure);
@@ -1387,10 +1412,50 @@ export default function App() {
               <strong id="customer-care-title">AFC Customer Care</strong>
               <span>Here to help</span>
             </div>
+            <button
+              className="customer-care-close"
+              type="button"
+              aria-label="Close customer care"
+              onClick={() => {
+                setCustomerCareOpen(false);
+                window.requestAnimationFrame(() => customerCareLauncherRef.current?.focus());
+              }}
+            >
+              ×
+            </button>
           </header>
           <p className="customer-care-message" aria-live="polite">
             {customerCareMessage}
           </p>
+          <div className="customer-care-actions">
+            {cartItemCount > 0 ? (
+              <button
+                className="customer-care-action customer-care-action-primary"
+                type="button"
+                onClick={() => openCart()}
+              >
+                Review your bag
+              </button>
+            ) : (
+              <button
+                className="customer-care-action customer-care-action-primary"
+                type="button"
+                onClick={() => {
+                  setCustomerCareOpen(false);
+                  browseCategories();
+                }}
+              >
+                Browse the menu
+              </button>
+            )}
+            <button
+              className="customer-care-action"
+              type="button"
+              onClick={showOrderingGuidance}
+            >
+              {cartItemCount > 0 ? "Checkout steps" : "How to order"}
+            </button>
+          </div>
         </section>
       )}
 

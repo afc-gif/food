@@ -22,11 +22,12 @@ the overlay and returns customers to the menu. It attempts to save orders
 through Laravel's existing `POST /api/orders` endpoint first, but still opens
 WhatsApp with the full itemized order if the API is unavailable.
 
-Customers can search dishes and use the floating AFC customer-care portrait for
-menu, cart, and checkout guidance. The assistant uses the existing chef portrait,
-stays closed unless a customer opens it, and closes whenever the cart opens so
-it does not compete with ordering controls. The menu, cart, Laravel API, and
-WhatsApp checkout remain independent of the assistant.
+Customers are welcomed by the AFC customer-care assistant on their first visit.
+It uses the existing chef portrait and offers shortcuts to browse the menu or
+review the bag, along with guidance for completing checkout in WhatsApp. The
+welcome is remembered in the browser, and the assistant closes whenever the
+cart opens so it does not compete with ordering controls. The menu, cart,
+Laravel API, and WhatsApp checkout remain independent of the assistant.
 
 The hero and assistant reuse the café chef portrait at `public/images/chef.jpeg`.
 
