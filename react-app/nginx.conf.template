@@ -4,15 +4,46 @@ server {
     root /usr/share/nginx/html;
     index index.html;
 
+    # React owns only the public homepage and its compiled static assets.
+    location = / {
+        try_files /index.html =404;
+    }
+
+    # If an asset is not part of the React build (for example, a Laravel logo),
+    # let Laravel serve it instead.
+    location /assets/ {
+        try_files $uri @laravel;
+    }
+
+    # Keep the existing same-origin API proxy for the public React app.
     location /api/ {
         proxy_pass ${BACKEND_URL}/api/;
         proxy_ssl_server_name on;
         proxy_set_header Host $proxy_host;
         proxy_set_header X-Forwarded-Host $host;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     }
 
+    # Everything else belongs to Laravel: login, auth callbacks, dashboards,
+    # receipts, and any other non-public-page routes.
     location / {
-        try_files $uri $uri/ /index.html;
+        proxy_pass ${BACKEND_URL};
+        proxy_ssl_server_name on;
+        proxy_set_header Host $proxy_host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_redirect ${BACKEND_URL}/ /;
+    }
+
+    location @laravel {
+        proxy_pass ${BACKEND_URL};
+        proxy_ssl_server_name on;
+        proxy_set_header Host $proxy_host;
+        proxy_set_header X-Forwarded-Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_redirect ${BACKEND_URL}/ /;
     }
 }
