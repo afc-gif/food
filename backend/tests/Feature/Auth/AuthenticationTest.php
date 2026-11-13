@@ -20,9 +20,10 @@ class AuthenticationTest extends TestCase
     public function test_unauthenticated_redirect_uses_the_public_https_origin_behind_a_proxy(): void
     {
         $this->withHeaders([
+            'X-Forwarded-Host' => 'afc.com.ng',
             'X-Forwarded-Proto' => 'https',
             'X-Forwarded-Port' => '443',
-        ])->get('https://afc.com.ng/admin')
+        ])->get('https://food-app-production-e680.up.railway.app/admin')
             ->assertRedirect('https://afc.com.ng/login');
     }
 
