@@ -25,6 +25,7 @@ server {
         proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Forwarded-Port 443;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_redirect ~^https?://[^/]+(/.*)$ $1;
     }
 
     location / {
@@ -34,8 +35,7 @@ server {
         proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Forwarded-Port 443;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_redirect ~^http://[^/]+(/.*)$ https://$host$1;
-        proxy_redirect ${BACKEND_URL}/ /;
+        proxy_redirect ~^https?://[^/]+(/.*)$ $1;
     }
 
     location @laravel {
@@ -45,6 +45,6 @@ server {
         proxy_set_header X-Forwarded-Proto https;
         proxy_set_header X-Forwarded-Port 443;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_redirect ${BACKEND_URL}/ /;
+        proxy_redirect ~^https?://[^/]+(/.*)$ $1;
     }
 }
