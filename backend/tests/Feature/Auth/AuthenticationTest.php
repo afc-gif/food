@@ -38,6 +38,20 @@ class AuthenticationTest extends TestCase
         $response->assertRedirect(route('staff', absolute: false));
     }
 
+    public function test_admin_login_redirect_uses_the_https_proxy_origin(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+
+        $this->withHeaders([
+            'Host' => 'food-app-production-e680.up.railway.app',
+            'X-Forwarded-Proto' => 'https',
+            'X-Forwarded-Port' => '443',
+        ])->post('http://food-app-production-e680.up.railway.app/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ])->assertRedirect('https://food-app-production-e680.up.railway.app/admin');
+    }
+
     public function test_users_can_not_authenticate_with_invalid_password(): void
     {
         $user = User::factory()->create();
