@@ -1,6 +1,12 @@
 server {
     listen ${PORT};
     server_name _;
+
+    # Login sessions are per host. Keep everyone on one host so a session
+    # created on afc.com.ng is not missing on www.afc.com.ng.
+    if ($host = www.afc.com.ng) {
+        return 301 https://afc.com.ng$request_uri;
+    }
     root /usr/share/nginx/html;
     index index.html;
 
