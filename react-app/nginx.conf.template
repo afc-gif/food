@@ -53,6 +53,12 @@ server {
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         # Keep redirects (e.g. login -> admin) on the public domain.
         proxy_redirect ${BACKEND_URL}/ https://$host/;
+
+        # Laravel builds absolute links (route()) from the backend host, which
+        # would open on a domain without the user's session. Rewrite them.
+        proxy_set_header Accept-Encoding "";
+        sub_filter_once off;
+        sub_filter '${BACKEND_URL}' 'https://$host';
     }
 
     # React client-side routes must resolve to the SPA, not Laravel.
